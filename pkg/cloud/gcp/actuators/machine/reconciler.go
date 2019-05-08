@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	"google.golang.org/api/compute/v1"
+	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -194,4 +195,40 @@ func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineP
 	// This is a complementary validation to fail early in case of lacking proper webhook validation.
 	// Default values can also be set here
 	return nil
+}
+
+// Returns true if machine exists.
+func (r *Reconciler) instanceExists() (bool, error) {
+	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
+		return false, fmt.Errorf("failed validating machine provider spec: %v", err)
+	}
+	zone := r.providerSpec.Zone
+	// Need to verify that our project/zone exists before checking machine, as
+	// invalid project/zone produces same 404 error as no machine.
+	if err := r.validateZone(); err != nil {
+		return false, fmt.Errorf("Unable to verify project/zone exists: %v/%v; err: %v", r.projectID, zone, err)
+	}
+	_, err := r.computeService.InstancesGet(r.projectID, zone, r.machine.Name)
+	if err == nil {
+		return true, nil
+	}
+	if isNotFoundError(err) {
+		return false, nil
+	}
+
+	return false, fmt.Errorf("Error getting running instances: %v", err)
+
+}
+
+func (r *Reconciler) validateZone() error {
+	_, err := r.computeService.ZonesGet(r.projectID, r.providerSpec.Zone)
+	return err
+}
+
+func isNotFoundError(err error) bool {
+	switch t := err.(type) {
+	case *googleapi.Error:
+		return t.Code == 404
+	}
+	return false
 }
