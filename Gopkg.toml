@@ -47,3 +47,12 @@ required = [
 [prune]
   go-tests = true
   unused-packages = true
+
+  # we need to bring this to build the core controller manager
+  [[prune.project]]
+  name = "github.com/openshift/cluster-api"
+  unused-packages = false
+
+  [[prune.project]]
+  name = "k8s.io/client-go"
+  unused-packages = false

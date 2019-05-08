@@ -200,7 +200,7 @@
 
 [[projects]]
   branch = "openshift-4.0-cluster-api-0.0.0-alpha.4"
-  digest = "1:b3e599a7762113036d6b6344ad7c2f8d563a53dc390d14c74fac87297c6ccab8"
+  digest = "1:7ac2d0246b09e9066ff66824b8686d4dd8ff6158cf7cbd058972a1a1e41b7df9"
   name = "github.com/openshift/cluster-api"
   packages = [
     "pkg/apis",
@@ -216,7 +216,7 @@
     "pkg/controller/machine",
     "pkg/util",
   ]
-  pruneopts = "UT"
+  pruneopts = "T"
   revision = "261136cbb6fbf4cf27f00b9da13a17f27ad4e1b1"
 
 [[projects]]
@@ -667,7 +667,7 @@
   version = "kubernetes-1.13.1"
 
 [[projects]]
-  digest = "1:96440689c7225b60ba35e4b9f893f28b5cc188f1224a8625685a2a4768e8c161"
+  digest = "1:0b3ba6818a03b0f0f181ab6b88d9be03789d02ede8929d876f45210471811fdb"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -711,6 +711,7 @@
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
     "plugin/pkg/client/auth/exec",
+    "plugin/pkg/client/auth/gcp",
     "rest",
     "rest/watch",
     "restmapper",
@@ -737,7 +738,7 @@
     "util/retry",
     "util/workqueue",
   ]
-  pruneopts = "UT"
+  pruneopts = "T"
   revision = "8d9ed539ba3134352c586810e749e58df4e94e4f"
   version = "kubernetes-1.13.1"
 
@@ -840,7 +841,6 @@
     "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset",
     "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1",
     "github.com/openshift/cluster-api/pkg/controller/machine",
-    "github.com/pkg/errors",
     "golang.org/x/oauth2",
     "golang.org/x/oauth2/google",
     "google.golang.org/api/compute/v1",
@@ -848,7 +848,6 @@
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
-    "k8s.io/apimachinery/pkg/util/json",
     "k8s.io/apimachinery/pkg/util/wait",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/klog",
