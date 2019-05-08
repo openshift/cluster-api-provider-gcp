@@ -96,7 +96,7 @@ func (r *Reconciler) create() error {
 	// userdata
 	userData, err := r.getCustomUserData()
 	if err != nil {
-		fmt.Errorf("error getting custom user data: %v", err)
+		return fmt.Errorf("error getting custom user data: %v", err)
 	}
 	var metadataItems = []*compute.MetadataItems{
 		{

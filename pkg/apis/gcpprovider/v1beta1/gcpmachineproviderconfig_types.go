@@ -26,7 +26,7 @@ type GCPMachineProviderSpec struct {
 	DeletionProtection bool                   `json:"deletionProtection"`
 	Disks              []*GCPDisk             `json:"disks,omitempty"`
 	Labels             map[string]string      `json:"labels,omitempty"`
-	Metadata           []*GCPMetadata         `json:"metadata,omitempty"`
+	Metadata           []*GCPMetadata         `json:"gcpMetadata,omitempty"`
 	NetworkInterfaces  []*GCPNetworkInterface `json:"networkInterfaces,omitempty"`
 	ServiceAccounts    []GCPServiceAccount    `json:"serviceAccounts"`
 	Tags               []string               `json:"tags,omitempty"`

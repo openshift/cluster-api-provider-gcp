@@ -69,7 +69,7 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 
 	computeService, err := computeservice.NewComputeService(oauthClient)
 	if err != nil {
-		fmt.Errorf("error creating compute service: %v", err)
+		return nil, fmt.Errorf("error creating compute service: %v", err)
 	}
 	return &machineScope{
 		machineClient:  params.machineClient.Machines(params.machine.Namespace),
