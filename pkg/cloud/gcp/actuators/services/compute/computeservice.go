@@ -11,6 +11,7 @@ import (
 type GCPComputeService interface {
 	InstancesInsert(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
 	ZoneOperationsGet(project string, zone string, operation string) (*compute.Operation, error)
+	InstancesGet(project string, zone string, instance string) (*compute.Instance, error)
 }
 
 type computeService struct {
@@ -36,4 +37,9 @@ func (c *computeService) InstancesInsert(project string, zone string, instance *
 // ZoneOperationsGet is a pass through wrapper for compute.Service.ZoneOperations.Get(...)
 func (c *computeService) ZoneOperationsGet(project string, zone string, operation string) (*compute.Operation, error) {
 	return c.service.ZoneOperations.Get(project, zone, operation).Do()
+}
+
+// A pass through wrapper for compute.Service.Instances.Get(...)
+func (c *computeService) InstancesGet(project string, zone string, instance string) (*compute.Instance, error) {
+	return c.service.Instances.Get(project, zone, instance).Do()
 }
