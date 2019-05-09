@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
-	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	"google.golang.org/api/compute/v1"
 	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
@@ -38,9 +36,6 @@ func newReconciler(scope *machineScope) *Reconciler {
 // Create creates machine if and only if machine exists, handled by cluster-api
 func (r *Reconciler) create() error {
 	defer r.reconcileMachineWithCloudState()
-	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
-		return fmt.Errorf("failed validating machine provider spec: %v", err)
-	}
 
 	zone := r.providerSpec.Zone
 	instance := &compute.Instance{
@@ -190,18 +185,8 @@ func (r *Reconciler) waitUntilOperationCompleted(zone, operationName string) (*c
 	})
 }
 
-func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineProviderSpec) error {
-	// TODO (alberto): First validation should happen via webhook before the object is persisted.
-	// This is a complementary validation to fail early in case of lacking proper webhook validation.
-	// Default values can also be set here
-	return nil
-}
-
 // Returns true if machine exists.
 func (r *Reconciler) instanceExists() (bool, error) {
-	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
-		return false, fmt.Errorf("failed validating machine provider spec: %v", err)
-	}
 	zone := r.providerSpec.Zone
 	// Need to verify that our project/zone exists before checking machine, as
 	// invalid project/zone produces same 404 error as no machine.

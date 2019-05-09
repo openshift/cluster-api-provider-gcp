@@ -31,6 +31,7 @@ type machineScopeParams struct {
 	machineClient machineclient.MachineV1beta1Interface
 	coreClient    controllerclient.Client
 	machine       *machinev1.Machine
+	providerSpec  *v1beta1.GCPMachineProviderSpec
 }
 
 // machineScope defines a scope defined around a machine and its cluster.
@@ -48,10 +49,7 @@ type machineScope struct {
 // newMachineScope creates a new MachineScope from the supplied parameters.
 // This is meant to be called for each machine actuator operation.
 func newMachineScope(params machineScopeParams) (*machineScope, error) {
-	providerSpec, err := v1beta1.ProviderSpecFromRawExtension(params.machine.Spec.ProviderSpec.Value)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get machine config: %v", err)
-	}
+	providerSpec := params.providerSpec
 
 	providerStatus, err := v1beta1.ProviderStatusFromRawExtension(params.machine.Status.ProviderStatus)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	mapiclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
@@ -31,13 +32,30 @@ func NewActuator(params ActuatorParams) *Actuator {
 	}
 }
 
+func getProviderSpec(machine machinev1.Machine) (*v1beta1.GCPMachineProviderSpec, error) {
+	// TODO (alberto): First validation should happen via webhook before the object is persisted.
+	// This is a complementary validation to fail early in case of lacking proper webhook validation.
+	// Default values can also be set here
+	providerSpec, err := v1beta1.ProviderSpecFromRawExtension(machine.Spec.ProviderSpec.Value)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get machine config: %v", err)
+	}
+	// TODO: validate machine/provider spec.
+	return providerSpec, nil
+}
+
 // Create creates a machine and is invoked by the machine controller.
 func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
 	klog.Infof("Creating machine %v", machine.Name)
+	providerSpec, err := getProviderSpec(*machine)
+	if err != nil {
+		return fmt.Errorf("failed validating machine provider spec: %v", err)
+	}
 	scope, err := newMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
 		machine:       machine,
+		providerSpec:  providerSpec,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
@@ -49,10 +67,15 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 }
 
 func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) (bool, error) {
+	providerSpec, err := getProviderSpec(*machine)
+	if err != nil {
+		return false, fmt.Errorf("failed validating machine provider spec: %v", err)
+	}
 	scope, err := newMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
 		machine:       machine,
+		providerSpec:  providerSpec,
 	})
 	if err != nil {
 		return false, fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
