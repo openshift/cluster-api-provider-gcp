@@ -141,6 +141,16 @@ func (in *GCPMachineProviderStatus) DeepCopyInto(out *GCPMachineProviderStatus) 
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	if in.InstanceID != nil {
+		in, out := &in.InstanceID, &out.InstanceID
+		*out = new(string)
+		**out = **in
+	}
+	if in.InstanceState != nil {
+		in, out := &in.InstanceState, &out.InstanceState
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 
