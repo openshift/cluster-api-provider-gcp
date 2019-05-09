@@ -7,6 +7,7 @@ import (
 type GCPComputeServiceMock struct {
 	mockInstancesInsert   func(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
 	mockZoneOperationsGet func(project string, zone string, operation string) (*compute.Operation, error)
+	mockInstancesGet      func(project string, zone string, instance string) (*compute.Instance, error)
 }
 
 func (c *GCPComputeServiceMock) InstancesInsert(project string, zone string, instance *compute.Instance) (*compute.Operation, error) {
@@ -21,6 +22,26 @@ func (c *GCPComputeServiceMock) ZoneOperationsGet(project string, zone string, o
 		return nil, nil
 	}
 	return c.mockZoneOperationsGet(project, zone, operation)
+}
+
+func (c *GCPComputeServiceMock) InstancesGet(project string, zone string, instance string) (*compute.Instance, error) {
+	return &compute.Instance{
+		Name:         instance,
+		Zone:         zone,
+		MachineType:  "n1-standard-1",
+		CanIpForward: true,
+		NetworkInterfaces: []*compute.NetworkInterface{
+			{
+				NetworkIP: "10.0.0.15",
+				AccessConfigs: []*compute.AccessConfig{
+					{
+						NatIP: "35.243.147.143",
+					},
+				},
+			},
+		},
+		Status: "RUNNING",
+	}, nil
 }
 
 func NewComputeServiceMock() (*compute.Instance, *GCPComputeServiceMock) {

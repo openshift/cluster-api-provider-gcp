@@ -10,6 +10,7 @@ import (
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	"google.golang.org/api/compute/v1"
 	apicorev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,6 +36,7 @@ func newReconciler(scope *machineScope) *Reconciler {
 
 // Create creates machine if and only if machine exists, handled by cluster-api
 func (r *Reconciler) create() error {
+	defer r.reconcileMachineWithCloudState()
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
 		return fmt.Errorf("failed validating machine provider spec: %v", err)
 	}
@@ -93,7 +95,7 @@ func (r *Reconciler) create() error {
 	}
 	instance.ServiceAccounts = serviceAccounts
 
-	// userdata
+	// userData
 	userData, err := r.getCustomUserData()
 	if err != nil {
 		return fmt.Errorf("error getting custom user data: %v", err)
@@ -116,9 +118,36 @@ func (r *Reconciler) create() error {
 
 	operation, err := r.computeService.InstancesInsert(r.projectID, zone, instance)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create instance via compute service: %v", err)
 	}
-	return r.waitUntilOperationCompleted(zone, operation.Name)
+	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
+		return fmt.Errorf("failed to wait for create operation via compute service. Operation status: %v. Error: %v", op, err)
+	}
+	return nil
+}
+
+func (r *Reconciler) reconcileMachineWithCloudState() error {
+	klog.Infof("Reconciling machine object %q with cloud state", r.machine.Name)
+	freshInstance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)
+	if err != nil {
+		return fmt.Errorf("failed to get instance via compute service: %v", err)
+	}
+
+	if len(freshInstance.NetworkInterfaces) < 1 {
+		return fmt.Errorf("could not find network interfaces for instance %q", freshInstance.Name)
+	}
+	networkInterface := freshInstance.NetworkInterfaces[0]
+
+	nodeAddresses := []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: networkInterface.NetworkIP}}
+	for _, config := range networkInterface.AccessConfigs {
+		nodeAddresses = append(nodeAddresses, v1.NodeAddress{Type: v1.NodeExternalIP, Address: config.NatIP})
+	}
+
+	r.machine.Status.Addresses = nodeAddresses
+	r.providerStatus.InstanceState = &freshInstance.Status
+	r.providerStatus.InstanceID = &freshInstance.Name
+	r.machine.Spec.ProviderID = &r.providerID
+	return nil
 }
 
 func (r *Reconciler) getCustomUserData() (string, error) {
@@ -137,9 +166,11 @@ func (r *Reconciler) getCustomUserData() (string, error) {
 	return base64.StdEncoding.EncodeToString(data), nil
 }
 
-func (r *Reconciler) waitUntilOperationCompleted(zone, operationName string) error {
-	return wait.Poll(operationRetryWait, operationTimeOut, func() (bool, error) {
-		op, err := r.computeService.ZoneOperationsGet(r.projectID, zone, operationName)
+func (r *Reconciler) waitUntilOperationCompleted(zone, operationName string) (*compute.Operation, error) {
+	var op *compute.Operation
+	var err error
+	return op, wait.Poll(operationRetryWait, operationTimeOut, func() (bool, error) {
+		op, err = r.computeService.ZoneOperationsGet(r.projectID, zone, operationName)
 		if err != nil {
 			return false, err
 		}

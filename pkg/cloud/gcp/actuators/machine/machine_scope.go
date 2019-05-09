@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/pkg/errors"
+
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
@@ -15,11 +17,9 @@ import (
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	machineclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
 	apicorev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -38,6 +38,7 @@ type machineScope struct {
 	machineClient  machineclient.MachineInterface
 	coreClient     controllerclient.Client
 	projectID      string
+	providerID     string
 	computeService computeservice.GCPComputeService
 	machine        *machinev1.Machine
 	providerSpec   *v1beta1.GCPMachineProviderSpec
@@ -47,9 +48,14 @@ type machineScope struct {
 // newMachineScope creates a new MachineScope from the supplied parameters.
 // This is meant to be called for each machine actuator operation.
 func newMachineScope(params machineScopeParams) (*machineScope, error) {
-	providerSpec, err := machineConfigFromProviderSpec(params.machine.Spec.ProviderSpec)
+	providerSpec, err := v1beta1.ProviderSpecFromRawExtension(params.machine.Spec.ProviderSpec.Value)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get machine config: %v", err)
+	}
+
+	providerStatus, err := v1beta1.ProviderStatusFromRawExtension(params.machine.Status.ProviderStatus)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get machine provider status")
 	}
 
 	serviceAccountJSON, err := getCredentialsSecret(params.coreClient, *params.machine, *providerSpec)
@@ -72,37 +78,56 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		return nil, fmt.Errorf("error creating compute service: %v", err)
 	}
 	return &machineScope{
-		machineClient:  params.machineClient.Machines(params.machine.Namespace),
-		coreClient:     params.coreClient,
-		projectID:      projectID,
+		machineClient: params.machineClient.Machines(params.machine.Namespace),
+		coreClient:    params.coreClient,
+		projectID:     projectID,
+		// https://github.com/kubernetes/kubernetes/blob/8765fa2e48974e005ad16e65cb5c3acf5acff17b/staging/src/k8s.io/legacy-cloud-providers/gce/gce_util.go#L204
+		providerID:     fmt.Sprintf("gce://%s/%s/%s", projectID, providerSpec.Zone, params.machine.Name),
 		computeService: computeService,
 		machine:        params.machine,
 		providerSpec:   providerSpec,
+		providerStatus: providerStatus,
 	}, nil
 }
 
-// Close the MachineScope by updating the machine spec, machine status.
-func (m *machineScope) Close() {
-	//TODO (alberto): implement this. Status can be refreshed here
+// Close the MachineScope by persisting the machine spec, machine status after reconciling.
+func (s *machineScope) Close() {
+	if s.machineClient == nil {
+		klog.Errorf("No machineClient is set for this scope")
+		return
+	}
+
+	latestMachine, err := s.storeMachineSpec(s.machine)
+	if err != nil {
+		klog.Errorf("[machinescope] failed to update machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
+		return
+	}
+
+	_, err = s.storeMachineStatus(latestMachine)
+	if err != nil {
+		klog.Errorf("[machinescope] failed to store provider status for machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
+	}
 }
 
-// machineConfigFromProviderSpec tries to decode the JSON-encoded spec, falling back on getting a MachineClass if the value is absent.
-func machineConfigFromProviderSpec(providerConfig machinev1.ProviderSpec) (*v1beta1.GCPMachineProviderSpec, error) {
-	if providerConfig.Value == nil {
-		return nil, fmt.Errorf("unable to find machine provider config: Spec.ProviderSpec.Value is not set")
+func (s *machineScope) storeMachineSpec(machine *machinev1.Machine) (*machinev1.Machine, error) {
+	ext, err := v1beta1.RawExtensionFromProviderSpec(s.providerSpec)
+	if err != nil {
+		return nil, err
 	}
-	return unmarshalProviderSpec(providerConfig.Value)
+
+	machine.Spec.ProviderSpec.Value = ext
+	return s.machineClient.Update(machine)
 }
 
-func unmarshalProviderSpec(spec *runtime.RawExtension) (*v1beta1.GCPMachineProviderSpec, error) {
-	var config v1beta1.GCPMachineProviderSpec
-	if spec != nil {
-		if err := yaml.Unmarshal(spec.Raw, &config); err != nil {
-			return nil, fmt.Errorf("error unmarshalling providerSpec: %v", err)
-		}
+func (s *machineScope) storeMachineStatus(machine *machinev1.Machine) (*machinev1.Machine, error) {
+	ext, err := v1beta1.RawExtensionFromProviderStatus(s.providerStatus)
+	if err != nil {
+		return nil, err
 	}
-	klog.V(5).Infof("Found ProviderSpec: %+v", config)
-	return &config, nil
+
+	s.machine.Status.DeepCopyInto(&machine.Status)
+	machine.Status.ProviderStatus = ext
+	return s.machineClient.UpdateStatus(machine)
 }
 
 // This expects the https://github.com/openshift/cloud-credential-operator to make a secret

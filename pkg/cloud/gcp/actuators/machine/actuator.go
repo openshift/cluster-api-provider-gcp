@@ -42,6 +42,8 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if err != nil {
 		return fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
 	}
+	// scope and reconciler lifetime is a machine actuator operation
+	// when scope is closed, it will persist to etcd the given machine spec and machine status (if modified)
 	defer scope.Close()
 	return newReconciler(scope).create()
 }

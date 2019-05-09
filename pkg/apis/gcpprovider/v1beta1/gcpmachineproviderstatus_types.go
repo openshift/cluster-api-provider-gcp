@@ -13,7 +13,14 @@ import (
 type GCPMachineProviderStatus struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	//TODO(alberto): Populate this and implement status
+
+	// InstanceID is the ID of the instance in GCP
+	// +optional
+	InstanceID *string `json:"instanceId,omitempty"`
+
+	// InstanceState is the provisioning state of the GCP Instance.
+	// +optional
+	InstanceState *string `json:"instanceState,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
