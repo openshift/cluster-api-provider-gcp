@@ -127,6 +127,10 @@ func (r *Reconciler) create() error {
 	return nil
 }
 
+func (r *Reconciler) update() error {
+	return r.reconcileMachineWithCloudState()
+}
+
 func (r *Reconciler) reconcileMachineWithCloudState() error {
 	klog.Infof("Reconciling machine object %q with cloud state", r.machine.Name)
 	freshInstance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)

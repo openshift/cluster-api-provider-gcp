@@ -63,8 +63,19 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 }
 
 func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
-	// TODO(alberto): implement this
-	return nil
+	klog.Infof("Updating machine %q", machine.Name)
+	scope, err := newMachineScope(machineScopeParams{
+		machineClient: a.machineClient,
+		coreClient:    a.coreClient,
+		machine:       machine,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
+	}
+	// scope and reconciler lifetime is a machine actuator operation
+	// when scope is closed, it will persist to etcd the given machine spec and machine status (if modified)
+	defer scope.Close()
+	return newReconciler(scope).update()
 }
 
 func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
