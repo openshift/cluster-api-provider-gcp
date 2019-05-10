@@ -14,6 +14,10 @@ import (
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	scopeFailFmt = "failed to create scope for machine %q: %v"
+)
+
 // Actuator is responsible for performing machine reconciliation.
 type Actuator struct {
 	machineClient mapiclient.MachineV1beta1Interface
@@ -43,7 +47,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		machine:       machine,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
+		return fmt.Errorf(scopeFailFmt, machine.Name, err)
 	}
 	defer scope.Close()
 	return newReconciler(scope).create()
@@ -57,7 +61,7 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 		machine:       machine,
 	})
 	if err != nil {
-		return false, fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
+		return false, fmt.Errorf(scopeFailFmt, machine.Name, err)
 	}
 	// The core machine controller calls exists() + create()/update() in the same reconciling operation.
 	// If exists() would store machineSpec/status object then create()/update() would still receive the local version.
@@ -82,6 +86,14 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 }
 
 func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
-	// TODO(alberto): implement this
-	return nil
+	klog.Infof("Deleting machine %v", machine.Name)
+	scope, err := newMachineScope(machineScopeParams{
+		machineClient: a.machineClient,
+		coreClient:    a.coreClient,
+		machine:       machine,
+	})
+	if err != nil {
+		return fmt.Errorf(scopeFailFmt, machine.Name, err)
+	}
+	return newReconciler(scope).delete()
 }
