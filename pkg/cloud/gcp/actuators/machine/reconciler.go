@@ -12,6 +12,7 @@ import (
 	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -152,6 +153,8 @@ func (r *Reconciler) reconcileMachineWithCloudState() error {
 	r.providerStatus.InstanceState = &freshInstance.Status
 	r.providerStatus.InstanceID = &freshInstance.Name
 	r.machine.Spec.ProviderID = &r.providerID
+	now := metav1.Now()
+	r.machine.Status.LastUpdated = &now
 	return nil
 }
 
