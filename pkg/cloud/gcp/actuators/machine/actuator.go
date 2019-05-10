@@ -1,5 +1,8 @@
 package machine
 
+// This is a thin layer to implement the machine actuator interface with cloud provider details.
+// The lifetime of scope and reconciler is a machine actuator operation.
+// when scope is closed, it will persist to etcd the given machine spec and machine status (if modified)
 import (
 	"context"
 	"fmt"
@@ -42,8 +45,6 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if err != nil {
 		return fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
 	}
-	// scope and reconciler lifetime is a machine actuator operation
-	// when scope is closed, it will persist to etcd the given machine spec and machine status (if modified)
 	defer scope.Close()
 	return newReconciler(scope).create()
 }
@@ -58,13 +59,26 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if err != nil {
 		return false, fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
 	}
-	defer scope.Close()
+	// The core machine controller calls exists() + create()/update() in the same reconciling operation.
+	// If exists() would store machineSpec/status object then create()/update() would still receive the local version.
+	// When create()/update() try to store machineSpec/status this might result in
+	// "Operation cannot be fulfilled; the object has been modified; please apply your changes to the latest version and try again."
+	// Therefore we don't close the scope here and we only store spec/status atomically either in create()/update()"
 	return newReconciler(scope).exists()
 }
 
 func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
-	// TODO(alberto): implement this
-	return nil
+	klog.Infof("Updating machine %q", machine.Name)
+	scope, err := newMachineScope(machineScopeParams{
+		machineClient: a.machineClient,
+		coreClient:    a.coreClient,
+		machine:       machine,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
+	}
+	defer scope.Close()
+	return newReconciler(scope).update()
 }
 
 func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {

@@ -115,6 +115,7 @@ func (s *machineScope) storeMachineSpec(machine *machinev1.Machine) (*machinev1.
 		return nil, err
 	}
 
+	klog.V(4).Infof("Storing machine spec for %q, resourceVersion: %v, generation: %v", s.machine.Name, s.machine.ResourceVersion, s.machine.Generation)
 	machine.Spec.ProviderSpec.Value = ext
 	return s.machineClient.Update(machine)
 }
@@ -125,6 +126,7 @@ func (s *machineScope) storeMachineStatus(machine *machinev1.Machine) (*machinev
 		return nil, err
 	}
 
+	klog.V(4).Infof("Storing machine status for %q, resourceVersion: %v, generation: %v", s.machine.Name, s.machine.ResourceVersion, s.machine.Generation)
 	s.machine.Status.DeepCopyInto(&machine.Status)
 	machine.Status.ProviderStatus = ext
 	return s.machineClient.UpdateStatus(machine)
