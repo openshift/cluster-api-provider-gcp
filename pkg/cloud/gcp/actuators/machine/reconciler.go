@@ -198,7 +198,7 @@ func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineP
 }
 
 // Returns true if machine exists.
-func (r *Reconciler) instanceExists() (bool, error) {
+func (r *Reconciler) exists() (bool, error) {
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
 		return false, fmt.Errorf("failed validating machine provider spec: %v", err)
 	}
@@ -206,17 +206,19 @@ func (r *Reconciler) instanceExists() (bool, error) {
 	// Need to verify that our project/zone exists before checking machine, as
 	// invalid project/zone produces same 404 error as no machine.
 	if err := r.validateZone(); err != nil {
-		return false, fmt.Errorf("Unable to verify project/zone exists: %v/%v; err: %v", r.projectID, zone, err)
+		return false, fmt.Errorf("unable to verify project/zone exists: %v/%v; err: %v", r.projectID, zone, err)
 	}
 	_, err := r.computeService.InstancesGet(r.projectID, zone, r.machine.Name)
 	if err == nil {
+		klog.Infof("Machine %q already exists", r.machine.Name)
 		return true, nil
 	}
 	if isNotFoundError(err) {
+		klog.Infof("Machine %q does not exist", r.machine.Name)
 		return false, nil
 	}
 
-	return false, fmt.Errorf("Error getting running instances: %v", err)
+	return false, fmt.Errorf("error getting running instances: %v", err)
 
 }
 

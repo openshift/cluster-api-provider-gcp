@@ -33,7 +33,7 @@ func NewActuator(params ActuatorParams) *Actuator {
 
 // Create creates a machine and is invoked by the machine controller.
 func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
-	klog.Infof("Creating machine %v", machine.Name)
+	klog.Infof("Creating machine %q", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
@@ -49,6 +49,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 }
 
 func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) (bool, error) {
+	klog.Infof("Checking if machine %q exists", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
@@ -58,7 +59,7 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return false, fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
 	}
 	defer scope.Close()
-	return newReconciler(scope).instanceExists()
+	return newReconciler(scope).exists()
 }
 
 func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
