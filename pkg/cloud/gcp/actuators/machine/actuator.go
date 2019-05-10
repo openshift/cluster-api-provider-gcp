@@ -49,8 +49,16 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 }
 
 func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) (bool, error) {
-	// TODO(alberto): implement this
-	return false, nil
+	scope, err := newMachineScope(machineScopeParams{
+		machineClient: a.machineClient,
+		coreClient:    a.coreClient,
+		machine:       machine,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
+	}
+	defer scope.Close()
+	return newReconciler(scope).instanceExists()
 }
 
 func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {

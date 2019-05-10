@@ -44,6 +44,10 @@ func (c *GCPComputeServiceMock) InstancesGet(project string, zone string, instan
 	}, nil
 }
 
+func (c *GCPComputeServiceMock) ZonesGet(project string, zone string) (*compute.Zone, error) {
+	return nil, nil
+}
+
 func NewComputeServiceMock() (*compute.Instance, *GCPComputeServiceMock) {
 	var receivedInstance compute.Instance
 	computeServiceMock := GCPComputeServiceMock{

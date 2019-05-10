@@ -1,9 +1,8 @@
 package computeservice
 
 import (
-	"net/http"
-
 	"google.golang.org/api/compute/v1"
+	"net/http"
 )
 
 // GCPComputeService is a pass through wrapper for google.golang.org/api/compute/v1/compute
@@ -12,6 +11,7 @@ type GCPComputeService interface {
 	InstancesInsert(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
 	ZoneOperationsGet(project string, zone string, operation string) (*compute.Operation, error)
 	InstancesGet(project string, zone string, instance string) (*compute.Instance, error)
+	ZonesGet(project string, zone string) (*compute.Zone, error)
 }
 
 type computeService struct {
@@ -39,7 +39,10 @@ func (c *computeService) ZoneOperationsGet(project string, zone string, operatio
 	return c.service.ZoneOperations.Get(project, zone, operation).Do()
 }
 
-// A pass through wrapper for compute.Service.Instances.Get(...)
 func (c *computeService) InstancesGet(project string, zone string, instance string) (*compute.Instance, error) {
 	return c.service.Instances.Get(project, zone, instance).Do()
+}
+
+func (c *computeService) ZonesGet(project string, zone string) (*compute.Zone, error) {
+	return c.service.Zones.Get(project, zone).Do()
 }
