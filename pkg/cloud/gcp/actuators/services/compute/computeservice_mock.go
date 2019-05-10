@@ -17,6 +17,12 @@ func (c *GCPComputeServiceMock) InstancesInsert(project string, zone string, ins
 	return c.mockInstancesInsert(project, zone, instance)
 }
 
+func (c *GCPComputeServiceMock) InstancesDelete(project string, zone string, instance string) (*compute.Operation, error) {
+	return &compute.Operation{
+		Status: "DONE",
+	}, nil
+}
+
 func (c *GCPComputeServiceMock) ZoneOperationsGet(project string, zone string, operation string) (*compute.Operation, error) {
 	if c.mockZoneOperationsGet == nil {
 		return nil, nil

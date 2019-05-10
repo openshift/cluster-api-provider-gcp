@@ -8,10 +8,11 @@ import (
 // GCPComputeService is a pass through wrapper for google.golang.org/api/compute/v1/compute
 // to enable tests to mock this struct and control behavior.
 type GCPComputeService interface {
+	InstancesDelete(project string, zone string, instance string) (*compute.Operation, error)
 	InstancesInsert(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
-	ZoneOperationsGet(project string, zone string, operation string) (*compute.Operation, error)
 	InstancesGet(project string, zone string, instance string) (*compute.Instance, error)
 	ZonesGet(project string, zone string) (*compute.Zone, error)
+	ZoneOperationsGet(project string, zone string, operation string) (*compute.Operation, error)
 }
 
 type computeService struct {
@@ -41,6 +42,10 @@ func (c *computeService) ZoneOperationsGet(project string, zone string, operatio
 
 func (c *computeService) InstancesGet(project string, zone string, instance string) (*compute.Instance, error) {
 	return c.service.Instances.Get(project, zone, instance).Do()
+}
+
+func (c *computeService) InstancesDelete(project string, zone string, instance string) (*compute.Operation, error) {
+	return c.service.Instances.Delete(project, zone, instance).Do()
 }
 
 func (c *computeService) ZonesGet(project string, zone string) (*compute.Zone, error) {

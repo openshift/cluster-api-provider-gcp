@@ -108,3 +108,23 @@ func TestExists(t *testing.T) {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
 }
+
+func TestDelete(t *testing.T) {
+	_, mockComputeService := computeservice.NewComputeServiceMock()
+	machineScope := machineScope{
+		machine: &machinev1beta1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "",
+				Namespace: "",
+			},
+		},
+		coreClient:     controllerfake.NewFakeClient(),
+		providerSpec:   &gcpv1beta1.GCPMachineProviderSpec{},
+		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
+		computeService: mockComputeService,
+	}
+	reconciler := newReconciler(&machineScope)
+	if err := reconciler.delete(); err != nil {
+		t.Errorf("reconciler was not expected to return error: %v", err)
+	}
+}

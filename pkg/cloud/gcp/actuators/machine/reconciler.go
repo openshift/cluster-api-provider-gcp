@@ -221,9 +221,28 @@ func (r *Reconciler) exists() (bool, error) {
 		klog.Infof("Machine %q does not exist", r.machine.Name)
 		return false, nil
 	}
-
 	return false, fmt.Errorf("error getting running instances: %v", err)
+}
 
+// Returns true if machine exists.
+func (r *Reconciler) delete() error {
+	exists, err := r.exists()
+	if err != nil {
+		return err
+	}
+	if !exists {
+		klog.Infof("Machine %v not found during delete, skipping", r.machine.Name)
+		return nil
+	}
+	zone := r.providerSpec.Zone
+	operation, err := r.computeService.InstancesDelete(r.projectID, zone, r.machine.Name)
+	if err != nil {
+		return fmt.Errorf("failed to delete instance via compute service: %v", err)
+	}
+	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
+		return fmt.Errorf("failed to wait for delete operation via compute service. Operation status: %v. Error: %v", op, err)
+	}
+	return nil
 }
 
 func (r *Reconciler) validateZone() error {
