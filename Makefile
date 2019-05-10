@@ -6,7 +6,7 @@ endif
 
 VERSION     ?= $(shell git describe --always --abbrev=7)
 REPO_PATH   ?= github.com/openshift/cluster-api-provider-gcp
-LD_FLAGS    ?= -X $(REPO_PATH)/pkg/version.Raw=$(VERSION) -extldflags "-static"
+LD_FLAGS    ?= -X $(REPO_PATH)/pkg/version.Raw=$(VERSION) -extldflags -static
 
 NO_DOCKER ?= 0
 ifeq ($(NO_DOCKER), 1)
@@ -34,5 +34,5 @@ unit: # Run unit test
 build: ## build binaries
 	$(DOCKER_CMD) go build $(GOGCFLAGS) -o "bin/machine-controller-manager" \
                -ldflags "$(LD_FLAGS)" "$(REPO_PATH)/cmd/manager"
-	$(DOCKER_CMD) go build $(GOGCFLAGS) -o bin/manager -ldflags '-extldflags "-static"' \
+	$(DOCKER_CMD) go build $(GOGCFLAGS) -o bin/manager -ldflags '-extldflags -static' \
                "$(REPO_PATH)/vendor/github.com/openshift/cluster-api/cmd/manager"
