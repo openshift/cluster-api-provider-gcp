@@ -8,11 +8,14 @@ import (
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	apierrors "github.com/openshift/cluster-api/pkg/errors"
 	"google.golang.org/api/compute/v1"
 	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -21,25 +24,42 @@ const (
 	userDataSecretKey  = "userData"
 	operationTimeOut   = 180 * time.Second
 	operationRetryWait = 5 * time.Second
+	createEventAction  = "Create"
+	updateEventAction  = "Update"
+	deleteEventAction  = "Delete"
+	noEventAction      = ""
 )
 
 // Reconciler are list of services required by machine actuator, easy to create a fake
 type Reconciler struct {
 	*machineScope
+	eventRecorder record.EventRecorder
 }
 
 // NewReconciler populates all the services based on input scope
-func newReconciler(scope *machineScope) *Reconciler {
+func newReconciler(scope *machineScope, recorder record.EventRecorder) *Reconciler {
 	return &Reconciler{
-		scope,
+		machineScope:  scope,
+		eventRecorder: recorder,
 	}
+}
+
+// Set corresponding event based on error. It also returns the original error
+// for convenience, so callers can do "return handleMachineError(...)".
+func (r *Reconciler) handleMachineError(machine *machinev1.Machine, err *apierrors.MachineError, eventAction string) error {
+	if eventAction != noEventAction {
+		r.eventRecorder.Eventf(machine, corev1.EventTypeWarning, "Failed"+eventAction, "%v", err.Reason)
+	}
+
+	klog.Errorf("Machine error: %v", err.Message)
+	return err
 }
 
 // Create creates machine if and only if machine exists, handled by cluster-api
 func (r *Reconciler) create() error {
 	defer r.reconcileMachineWithCloudState()
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
-		return fmt.Errorf("failed validating machine provider spec: %v", err)
+		return r.handleMachineError(r.machine, apierrors.InvalidMachineConfiguration("error decoding MachineProviderConfig: %v", err), createEventAction)
 	}
 
 	zone := r.providerSpec.Zone
@@ -124,6 +144,9 @@ func (r *Reconciler) create() error {
 	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
 		return fmt.Errorf("failed to wait for create operation via compute service. Operation status: %v. Error: %v", op, err)
 	}
+	// This event is best-effort and might get missed in case of timeout
+	// on waitUntilOperationCompleted
+	r.eventRecorder.Eventf(r.machine, corev1.EventTypeNormal, "Created", "Created Machine %v", r.machine.Name)
 	return nil
 }
 

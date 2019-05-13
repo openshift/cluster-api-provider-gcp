@@ -10,6 +10,7 @@ import (
 	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	mapiclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/klog"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -22,12 +23,14 @@ const (
 type Actuator struct {
 	machineClient mapiclient.MachineV1beta1Interface
 	coreClient    controllerclient.Client
+	eventRecorder record.EventRecorder
 }
 
 // ActuatorParams holds parameter information for Actuator.
 type ActuatorParams struct {
 	MachineClient mapiclient.MachineV1beta1Interface
 	CoreClient    controllerclient.Client
+	EventRecorder record.EventRecorder
 }
 
 // NewActuator returns an actuator.
@@ -35,6 +38,7 @@ func NewActuator(params ActuatorParams) *Actuator {
 	return &Actuator{
 		machineClient: params.MachineClient,
 		coreClient:    params.CoreClient,
+		eventRecorder: params.EventRecorder,
 	}
 }
 
@@ -50,7 +54,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return fmt.Errorf(scopeFailFmt, machine.Name, err)
 	}
 	defer scope.Close()
-	return newReconciler(scope).create()
+	return newReconciler(scope, a.eventRecorder).create()
 }
 
 func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) (bool, error) {
@@ -68,7 +72,7 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 	// When create()/update() try to store machineSpec/status this might result in
 	// "Operation cannot be fulfilled; the object has been modified; please apply your changes to the latest version and try again."
 	// Therefore we don't close the scope here and we only store spec/status atomically either in create()/update()"
-	return newReconciler(scope).exists()
+	return newReconciler(scope, a.eventRecorder).exists()
 }
 
 func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
@@ -82,7 +86,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
 	}
 	defer scope.Close()
-	return newReconciler(scope).update()
+	return newReconciler(scope, a.eventRecorder).update()
 }
 
 func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
@@ -95,5 +99,5 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if err != nil {
 		return fmt.Errorf(scopeFailFmt, machine.Name, err)
 	}
-	return newReconciler(scope).delete()
+	return newReconciler(scope, a.eventRecorder).delete()
 }

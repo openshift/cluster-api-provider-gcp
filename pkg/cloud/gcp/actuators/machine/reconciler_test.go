@@ -9,6 +9,7 @@ import (
 	machinev1beta1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
 	controllerfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -26,7 +27,11 @@ func TestCreate(t *testing.T) {
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 		computeService: mockComputeService,
 	}
-	reconciler := newReconciler(&machineScope)
+	eventsChannel := make(chan string, 1)
+	recorder := &record.FakeRecorder{
+		Events: eventsChannel,
+	}
+	reconciler := newReconciler(&machineScope, recorder)
 	if err := reconciler.create(); err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
@@ -66,7 +71,11 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 		},
 	}
 
-	r := newReconciler(&machineScope)
+	eventsChannel := make(chan string, 1)
+	recorder := &record.FakeRecorder{
+		Events: eventsChannel,
+	}
+	r := newReconciler(&machineScope, recorder)
 	if err := r.reconcileMachineWithCloudState(); err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
@@ -102,7 +111,11 @@ func TestExists(t *testing.T) {
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 		computeService: mockComputeService,
 	}
-	reconciler := newReconciler(&machineScope)
+	eventsChannel := make(chan string, 1)
+	recorder := &record.FakeRecorder{
+		Events: eventsChannel,
+	}
+	reconciler := newReconciler(&machineScope, recorder)
 	exists, err := reconciler.exists()
 	if err != nil || exists != true {
 		t.Errorf("reconciler was not expected to return error: %v", err)
@@ -123,7 +136,11 @@ func TestDelete(t *testing.T) {
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 		computeService: mockComputeService,
 	}
-	reconciler := newReconciler(&machineScope)
+	eventsChannel := make(chan string, 1)
+	recorder := &record.FakeRecorder{
+		Events: eventsChannel,
+	}
+	reconciler := newReconciler(&machineScope, recorder)
 	if err := reconciler.delete(); err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
