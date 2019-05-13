@@ -36,6 +36,7 @@ func main() {
 	machineActuator := machine.NewActuator(machine.ActuatorParams{
 		MachineClient: cs.MachineV1beta1(),
 		CoreClient:    mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor("gcpcontroller"),
 	})
 
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
