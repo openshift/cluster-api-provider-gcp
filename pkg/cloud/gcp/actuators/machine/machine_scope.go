@@ -150,11 +150,11 @@ func getCredentialsSecret(coreClient controllerclient.Client, machine machinev1.
 	var credentialsSecret apicorev1.Secret
 
 	if err := coreClient.Get(context.Background(), client.ObjectKey{Namespace: machine.GetNamespace(), Name: spec.CredentialsSecret.Name}, &credentialsSecret); err != nil {
-		return "", fmt.Errorf("error getting user data secret %q in namespace %q: %v", spec.UserDataSecret.Name, machine.GetNamespace(), err)
+		return "", fmt.Errorf("error getting credentials secret %q in namespace %q: %v", spec.CredentialsSecret.Name, machine.GetNamespace(), err)
 	}
 	data, exists := credentialsSecret.Data[credentialsSecretKey]
 	if !exists {
-		return "", fmt.Errorf("secret %v/%v does not have %q field set. Thus, no user data applied when creating an instance", machine.GetNamespace(), spec.UserDataSecret.Name, credentialsSecretKey)
+		return "", fmt.Errorf("secret %v/%v does not have %q field set. Thus, no credentials applied when creating an instance", machine.GetNamespace(), spec.CredentialsSecret.Name, credentialsSecretKey)
 	}
 
 	return string(data), nil

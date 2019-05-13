@@ -179,7 +179,7 @@ func (r *Reconciler) waitUntilOperationCompleted(zone, operationName string) (*c
 		if err != nil {
 			return false, err
 		}
-		klog.V(3).Infof("Waiting for operation to be completed... (status: %s)", op.Status)
+		klog.V(3).Infof("Waiting for %q operation to be completed... (status: %s)", op.OperationType, op.Status)
 		if op.Status == "DONE" {
 			if op.Error == nil {
 				return true, nil
