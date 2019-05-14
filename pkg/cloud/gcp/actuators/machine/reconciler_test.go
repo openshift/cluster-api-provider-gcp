@@ -30,6 +30,18 @@ func TestCreate(t *testing.T) {
 	if err := reconciler.create(); err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
+	if reconciler.providerStatus.Conditions[0].Type != gcpv1beta1.MachineCreated {
+		t.Errorf("Expected: %s, got %s", gcpv1beta1.MachineCreated, reconciler.providerStatus.Conditions[0].Type)
+	}
+	if reconciler.providerStatus.Conditions[0].Status != corev1.ConditionTrue {
+		t.Errorf("Expected: %s, got %s", corev1.ConditionTrue, reconciler.providerStatus.Conditions[0].Status)
+	}
+	if reconciler.providerStatus.Conditions[0].Reason != machineCreationSucceedReason {
+		t.Errorf("Expected: %s, got %s", machineCreationSucceedReason, reconciler.providerStatus.Conditions[0].Reason)
+	}
+	if reconciler.providerStatus.Conditions[0].Message != machineCreationSucceedMessage {
+		t.Errorf("Expected: %s, got %s", machineCreationSucceedMessage, reconciler.providerStatus.Conditions[0].Message)
+	}
 }
 
 func TestReconcileMachineWithCloudState(t *testing.T) {
@@ -67,7 +79,7 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 	}
 
 	r := newReconciler(&machineScope)
-	if err := r.reconcileMachineWithCloudState(); err != nil {
+	if err := r.reconcileMachineWithCloudState(nil); err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
 	if r.machine.Status.Addresses[0] != expectedNodeAddresses[0] {

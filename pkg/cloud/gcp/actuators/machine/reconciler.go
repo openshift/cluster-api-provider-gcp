@@ -11,6 +11,7 @@ import (
 	"google.golang.org/api/compute/v1"
 	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
@@ -37,7 +38,6 @@ func newReconciler(scope *machineScope) *Reconciler {
 
 // Create creates machine if and only if machine exists, handled by cluster-api
 func (r *Reconciler) create() error {
-	defer r.reconcileMachineWithCloudState()
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
 		return fmt.Errorf("failed validating machine provider spec: %v", err)
 	}
@@ -119,39 +119,70 @@ func (r *Reconciler) create() error {
 
 	operation, err := r.computeService.InstancesInsert(r.projectID, zone, instance)
 	if err != nil {
+		if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
+			Type:    v1beta1.MachineCreated,
+			Reason:  machineCreationFailedReason,
+			Message: err.Error(),
+			Status:  corev1.ConditionFalse,
+		}); reconcileWithCloudError != nil {
+			klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
+		}
 		return fmt.Errorf("failed to create instance via compute service: %v", err)
 	}
 	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
+		if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
+			Type:    v1beta1.MachineCreated,
+			Reason:  machineCreationFailedReason,
+			Message: err.Error(),
+			Status:  corev1.ConditionFalse,
+		}); reconcileWithCloudError != nil {
+			klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
+		}
 		return fmt.Errorf("failed to wait for create operation via compute service. Operation status: %v. Error: %v", op, err)
 	}
-	return nil
+	return r.reconcileMachineWithCloudState(nil)
 }
 
 func (r *Reconciler) update() error {
-	return r.reconcileMachineWithCloudState()
+	return r.reconcileMachineWithCloudState(nil)
 }
 
-func (r *Reconciler) reconcileMachineWithCloudState() error {
+// reconcileMachineWithCloudState reconcile machineSpec and status with the latest cloud state
+// if a failedCondition is passed it updates the providerStatus.Conditions and return
+// otherwise it fetches the relevant cloud instance and reconcile the rest of the fields
+func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCPMachineProviderCondition) error {
 	klog.Infof("Reconciling machine object %q with cloud state", r.machine.Name)
-	freshInstance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)
-	if err != nil {
-		return fmt.Errorf("failed to get instance via compute service: %v", err)
-	}
+	if failedCondition != nil {
+		r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, *failedCondition)
+		return nil
+	} else {
+		freshInstance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)
+		if err != nil {
+			return fmt.Errorf("failed to get instance via compute service: %v", err)
+		}
 
-	if len(freshInstance.NetworkInterfaces) < 1 {
-		return fmt.Errorf("could not find network interfaces for instance %q", freshInstance.Name)
-	}
-	networkInterface := freshInstance.NetworkInterfaces[0]
+		if len(freshInstance.NetworkInterfaces) < 1 {
+			return fmt.Errorf("could not find network interfaces for instance %q", freshInstance.Name)
+		}
+		networkInterface := freshInstance.NetworkInterfaces[0]
 
-	nodeAddresses := []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: networkInterface.NetworkIP}}
-	for _, config := range networkInterface.AccessConfigs {
-		nodeAddresses = append(nodeAddresses, v1.NodeAddress{Type: v1.NodeExternalIP, Address: config.NatIP})
-	}
+		nodeAddresses := []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: networkInterface.NetworkIP}}
+		for _, config := range networkInterface.AccessConfigs {
+			nodeAddresses = append(nodeAddresses, v1.NodeAddress{Type: v1.NodeExternalIP, Address: config.NatIP})
+		}
 
-	r.machine.Status.Addresses = nodeAddresses
-	r.providerStatus.InstanceState = &freshInstance.Status
-	r.providerStatus.InstanceID = &freshInstance.Name
-	r.machine.Spec.ProviderID = &r.providerID
+		r.machine.Spec.ProviderID = &r.providerID
+		r.machine.Status.Addresses = nodeAddresses
+		r.providerStatus.InstanceState = &freshInstance.Status
+		r.providerStatus.InstanceID = &freshInstance.Name
+		succeedCondition := v1beta1.GCPMachineProviderCondition{
+			Type:    v1beta1.MachineCreated,
+			Reason:  machineCreationSucceedReason,
+			Message: machineCreationSucceedMessage,
+			Status:  corev1.ConditionTrue,
+		}
+		r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, succeedCondition)
+	}
 	return nil
 }
 
