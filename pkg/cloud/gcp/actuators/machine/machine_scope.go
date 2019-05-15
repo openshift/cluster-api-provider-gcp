@@ -1,29 +1,18 @@
 package machine
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/pkg/errors"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	machineclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
-	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	credentialsSecretKey = "serviceAccountJSON"
 )
 
 // machineScopeParams defines the input parameters used to create a new MachineScope.
@@ -130,52 +119,4 @@ func (s *machineScope) storeMachineStatus(machine *machinev1.Machine) (*machinev
 	s.machine.Status.DeepCopyInto(&machine.Status)
 	machine.Status.ProviderStatus = ext
 	return s.machineClient.UpdateStatus(machine)
-}
-
-// This expects the https://github.com/openshift/cloud-credential-operator to make a secret
-// with a serviceAccount JSON Key content available. E.g:
-//
-//apiVersion: v1
-//kind: Secret
-//metadata:
-//  name: gcp-sa
-//  namespace: openshift-machine-api
-//type: Opaque
-//data:
-//  serviceAccountJSON: base64 encoded content of the file
-func getCredentialsSecret(coreClient controllerclient.Client, machine machinev1.Machine, spec v1beta1.GCPMachineProviderSpec) (string, error) {
-	if spec.CredentialsSecret == nil {
-		return "", nil
-	}
-	var credentialsSecret apicorev1.Secret
-
-	if err := coreClient.Get(context.Background(), client.ObjectKey{Namespace: machine.GetNamespace(), Name: spec.CredentialsSecret.Name}, &credentialsSecret); err != nil {
-		return "", fmt.Errorf("error getting credentials secret %q in namespace %q: %v", spec.CredentialsSecret.Name, machine.GetNamespace(), err)
-	}
-	data, exists := credentialsSecret.Data[credentialsSecretKey]
-	if !exists {
-		return "", fmt.Errorf("secret %v/%v does not have %q field set. Thus, no credentials applied when creating an instance", machine.GetNamespace(), spec.CredentialsSecret.Name, credentialsSecretKey)
-	}
-
-	return string(data), nil
-}
-
-func getProjectIDFromJSONKey(content []byte) (string, error) {
-	var JSONKey struct {
-		ProjectID string `json:"project_id"`
-	}
-	if err := json.Unmarshal(content, &JSONKey); err != nil {
-		return "", fmt.Errorf("error un marshalling JSON key: %v", err)
-	}
-	return JSONKey.ProjectID, nil
-}
-
-func createOauth2Client(serviceAccountJSON string, scope ...string) (*http.Client, error) {
-	ctx := context.Background()
-
-	jwt, err := google.JWTConfigFromJSON([]byte(serviceAccountJSON), scope...)
-	if err != nil {
-		return nil, err
-	}
-	return oauth2.NewClient(ctx, jwt.TokenSource(ctx)), nil
 }

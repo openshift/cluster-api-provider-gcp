@@ -4,24 +4,16 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"time"
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	"google.golang.org/api/compute/v1"
-	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	userDataSecretKey  = "userData"
-	operationTimeOut   = 180 * time.Second
-	operationRetryWait = 5 * time.Second
 )
 
 // Reconciler are list of services required by machine actuator, easy to create a fake
@@ -279,12 +271,4 @@ func (r *Reconciler) delete() error {
 func (r *Reconciler) validateZone() error {
 	_, err := r.computeService.ZonesGet(r.projectID, r.providerSpec.Zone)
 	return err
-}
-
-func isNotFoundError(err error) bool {
-	switch t := err.(type) {
-	case *googleapi.Error:
-		return t.Code == 404
-	}
-	return false
 }
