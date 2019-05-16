@@ -140,29 +140,36 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 	operation, err := machineCtx.computeService.InstancesInsert(machineCtx.projectID, machineCtx.providerSpec.Zone, instance)
 	if err != nil {
-		machineCtx.providerStatus.Conditions = reconcileProviderConditions(machineCtx.providerStatus.Conditions, v1beta1.GCPMachineProviderCondition{
-			Type:    v1beta1.MachineCreated,
-			Reason:  machineCreationFailedReason,
-			Message: err.Error(),
-			Status:  corev1.ConditionFalse,
-		})
-		if _, err := a.updateMachineStatus(machine, machineCtx.providerStatus); err != nil {
-			return err
+		if cloudErr := a.reconcileMachineWithCloudState(machine, machineCtx); cloudErr != nil {
+			machineCtx.providerStatus.Conditions = reconcileProviderConditions(machineCtx.providerStatus.Conditions, v1beta1.GCPMachineProviderCondition{
+				Type:    v1beta1.MachineCreated,
+				Reason:  machineCreationFailedReason,
+				Message: err.Error(),
+				Status:  corev1.ConditionFalse,
+			})
 		}
 		return fmt.Errorf("failed to create instance via compute service: %v", err)
 	}
 
 	if op, err := waitUntilOperationCompleted(machineCtx, operation.Name); err != nil {
+		if cloudErr := a.reconcileMachineWithCloudState(machine, machineCtx); cloudErr != nil {
+			machineCtx.providerStatus.Conditions = reconcileProviderConditions(machineCtx.providerStatus.Conditions, v1beta1.GCPMachineProviderCondition{
+				Type:    v1beta1.MachineCreated,
+				Reason:  machineCreationFailedReason,
+				Message: err.Error(),
+				Status:  corev1.ConditionFalse,
+			})
+		}
+		return fmt.Errorf("failed to wait for create operation via compute service. Operation status: %v. Error: %v", op, err)
+	}
+
+	if err := a.reconcileMachineWithCloudState(machine, machineCtx); err != nil {
 		machineCtx.providerStatus.Conditions = reconcileProviderConditions(machineCtx.providerStatus.Conditions, v1beta1.GCPMachineProviderCondition{
 			Type:    v1beta1.MachineCreated,
 			Reason:  machineCreationFailedReason,
 			Message: err.Error(),
 			Status:  corev1.ConditionFalse,
 		})
-		if _, err := a.updateMachineStatus(machine, machineCtx.providerStatus); err != nil {
-			return err
-		}
-		return fmt.Errorf("failed to wait for create operation via compute service. Operation status: %v. Error: %v", op, err)
 	}
 
 	if _, err = a.updateMachineStatus(machine, machineCtx.providerStatus); err != nil {
@@ -214,7 +221,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return err
 	}
 
-	if err := a.refreshMachineFromCloudState(machine, machineCtx); err != nil {
+	if err := a.reconcileMachineWithCloudState(machine, machineCtx); err != nil {
 		return err
 	}
 
@@ -419,7 +426,7 @@ func (a *Actuator) updateMachineSpec(machine *machinev1.Machine, providerSpec *v
 	return a.machineClient.Machines(machine.Namespace).Update(machine)
 }
 
-func (a *Actuator) refreshMachineFromCloudState(machine *machinev1.Machine, machineCtx *machineContext) error {
+func (a *Actuator) reconcileMachineWithCloudState(machine *machinev1.Machine, machineCtx *machineContext) error {
 	klog.Infof("Reconciling machine object %q with cloud state", machine.Name)
 
 	freshInstance, err := machineCtx.computeService.InstancesGet(machineCtx.projectID, machineCtx.providerSpec.Zone, machine.Name)
