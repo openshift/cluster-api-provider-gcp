@@ -18,6 +18,13 @@ else
   IMAGE_BUILD_CMD = docker build
 endif
 
+.PHONY: build
+build: ## build binaries
+	$(DOCKER_CMD) go build $(GOGCFLAGS) -o "bin/machine-controller-manager" \
+               -ldflags "$(LD_FLAGS)" "$(REPO_PATH)/cmd/manager"
+	$(DOCKER_CMD) go build $(GOGCFLAGS) -o bin/manager -ldflags '-extldflags -static' \
+               "$(REPO_PATH)/vendor/github.com/openshift/cluster-api/cmd/manager"
+
 .PHONY: fmt
 fmt: ## Go fmt your code
 	hack/go-fmt.sh .
@@ -29,10 +36,3 @@ vet: ## Apply go vet to all go files
 .PHONY: unit
 unit: # Run unit test
 	$(DOCKER_CMD) go test -race -cover ./cmd/... ./pkg/...
-
-.PHONY: build
-build: ## build binaries
-	$(DOCKER_CMD) go build $(GOGCFLAGS) -o "bin/machine-controller-manager" \
-               -ldflags "$(LD_FLAGS)" "$(REPO_PATH)/cmd/manager"
-	$(DOCKER_CMD) go build $(GOGCFLAGS) -o bin/manager -ldflags '-extldflags -static' \
-               "$(REPO_PATH)/vendor/github.com/openshift/cluster-api/cmd/manager"
