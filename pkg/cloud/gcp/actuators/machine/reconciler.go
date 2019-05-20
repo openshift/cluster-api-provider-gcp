@@ -200,13 +200,6 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 		r.machine.Status.Addresses = nodeAddresses
 		r.providerStatus.InstanceState = &freshInstance.Status
 		r.providerStatus.InstanceID = &freshInstance.Name
-		succeedCondition := v1beta1.GCPMachineProviderCondition{
-			Type:    v1beta1.MachineCreated,
-			Reason:  machineCreationSucceedReason,
-			Message: machineCreationSucceedMessage,
-			Status:  corev1.ConditionTrue,
-		}
-		r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, succeedCondition)
 	}
 	return nil
 }
