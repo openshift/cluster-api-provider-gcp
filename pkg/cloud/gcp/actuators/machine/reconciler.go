@@ -255,7 +255,7 @@ func (r *Reconciler) exists() (bool, error) {
 	return false, fmt.Errorf("error getting running instances: %v", err)
 }
 
-// Returns true if machine exists.
+// delete deletes the cloud instance, if and only if it exists
 func (r *Reconciler) delete() error {
 	exists, err := r.exists()
 	if err != nil {
@@ -265,14 +265,24 @@ func (r *Reconciler) delete() error {
 		klog.Infof("Machine %v not found during delete, skipping", r.machine.Name)
 		return nil
 	}
-	zone := r.providerSpec.Zone
-	operation, err := r.computeService.InstancesDelete(r.projectID, zone, r.machine.Name)
+	// The core machine controller will not call us back on error
+	// or an explicit request to re-queue by returning
+	// RequeueAfterError.
+	//
+	// By the time delete is called the machine object has gone.
+	// If were to call machine.Update() and add an annotation for
+	// the operation.Id (so that we could keep track of it in
+	// follow-up calls) the Update() will fail.
+	//
+	// Ideally we would like to return nil when the cloud
+	// operation is "DONE". However, the current design of the
+	// core controller does not allow for an idempotent delete
+	// operation.
+	operation, err := r.computeService.InstancesDelete(r.projectID, r.providerSpec.Zone, r.machine.Name)
 	if err != nil {
-		return fmt.Errorf("failed to delete instance via compute service: %v", err)
+		return fmt.Errorf("failed to delete instance for machine %q via compute service: %v", machineID(r.machine), err)
 	}
-	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
-		return fmt.Errorf("failed to wait for delete operation via compute service. Operation status: %v. Error: %v", op, err)
-	}
+	klog.Infof("Delete Operation #%v initiated for machine %q", operation.Id, machineID(r.machine))
 	return nil
 }
 
@@ -287,4 +297,8 @@ func isNotFoundError(err error) bool {
 		return t.Code == 404
 	}
 	return false
+}
+
+func machineID(machine *machinev1.Machine) string {
+	return fmt.Sprintf("%s/%s", machine.Namespace, machine.Name)
 }
