@@ -8,8 +8,10 @@ import (
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	clustererror "github.com/openshift/cluster-api/pkg/controller/error"
+	"github.com/pkg/errors"
 	"google.golang.org/api/compute/v1"
-	googleapi "google.golang.org/api/googleapi"
+	"google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -19,9 +21,11 @@ import (
 )
 
 const (
-	userDataSecretKey  = "userData"
-	operationTimeOut   = 180 * time.Second
+	operationDone      = "DONE"
 	operationRetryWait = 5 * time.Second
+	operationTimeOut   = 180 * time.Second
+	requeuePeriod      = 10 * time.Second
+	userDataSecretKey  = "userData"
 )
 
 // Reconciler are list of services required by machine actuator, easy to create a fake
@@ -36,18 +40,16 @@ func newReconciler(scope *machineScope) *Reconciler {
 	}
 }
 
-// Create creates machine if and only if machine exists, handled by cluster-api
-func (r *Reconciler) create() error {
+func (r *Reconciler) newInstanceFromMachineScope() (*compute.Instance, error) {
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
-		return fmt.Errorf("failed validating machine provider spec: %v", err)
+		return nil, fmt.Errorf("failed validating machine provider spec: %v", err)
 	}
 
-	zone := r.providerSpec.Zone
 	instance := &compute.Instance{
 		CanIpForward:       r.providerSpec.CanIPForward,
 		DeletionProtection: r.providerSpec.DeletionProtection,
 		Labels:             r.providerSpec.Labels,
-		MachineType:        fmt.Sprintf("zones/%s/machineTypes/%s", zone, r.providerSpec.MachineType),
+		MachineType:        fmt.Sprintf("zones/%s/machineTypes/%s", r.providerSpec.Zone, r.providerSpec.MachineType),
 		Name:               r.machine.Name,
 		Tags: &compute.Tags{
 			Items: r.providerSpec.Tags,
@@ -62,7 +64,7 @@ func (r *Reconciler) create() error {
 			Boot:       disk.Boot,
 			InitializeParams: &compute.AttachedDiskInitializeParams{
 				DiskSizeGb:  disk.SizeGb,
-				DiskType:    fmt.Sprintf("zones/%s/diskTypes/%s", zone, disk.Type),
+				DiskType:    fmt.Sprintf("zones/%s/diskTypes/%s", r.providerSpec.Zone, disk.Type),
 				Labels:      disk.Labels,
 				SourceImage: disk.Image,
 			},
@@ -99,7 +101,7 @@ func (r *Reconciler) create() error {
 	// userData
 	userData, err := r.getCustomUserData()
 	if err != nil {
-		return fmt.Errorf("error getting custom user data: %v", err)
+		return nil, fmt.Errorf("error getting custom user data: %v", err)
 	}
 	var metadataItems = []*compute.MetadataItems{
 		{
@@ -117,30 +119,53 @@ func (r *Reconciler) create() error {
 		Items: metadataItems,
 	}
 
-	operation, err := r.computeService.InstancesInsert(r.projectID, zone, instance)
+	return instance, nil
+}
+
+// Create creates machine if and only if machine exists, handled by cluster-api
+func (r *Reconciler) create() error {
+	instance, err := r.newInstanceFromMachineScope()
 	if err != nil {
-		if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
+		return err
+	}
+
+	requestId := string(r.machine.UID)[1:] + `c` // create
+	operation, err := r.computeService.InstancesInsert(requestId, r.projectID, r.providerSpec.Zone, instance)
+	if err != nil {
+		if reconcileErr := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
 			Type:    v1beta1.MachineCreated,
 			Reason:  machineCreationFailedReason,
 			Message: err.Error(),
 			Status:  corev1.ConditionFalse,
-		}); reconcileWithCloudError != nil {
-			klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
+		}); reconcileErr != nil {
+			klog.Infof("Reconcile machine state failed for machine %q: %v", r.machine.Name, reconcileErr)
 		}
-		return fmt.Errorf("failed to create instance via compute service: %v", err)
+		return err
 	}
-	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
-		if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
-			Type:    v1beta1.MachineCreated,
-			Reason:  machineCreationFailedReason,
-			Message: err.Error(),
-			Status:  corev1.ConditionFalse,
-		}); reconcileWithCloudError != nil {
-			klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
-		}
-		return fmt.Errorf("failed to wait for create operation via compute service. Operation status: %v. Error: %v", op, err)
+
+	klog.Infof("Create Operation #%v status=%q for machine %q", operation.Id, operation.Status, r.machine.Name)
+
+	// Accumulate spec/status changes as we progress to RUNNING.
+	if err := r.reconcileMachineWithCloudState(nil); err != nil {
+		return err
 	}
-	return r.reconcileMachineWithCloudState(nil)
+
+	if operation.Status != operationDone {
+		klog.Infof("Create Operation #%v not %q for machine %q, returning an error to requeue", operation.Id, operationDone, r.machine.Name)
+		return &clustererror.RequeueAfterError{RequeueAfter: requeuePeriod}
+	}
+
+	// If this condition is written successfully on scope.Close()
+	// then the machine will exist as far as future calls to
+	// Actuator.Exists() are concerned.
+	r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, v1beta1.GCPMachineProviderCondition{
+		Type:    v1beta1.MachineCreated,
+		Reason:  machineCreationSucceedReason,
+		Message: machineCreationSucceedMessage,
+		Status:  corev1.ConditionTrue,
+	})
+
+	return nil
 }
 
 func (r *Reconciler) update() error {
@@ -234,6 +259,11 @@ func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineP
 
 // Returns true if machine exists.
 func (r *Reconciler) exists() (bool, error) {
+	// MachineCreated condition is only set when create() succeeds.
+	if findCondition(r.providerStatus.Conditions, v1beta1.MachineCreated) == nil {
+		return false, nil
+	}
+
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
 		return false, fmt.Errorf("failed validating machine provider spec: %v", err)
 	}
@@ -243,16 +273,16 @@ func (r *Reconciler) exists() (bool, error) {
 	if err := r.validateZone(); err != nil {
 		return false, fmt.Errorf("unable to verify project/zone exists: %v/%v; err: %v", r.projectID, zone, err)
 	}
-	_, err := r.computeService.InstancesGet(r.projectID, zone, r.machine.Name)
-	if err == nil {
-		klog.Infof("Machine %q already exists", r.machine.Name)
-		return true, nil
+
+	instance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)
+	if err != nil {
+		e, ok := err.(*googleapi.Error)
+		if ok && e.Code == 404 {
+			return false, nil
+		}
+		return false, errors.Wrapf(err, "InstanceGet failed for machine %q", r.machine.Name)
 	}
-	if isNotFoundError(err) {
-		klog.Infof("Machine %q does not exist", r.machine.Name)
-		return false, nil
-	}
-	return false, fmt.Errorf("error getting running instances: %v", err)
+	return instance != nil, nil
 }
 
 // Returns true if machine exists.
@@ -279,12 +309,4 @@ func (r *Reconciler) delete() error {
 func (r *Reconciler) validateZone() error {
 	_, err := r.computeService.ZonesGet(r.projectID, r.providerSpec.Zone)
 	return err
-}
-
-func isNotFoundError(err error) bool {
-	switch t := err.(type) {
-	case *googleapi.Error:
-		return t.Code == 404
-	}
-	return false
 }
