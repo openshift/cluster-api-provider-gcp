@@ -1,15 +1,16 @@
 package computeservice
 
 import (
-	"google.golang.org/api/compute/v1"
 	"net/http"
+
+	"google.golang.org/api/compute/v1"
 )
 
 // GCPComputeService is a pass through wrapper for google.golang.org/api/compute/v1/compute
 // to enable tests to mock this struct and control behavior.
 type GCPComputeService interface {
 	InstancesDelete(project string, zone string, instance string) (*compute.Operation, error)
-	InstancesInsert(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
+	InstancesInsert(requestID string, project string, zone string, instance *compute.Instance) (*compute.Operation, error)
 	InstancesGet(project string, zone string, instance string) (*compute.Instance, error)
 	ZonesGet(project string, zone string) (*compute.Zone, error)
 	ZoneOperationsGet(project string, zone string, operation string) (*compute.Operation, error)
@@ -31,8 +32,8 @@ func NewComputeService(oauthClient *http.Client) (*computeService, error) {
 }
 
 // InstancesInsert is a pass through wrapper for compute.Service.Instances.Insert(...)
-func (c *computeService) InstancesInsert(project string, zone string, instance *compute.Instance) (*compute.Operation, error) {
-	return c.service.Instances.Insert(project, zone, instance).Do()
+func (c *computeService) InstancesInsert(requestID, project string, zone string, instance *compute.Instance) (*compute.Operation, error) {
+	return c.service.Instances.Insert(project, zone, instance).RequestId(requestID).Do()
 }
 
 // ZoneOperationsGet is a pass through wrapper for compute.Service.ZoneOperations.Get(...)
