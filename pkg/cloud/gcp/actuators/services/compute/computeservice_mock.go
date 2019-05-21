@@ -17,7 +17,7 @@ func (c *GCPComputeServiceMock) InstancesInsert(requestId, project string, zone 
 	return c.mockInstancesInsert(requestId, project, zone, instance)
 }
 
-func (c *GCPComputeServiceMock) InstancesDelete(project string, zone string, instance string) (*compute.Operation, error) {
+func (c *GCPComputeServiceMock) InstancesDelete(requestId string, project string, zone string, instance string) (*compute.Operation, error) {
 	return &compute.Operation{
 		Status: "DONE",
 	}, nil
