@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	gcpv1beta1 "github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1beta1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	clusterapifake "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/fake"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	controllerfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -20,6 +22,7 @@ func TestCreate(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-gcp",
 			Namespace: "test",
+			UID:       types.UID(uuid.New().String()),
 		},
 	}
 
