@@ -15,17 +15,14 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	operationDone      = "DONE"
-	operationRetryWait = 5 * time.Second
-	operationTimeOut   = 180 * time.Second
-	requeuePeriod      = 10 * time.Second
-	userDataSecretKey  = "userData"
+	operationDone     = "DONE"
+	requeuePeriod     = 10 * time.Second
+	userDataSecretKey = "userData"
 )
 
 // Reconciler are list of services required by machine actuator, easy to create a fake
@@ -218,29 +215,6 @@ func (r *Reconciler) getCustomUserData() (string, error) {
 		return "", fmt.Errorf("secret %v/%v does not have %q field set. Thus, no user data applied when creating an instance", r.machine.GetNamespace(), r.providerSpec.UserDataSecret.Name, userDataSecretKey)
 	}
 	return base64.StdEncoding.EncodeToString(data), nil
-}
-
-func (r *Reconciler) waitUntilOperationCompleted(zone, operationName string) (*compute.Operation, error) {
-	var op *compute.Operation
-	var err error
-	return op, wait.Poll(operationRetryWait, operationTimeOut, func() (bool, error) {
-		op, err = r.computeService.ZoneOperationsGet(r.projectID, zone, operationName)
-		if err != nil {
-			return false, err
-		}
-		klog.V(3).Infof("Waiting for %q operation to be completed... (status: %s)", op.OperationType, op.Status)
-		if op.Status == "DONE" {
-			if op.Error == nil {
-				return true, nil
-			}
-			var err []error
-			for _, opErr := range op.Error.Errors {
-				err = append(err, fmt.Errorf("%s", *opErr))
-			}
-			return false, fmt.Errorf("the following errors occurred: %+v", err)
-		}
-		return false, nil
-	})
 }
 
 func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineProviderSpec) error {
