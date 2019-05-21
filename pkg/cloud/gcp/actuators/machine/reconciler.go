@@ -278,7 +278,7 @@ func (r *Reconciler) exists() (bool, error) {
 	return instance != nil, nil
 }
 
-// Returns true if machine exists.
+// delete deletes the cloud instance if it exists
 func (r *Reconciler) delete() error {
 	exists, err := r.exists()
 	if err != nil {
@@ -288,13 +288,15 @@ func (r *Reconciler) delete() error {
 		klog.Infof("Machine %v not found during delete, skipping", r.machine.Name)
 		return nil
 	}
-	zone := r.providerSpec.Zone
-	operation, err := r.computeService.InstancesDelete(r.projectID, zone, r.machine.Name)
+	requestId := string(r.machine.UID)[1:] + `d` // delete
+	operation, err := r.computeService.InstancesDelete(requestId, r.projectID, r.providerSpec.Zone, r.machine.Name)
 	if err != nil {
-		return fmt.Errorf("failed to delete instance via compute service: %v", err)
+		klog.Infof("failed to delete instance via compute service: %v", err)
+		return &clustererror.RequeueAfterError{RequeueAfter: requeuePeriod}
 	}
-	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
-		return fmt.Errorf("failed to wait for delete operation via compute service. Operation status: %v. Error: %v", op, err)
+	klog.Infof("Delete Operation #%v status=%q for machine %q", operation.Id, operation.Status, r.machine.Name)
+	if operation.Status != operationDone {
+		return &clustererror.RequeueAfterError{RequeueAfter: requeuePeriod}
 	}
 	return nil
 }
