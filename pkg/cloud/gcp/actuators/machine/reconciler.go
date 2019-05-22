@@ -24,6 +24,7 @@ const (
 	operationTimeOut   = 180 * time.Second
 	operationRetryWait = 5 * time.Second
 	pendingCreateKey  = "machine.openshift.io/cluster-api-provider-gcp-CREATE-ID"
+	pendingDeleteKey  = "machine.openshift.io/cluster-api-provider-gcp-DELETE-ID"
 	requeuePeriod     = 20 * time.Second
 )
 
@@ -286,24 +287,41 @@ func (r *Reconciler) exists() (bool, error) {
 	return instance != nil && !haveCreateOperationInProgress(r.machine), nil
 }
 
-// Returns true if machine exists.
+// delete deletes the cloud instance if it exists
 func (r *Reconciler) delete() error {
-	exists, err := r.exists()
+	instance, err := r.instanceGet()
 	if err != nil {
 		return err
 	}
-	if !exists {
+	if instance == nil {
 		klog.Infof("Machine %v not found during delete, skipping", r.machine.Name)
 		return nil
 	}
-	zone := r.providerSpec.Zone
-	operation, err := r.computeService.InstancesDelete(r.projectID, zone, r.machine.Name)
-	if err != nil {
-		return fmt.Errorf("failed to delete instance via compute service: %v", err)
+
+	if r.machine.Annotations == nil {
+		r.machine.Annotations = map[string]string{}
 	}
-	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
-		return fmt.Errorf("failed to wait for delete operation via compute service. Operation status: %v. Error: %v", op, err)
+
+	var operation *compute.Operation
+
+	if haveDeleteOperationInProgress(r.machine) {
+		operation, err = r.computeService.ZoneOperationsGet(r.projectID, r.providerSpec.Zone, r.machine.Annotations[pendingDeleteKey])
+		if err != nil {
+			return fmt.Errorf("failed to get existing delete operation via compute service: %v", err)
+		}
+	} else {
+		operation, err = r.computeService.InstancesDelete(r.projectID, r.providerSpec.Zone, r.machine.Name)
+		if err != nil {
+			return fmt.Errorf("failed to delete instance via compute service: %v", err)
+		}
+		r.machine.Annotations[pendingDeleteKey] = fmt.Sprintf("%v", operation.Id)
 	}
+
+	klog.Infof("Delete operation #%v status=%q for machine %q", operation.Id, operation.Status, r.machine.Name)
+	if operation.Status != "DONE" {
+		return &clustererror.RequeueAfterError{RequeueAfter: requeuePeriod}
+	}
+	delete(r.machine.Annotations, pendingDeleteKey)
 	return nil
 }
 
@@ -322,4 +340,8 @@ func isNotFoundError(err error) bool {
 
 func haveCreateOperationInProgress(m *machinev1.Machine) bool {
 	return m.Annotations[pendingCreateKey] != ""
+}
+
+func haveDeleteOperationInProgress(m *machinev1.Machine) bool {
+	return m.Annotations[pendingDeleteKey] != ""
 }
