@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	clustererror "github.com/openshift/cluster-api/pkg/controller/error"
 	"google.golang.org/api/compute/v1"
 	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
@@ -22,6 +23,8 @@ const (
 	userDataSecretKey  = "userData"
 	operationTimeOut   = 180 * time.Second
 	operationRetryWait = 5 * time.Second
+	pendingCreateKey  = "machine.openshift.io/cluster-api-provider-gcp-CREATE-ID"
+	requeuePeriod     = 20 * time.Second
 )
 
 // Reconciler are list of services required by machine actuator, easy to create a fake
@@ -36,12 +39,7 @@ func newReconciler(scope *machineScope) *Reconciler {
 	}
 }
 
-// Create creates machine if and only if machine exists, handled by cluster-api
-func (r *Reconciler) create() error {
-	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
-		return fmt.Errorf("failed validating machine provider spec: %v", err)
-	}
-
+func (r *Reconciler) createInstanceFromMachineScope() (*compute.Instance, error) {
 	zone := r.providerSpec.Zone
 	instance := &compute.Instance{
 		CanIpForward:       r.providerSpec.CanIPForward,
@@ -99,8 +97,9 @@ func (r *Reconciler) create() error {
 	// userData
 	userData, err := r.getCustomUserData()
 	if err != nil {
-		return fmt.Errorf("error getting custom user data: %v", err)
+		return nil, fmt.Errorf("error getting custom user data: %v", err)
 	}
+
 	var metadataItems = []*compute.MetadataItems{
 		{
 			Key:   "user-data",
@@ -117,30 +116,63 @@ func (r *Reconciler) create() error {
 		Items: metadataItems,
 	}
 
-	operation, err := r.computeService.InstancesInsert(r.projectID, zone, instance)
+	return instance, nil
+}
+
+// Create creates a new cloud instance
+func (r *Reconciler) create() error {
+	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
+		return fmt.Errorf("failed validating machine provider spec: %v", err)
+	}
+
+	if r.machine.Annotations == nil {
+		r.machine.Annotations = map[string]string{}
+	}
+
+	instance, err := r.instanceGet()
 	if err != nil {
-		if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
-			Type:    v1beta1.MachineCreated,
-			Reason:  machineCreationFailedReason,
-			Message: err.Error(),
-			Status:  corev1.ConditionFalse,
-		}); reconcileWithCloudError != nil {
-			klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
-		}
-		return fmt.Errorf("failed to create instance via compute service: %v", err)
+		return err
 	}
-	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
-		if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
-			Type:    v1beta1.MachineCreated,
-			Reason:  machineCreationFailedReason,
-			Message: err.Error(),
-			Status:  corev1.ConditionFalse,
-		}); reconcileWithCloudError != nil {
-			klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
+
+	var operation *compute.Operation
+
+	if instance != nil && haveCreateOperationInProgress(r.machine) {
+		operation, err = r.computeService.ZoneOperationsGet(r.projectID, r.providerSpec.Zone, r.machine.Annotations[pendingCreateKey])
+		if err != nil {
+			return err
 		}
-		return fmt.Errorf("failed to wait for create operation via compute service. Operation status: %v. Error: %v", op, err)
+	} else {
+		instance, err = r.createInstanceFromMachineScope()
+		if err != nil {
+			return err
+		}
+		operation, err = r.computeService.InstancesInsert(r.projectID, r.providerSpec.Zone, instance)
+		if err != nil {
+			if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
+				Type:    v1beta1.MachineCreated,
+				Reason:  machineCreationFailedReason,
+				Message: err.Error(),
+				Status:  corev1.ConditionFalse,
+			}); reconcileWithCloudError != nil {
+				klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
+			}
+			return fmt.Errorf("failed to create instance via compute service: %v", err)
+		}
+		r.machine.Annotations[pendingCreateKey] = fmt.Sprintf("%v", operation.Id)
 	}
-	return r.reconcileMachineWithCloudState(nil)
+
+	klog.Infof("Instance create operation #%v status=%q for machine %q", operation.Id, operation.Status, r.machine.Name)
+	if err := r.reconcileMachineWithCloudState(nil); err != nil {
+		return err
+	}
+
+	if operation.Status != "DONE" {
+		klog.Infof("Instance create operation #%v incomplete, returning an error to requeue", operation.Id)
+		return &clustererror.RequeueAfterError{RequeueAfter: requeuePeriod}
+	}
+
+	delete(r.machine.Annotations, pendingCreateKey)
+	return nil
 }
 
 func (r *Reconciler) update() error {
@@ -247,25 +279,11 @@ func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineP
 
 // Returns true if machine exists.
 func (r *Reconciler) exists() (bool, error) {
-	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
-		return false, fmt.Errorf("failed validating machine provider spec: %v", err)
+	instance, err := r.instanceGet()
+	if err != nil {
+		return false, err
 	}
-	zone := r.providerSpec.Zone
-	// Need to verify that our project/zone exists before checking machine, as
-	// invalid project/zone produces same 404 error as no machine.
-	if err := r.validateZone(); err != nil {
-		return false, fmt.Errorf("unable to verify project/zone exists: %v/%v; err: %v", r.projectID, zone, err)
-	}
-	_, err := r.computeService.InstancesGet(r.projectID, zone, r.machine.Name)
-	if err == nil {
-		klog.Infof("Machine %q already exists", r.machine.Name)
-		return true, nil
-	}
-	if isNotFoundError(err) {
-		klog.Infof("Machine %q does not exist", r.machine.Name)
-		return false, nil
-	}
-	return false, fmt.Errorf("error getting running instances: %v", err)
+	return instance != nil && !haveCreateOperationInProgress(r.machine), nil
 }
 
 // Returns true if machine exists.
@@ -300,4 +318,8 @@ func isNotFoundError(err error) bool {
 		return t.Code == 404
 	}
 	return false
+}
+
+func haveCreateOperationInProgress(m *machinev1.Machine) bool {
+	return m.Annotations[pendingCreateKey] != ""
 }
