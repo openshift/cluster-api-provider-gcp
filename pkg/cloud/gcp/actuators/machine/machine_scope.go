@@ -132,6 +132,25 @@ func (s *machineScope) storeMachineStatus(machine *machinev1.Machine) (*machinev
 	return s.machineClient.UpdateStatus(machine)
 }
 
+func (s *machineScope) instanceGet() (*compute.Instance, error) {
+	// Need to verify that our project/zone exists before checking
+	// for machine name, as invalid project/zone produces same 404
+	// error as no machine.
+	if _, err := s.computeService.ZonesGet(s.projectID, s.providerSpec.Zone); err != nil {
+		return nil, errors.Wrapf(err, "invalid zone %v", s.providerSpec.Zone)
+	}
+
+	instance, err := s.computeService.InstancesGet(s.projectID, s.providerSpec.Zone, s.machine.Name)
+	if err != nil {
+		if isNotFoundError(err) {
+			return nil, nil
+		}
+		return nil, errors.Wrapf(err, "InstanceGet failed for machine %q", s.machine.Name)
+	}
+
+	return instance, nil
+}
+
 // This expects the https://github.com/openshift/cloud-credential-operator to make a secret
 // with a serviceAccount JSON Key content available. E.g:
 //
