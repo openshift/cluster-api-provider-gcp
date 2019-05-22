@@ -7,6 +7,7 @@ import (
 	gcpv1beta1 "github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1beta1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	clusterapifake "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/fake"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	controllerfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -14,17 +15,23 @@ import (
 
 func TestCreate(t *testing.T) {
 	_, mockComputeService := computeservice.NewComputeServiceMock()
-	machineScope := machineScope{
-		machine: &machinev1beta1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "",
-				Namespace: "",
-			},
+
+	machine := machinev1beta1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-gcp",
+			Namespace: "test",
 		},
+	}
+
+	cs := clusterapifake.NewSimpleClientset(&machine)
+
+	machineScope := machineScope{
+		machine:        &machine,
 		coreClient:     controllerfake.NewFakeClient(),
 		providerSpec:   &gcpv1beta1.GCPMachineProviderSpec{},
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 		computeService: mockComputeService,
+		machineClient:  cs.MachineV1beta1().Machines(machine.Namespace),
 	}
 	reconciler := newReconciler(&machineScope)
 	if err := reconciler.create(); err != nil {
@@ -41,6 +48,13 @@ func TestCreate(t *testing.T) {
 	}
 	if reconciler.providerStatus.Conditions[0].Message != machineCreationSucceedMessage {
 		t.Errorf("Expected: %s, got %s", machineCreationSucceedMessage, reconciler.providerStatus.Conditions[0].Message)
+	}
+	exists, err := reconciler.exists()
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if !exists {
+		t.Errorf("expected machine to exist, got %t", exists)
 	}
 }
 
