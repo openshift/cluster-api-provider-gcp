@@ -137,17 +137,23 @@ func TestExists(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	_, mockComputeService := computeservice.NewComputeServiceMock()
-	machineScope := machineScope{
-		machine: &machinev1beta1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "",
-				Namespace: "",
-			},
+
+	machine := machinev1beta1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-gcp",
+			Namespace: "test",
 		},
+	}
+
+	cs := clusterapifake.NewSimpleClientset(&machine)
+
+	machineScope := machineScope{
+		machine:        &machine,
 		coreClient:     controllerfake.NewFakeClient(),
 		providerSpec:   &gcpv1beta1.GCPMachineProviderSpec{},
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 		computeService: mockComputeService,
+		machineClient:  cs.MachineV1beta1().Machines(machine.Namespace),
 	}
 	reconciler := newReconciler(&machineScope)
 	if err := reconciler.delete(); err != nil {
