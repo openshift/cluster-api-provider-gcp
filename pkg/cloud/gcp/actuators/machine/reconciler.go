@@ -146,21 +146,19 @@ func (r *Reconciler) create() error {
 		}
 		operation, err = r.computeService.InstancesInsert(r.projectID, r.providerSpec.Zone, instance)
 		if err != nil {
-			if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
+			r.providerStatus.Conditions = setProviderConditions(r.providerStatus.Conditions, v1beta1.GCPMachineProviderCondition{
 				Type:    v1beta1.MachineCreated,
 				Reason:  machineCreationFailedReason,
 				Message: err.Error(),
 				Status:  corev1.ConditionFalse,
-			}); reconcileWithCloudError != nil {
-				klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
-			}
+			})
 			return fmt.Errorf("failed to create instance via compute service: %v", err)
 		}
 		r.machine.Annotations[pendingCreateKey] = fmt.Sprintf("%v", operation.Id)
 	}
 
 	klog.Infof("Instance create operation #%v status=%q for machine %q", operation.Id, operation.Status, r.machine.Name)
-	if err := r.reconcileMachineWithCloudState(nil); err != nil {
+	if err = r.reconcileMachineWithCloudState(); err != nil {
 		return err
 	}
 
@@ -170,12 +168,19 @@ func (r *Reconciler) create() error {
 	}
 
 	delete(r.machine.Annotations, pendingCreateKey)
+	r.providerStatus.Conditions = setProviderConditions(r.providerStatus.Conditions, v1beta1.GCPMachineProviderCondition{
+		Type:    v1beta1.MachineCreated,
+		Reason:  machineCreationSucceedReason,
+		Message: machineCreationSucceedMessage,
+		Status:  corev1.ConditionTrue,
+	})
+
 	_, err = r.persist()
 	return err
 }
 
 func (r *Reconciler) update() error {
-	if err := r.reconcileMachineWithCloudState(nil); err != nil {
+	if err := r.reconcileMachineWithCloudState(); err != nil {
 		return err
 	}
 	_, err := r.persist()
@@ -185,52 +190,40 @@ func (r *Reconciler) update() error {
 // reconcileMachineWithCloudState reconcile machineSpec and status with the latest cloud state
 // if a failedCondition is passed it updates the providerStatus.Conditions and return
 // otherwise it fetches the relevant cloud instance and reconcile the rest of the fields
-func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCPMachineProviderCondition) error {
+func (r *Reconciler) reconcileMachineWithCloudState() error {
 	klog.Infof("Reconciling machine object %q with cloud state", r.machine.Name)
-	if failedCondition != nil {
-		r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, *failedCondition)
-		return nil
-	} else {
-		freshInstance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)
-		if err != nil {
-			return fmt.Errorf("failed to get instance via compute service: %v", err)
-		}
-
-		if len(freshInstance.NetworkInterfaces) < 1 {
-			return fmt.Errorf("could not find network interfaces for instance %q", freshInstance.Name)
-		}
-		networkInterface := freshInstance.NetworkInterfaces[0]
-
-		nodeAddresses := []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: networkInterface.NetworkIP}}
-		for _, config := range networkInterface.AccessConfigs {
-			nodeAddresses = append(nodeAddresses, v1.NodeAddress{Type: v1.NodeExternalIP, Address: config.NatIP})
-		}
-		// Since we don't know when the project was created, we must account for
-		// both types of internal-dns:
-		// https://cloud.google.com/compute/docs/internal-dns#instance-fully-qualified-domain-names
-		// [INSTANCE_NAME].[ZONE].c.[PROJECT_ID].internal (newer)
-		nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
-			Type:    corev1.NodeInternalDNS,
-			Address: fmt.Sprintf("%s.%s.c.%s.internal", r.machine.Name, r.providerSpec.Zone, r.projectID),
-		})
-		// [INSTANCE_NAME].c.[PROJECT_ID].internal
-		nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
-			Type:    "AltInternalDNS",
-			Address: fmt.Sprintf("%s.c.%s.internal", r.machine.Name, r.projectID),
-		})
-
-		r.machine.Spec.ProviderID = &r.providerID
-		r.machine.Status.Addresses = nodeAddresses
-		r.providerStatus.InstanceState = &freshInstance.Status
-		r.providerStatus.InstanceID = &freshInstance.Name
-		succeedCondition := v1beta1.GCPMachineProviderCondition{
-			Type:    v1beta1.MachineCreated,
-			Reason:  machineCreationSucceedReason,
-			Message: machineCreationSucceedMessage,
-			Status:  corev1.ConditionTrue,
-		}
-		r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, succeedCondition)
+	freshInstance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)
+	if err != nil {
+		return fmt.Errorf("failed to get instance via compute service: %v", err)
 	}
+
+	if len(freshInstance.NetworkInterfaces) < 1 {
+		return fmt.Errorf("could not find network interfaces for instance %q", freshInstance.Name)
+	}
+	networkInterface := freshInstance.NetworkInterfaces[0]
+
+	nodeAddresses := []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: networkInterface.NetworkIP}}
+	for _, config := range networkInterface.AccessConfigs {
+		nodeAddresses = append(nodeAddresses, v1.NodeAddress{Type: v1.NodeExternalIP, Address: config.NatIP})
+	}
+	// Since we don't know when the project was created, we must account for
+	// both types of internal-dns:
+	// https://cloud.google.com/compute/docs/internal-dns#instance-fully-qualified-domain-names
+	// [INSTANCE_NAME].[ZONE].c.[PROJECT_ID].internal (newer)
+	nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
+		Type:    corev1.NodeInternalDNS,
+		Address: fmt.Sprintf("%s.%s.c.%s.internal", r.machine.Name, r.providerSpec.Zone, r.projectID),
+	})
+	// [INSTANCE_NAME].c.[PROJECT_ID].internal
+	nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
+		Type:    "AltInternalDNS",
+		Address: fmt.Sprintf("%s.c.%s.internal", r.machine.Name, r.projectID),
+	})
+
+	r.machine.Spec.ProviderID = &r.providerID
+	r.machine.Status.Addresses = nodeAddresses
+	r.providerStatus.InstanceState = &freshInstance.Status
+	r.providerStatus.InstanceID = &freshInstance.Name
 	return nil
 }
 

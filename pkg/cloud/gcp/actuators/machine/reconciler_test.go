@@ -93,7 +93,7 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 	}
 
 	r := newReconciler(&machineScope)
-	if err := r.reconcileMachineWithCloudState(nil); err != nil {
+	if err := r.reconcileMachineWithCloudState(); err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
 	if r.machine.Status.Addresses[0] != expectedNodeAddresses[0] {

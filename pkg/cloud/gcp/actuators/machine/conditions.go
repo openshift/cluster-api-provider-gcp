@@ -33,7 +33,7 @@ func shouldUpdateCondition(
 // 1) Requested Status is different than existing status.
 // 2) requested Reason is different that existing one.
 // 3) requested Message is different that existing one.
-func reconcileProviderConditions(conditions []v1beta1.GCPMachineProviderCondition, newCondition v1beta1.GCPMachineProviderCondition) []v1beta1.GCPMachineProviderCondition {
+func setProviderConditions(conditions []v1beta1.GCPMachineProviderCondition, newCondition v1beta1.GCPMachineProviderCondition) []v1beta1.GCPMachineProviderCondition {
 	now := metav1.Now()
 	currentCondition := findCondition(conditions, newCondition.Type)
 	if currentCondition == nil {
