@@ -90,23 +90,21 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 	}, nil
 }
 
-// Close the MachineScope by persisting the machine spec, machine status after reconciling.
-func (s *machineScope) Close() {
-	if s.machineClient == nil {
-		klog.Errorf("No machineClient is set for this scope")
-		return
-	}
-
+// persist updates the machine's spec and status by calling
+// MachineInterface.Update() and MachineInterface.UpdateStatus()
+// respectively.
+func (s *machineScope) persist() (*machinev1.Machine, error) {
 	latestMachine, err := s.storeMachineSpec(s.machine)
 	if err != nil {
-		klog.Errorf("[machinescope] failed to update machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
-		return
+		return nil, errors.Wrapf(err, "storeMachineSpec failed for machine %q", s.machine.Name)
 	}
 
-	_, err = s.storeMachineStatus(latestMachine)
+	latestMachine, err = s.storeMachineStatus(latestMachine)
 	if err != nil {
-		klog.Errorf("[machinescope] failed to store provider status for machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
+		return nil, errors.Wrapf(err, "storeMachineStatus failed for machine %q", s.machine.Name)
 	}
+
+	return latestMachine, err
 }
 
 func (s *machineScope) storeMachineSpec(machine *machinev1.Machine) (*machinev1.Machine, error) {

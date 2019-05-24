@@ -49,7 +49,6 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if err != nil {
 		return fmt.Errorf(scopeFailFmt, machine.Name, err)
 	}
-	defer scope.Close()
 	return newReconciler(scope).create()
 }
 
@@ -63,11 +62,6 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if err != nil {
 		return false, fmt.Errorf(scopeFailFmt, machine.Name, err)
 	}
-	// The core machine controller calls exists() + create()/update() in the same reconciling operation.
-	// If exists() would store machineSpec/status object then create()/update() would still receive the local version.
-	// When create()/update() try to store machineSpec/status this might result in
-	// "Operation cannot be fulfilled; the object has been modified; please apply your changes to the latest version and try again."
-	// Therefore we don't close the scope here and we only store spec/status atomically either in create()/update()"
 	return newReconciler(scope).exists()
 }
 
@@ -81,7 +75,6 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if err != nil {
 		return fmt.Errorf("failed to create scope for machine %q: %v", machine.Name, err)
 	}
-	defer scope.Close()
 	return newReconciler(scope).update()
 }
 

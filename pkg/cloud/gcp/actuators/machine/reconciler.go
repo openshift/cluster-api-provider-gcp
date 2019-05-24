@@ -170,11 +170,16 @@ func (r *Reconciler) create() error {
 	}
 
 	delete(r.machine.Annotations, pendingCreateKey)
-	return nil
+	_, err = r.persist()
+	return err
 }
 
 func (r *Reconciler) update() error {
-	return r.reconcileMachineWithCloudState(nil)
+	if err := r.reconcileMachineWithCloudState(nil); err != nil {
+		return err
+	}
+	_, err := r.persist()
+	return err
 }
 
 // reconcileMachineWithCloudState reconcile machineSpec and status with the latest cloud state
@@ -228,6 +233,7 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 	}
 	return nil
 }
+
 func (r *Reconciler) getCustomUserData() (string, error) {
 	if r.providerSpec.UserDataSecret == nil {
 		return "", nil
@@ -295,7 +301,8 @@ func (r *Reconciler) delete() error {
 		return &clustererror.RequeueAfterError{RequeueAfter: requeuePeriod}
 	}
 	delete(r.machine.Annotations, pendingDeleteKey)
-	return nil
+	_, err = r.persist()
+	return err
 }
 
 func (r *Reconciler) validateZone() error {
