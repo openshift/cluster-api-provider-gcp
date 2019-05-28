@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	clustererror "github.com/openshift/cluster-api/pkg/controller/error"
 	"google.golang.org/api/compute/v1"
 	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
@@ -19,9 +20,10 @@ import (
 )
 
 const (
-	userDataSecretKey  = "userData"
-	operationTimeOut   = 180 * time.Second
-	operationRetryWait = 5 * time.Second
+	userDataSecretKey   = "userData"
+	operationTimeOut    = 180 * time.Second
+	operationRetryWait  = 5 * time.Second
+	requeueAfterSeconds = 20
 )
 
 // Reconciler are list of services required by machine actuator, easy to create a fake
@@ -117,7 +119,7 @@ func (r *Reconciler) create() error {
 		Items: metadataItems,
 	}
 
-	operation, err := r.computeService.InstancesInsert(r.projectID, zone, instance)
+	_, err = r.computeService.InstancesInsert(r.projectID, zone, instance)
 	if err != nil {
 		if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
 			Type:    v1beta1.MachineCreated,
@@ -128,17 +130,6 @@ func (r *Reconciler) create() error {
 			klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
 		}
 		return fmt.Errorf("failed to create instance via compute service: %v", err)
-	}
-	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
-		if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
-			Type:    v1beta1.MachineCreated,
-			Reason:  machineCreationFailedReason,
-			Message: err.Error(),
-			Status:  corev1.ConditionFalse,
-		}); reconcileWithCloudError != nil {
-			klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
-		}
-		return fmt.Errorf("failed to wait for create operation via compute service. Operation status: %v. Error: %v", op, err)
 	}
 	return r.reconcileMachineWithCloudState(nil)
 }
@@ -195,7 +186,13 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 			Status:  corev1.ConditionTrue,
 		}
 		r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, succeedCondition)
+
+		if freshInstance.Status != "RUNNING" {
+			klog.Infof("machine %q status is %q, requeuing...", r.machine.Name, freshInstance.Status)
+			return &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
+		}
 	}
+
 	return nil
 }
 
@@ -256,10 +253,16 @@ func (r *Reconciler) exists() (bool, error) {
 	if err := r.validateZone(); err != nil {
 		return false, fmt.Errorf("unable to verify project/zone exists: %v/%v; err: %v", r.projectID, zone, err)
 	}
-	_, err := r.computeService.InstancesGet(r.projectID, zone, r.machine.Name)
+	instance, err := r.computeService.InstancesGet(r.projectID, zone, r.machine.Name)
 	if err == nil {
-		klog.Infof("Machine %q already exists", r.machine.Name)
-		return true, nil
+		switch instance.Status {
+		case "PROVISIONING", "REPAIRING", "RUNNING", "STAGING":
+			klog.Infof("Machine %q already exists", r.machine.Name)
+			return true, nil
+		default:
+			klog.Infof("Machine %q is considered as non existent as its status is %q", instance.Status)
+			return false, nil
+		}
 	}
 	if isNotFoundError(err) {
 		klog.Infof("Machine %q does not exist", r.machine.Name)
