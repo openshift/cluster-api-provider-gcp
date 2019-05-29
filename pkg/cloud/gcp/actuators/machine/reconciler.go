@@ -281,15 +281,11 @@ func (r *Reconciler) delete() error {
 		klog.Infof("Machine %v not found during delete, skipping", r.machine.Name)
 		return nil
 	}
-	zone := r.providerSpec.Zone
-	operation, err := r.computeService.InstancesDelete(r.projectID, zone, r.machine.Name)
-	if err != nil {
+	if _, err = r.computeService.InstancesDelete(string(r.machine.UID), r.projectID, r.providerSpec.Zone, r.machine.Name); err != nil {
 		return fmt.Errorf("failed to delete instance via compute service: %v", err)
 	}
-	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
-		return fmt.Errorf("failed to wait for delete operation via compute service. Operation status: %v. Error: %v", op, err)
-	}
-	return nil
+	klog.Infof("machine %q status is exists, requeuing...", r.machine.Name)
+	return &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
 }
 
 func (r *Reconciler) validateZone() error {
