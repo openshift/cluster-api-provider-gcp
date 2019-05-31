@@ -256,12 +256,12 @@ func (r *Reconciler) exists() (bool, error) {
 	instance, err := r.computeService.InstancesGet(r.projectID, zone, r.machine.Name)
 	if err == nil {
 		switch instance.Status {
-		case "PROVISIONING", "REPAIRING", "RUNNING", "STAGING":
-			klog.Infof("Machine %q already exists", r.machine.Name)
-			return true, nil
-		default:
+		case "TERMINATED":
 			klog.Infof("Machine %q is considered as non existent as its status is %q", instance.Status)
 			return false, nil
+		default:
+			klog.Infof("Machine %q already exists", r.machine.Name)
+			return true, nil
 		}
 	}
 	if isNotFoundError(err) {
