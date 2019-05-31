@@ -14,15 +14,12 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
 	userDataSecretKey   = "userData"
-	operationTimeOut    = 180 * time.Second
-	operationRetryWait  = 5 * time.Second
 	requeueAfterSeconds = 20
 )
 
@@ -212,29 +209,6 @@ func (r *Reconciler) getCustomUserData() (string, error) {
 	return base64.StdEncoding.EncodeToString(data), nil
 }
 
-func (r *Reconciler) waitUntilOperationCompleted(zone, operationName string) (*compute.Operation, error) {
-	var op *compute.Operation
-	var err error
-	return op, wait.Poll(operationRetryWait, operationTimeOut, func() (bool, error) {
-		op, err = r.computeService.ZoneOperationsGet(r.projectID, zone, operationName)
-		if err != nil {
-			return false, err
-		}
-		klog.V(3).Infof("Waiting for %q operation to be completed... (status: %s)", op.OperationType, op.Status)
-		if op.Status == "DONE" {
-			if op.Error == nil {
-				return true, nil
-			}
-			var err []error
-			for _, opErr := range op.Error.Errors {
-				err = append(err, fmt.Errorf("%s", *opErr))
-			}
-			return false, fmt.Errorf("the following errors occurred: %+v", err)
-		}
-		return false, nil
-	})
-}
-
 func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineProviderSpec) error {
 	// TODO (alberto): First validation should happen via webhook before the object is persisted.
 	// This is a complementary validation to fail early in case of lacking proper webhook validation.
@@ -257,7 +231,7 @@ func (r *Reconciler) exists() (bool, error) {
 	if err == nil {
 		switch instance.Status {
 		case "TERMINATED":
-			klog.Infof("Machine %q is considered as non existent as its status is %q", instance.Status)
+			klog.Infof("Machine %q is considered as non existent as its status is %q", r.machine.Name, instance.Status)
 			return false, nil
 		default:
 			klog.Infof("Machine %q already exists", r.machine.Name)
@@ -281,15 +255,11 @@ func (r *Reconciler) delete() error {
 		klog.Infof("Machine %v not found during delete, skipping", r.machine.Name)
 		return nil
 	}
-	zone := r.providerSpec.Zone
-	operation, err := r.computeService.InstancesDelete(r.projectID, zone, r.machine.Name)
-	if err != nil {
+	if _, err = r.computeService.InstancesDelete(string(r.machine.UID), r.projectID, r.providerSpec.Zone, r.machine.Name); err != nil {
 		return fmt.Errorf("failed to delete instance via compute service: %v", err)
 	}
-	if op, err := r.waitUntilOperationCompleted(zone, operation.Name); err != nil {
-		return fmt.Errorf("failed to wait for delete operation via compute service. Operation status: %v. Error: %v", op, err)
-	}
-	return nil
+	klog.Infof("machine %q status is exists, requeuing...", r.machine.Name)
+	return &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
 }
 
 func (r *Reconciler) validateZone() error {

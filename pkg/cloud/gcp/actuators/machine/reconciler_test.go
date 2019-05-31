@@ -7,6 +7,7 @@ import (
 	gcpv1beta1 "github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1beta1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	controllerError "github.com/openshift/cluster-api/pkg/controller/error"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	controllerfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -137,6 +138,8 @@ func TestDelete(t *testing.T) {
 	}
 	reconciler := newReconciler(&machineScope)
 	if err := reconciler.delete(); err != nil {
-		t.Errorf("reconciler was not expected to return error: %v", err)
+		if _, ok := err.(*controllerError.RequeueAfterError); !ok {
+			t.Errorf("reconciler was not expected to return error: %v", err)
+		}
 	}
 }
