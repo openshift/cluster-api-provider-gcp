@@ -231,7 +231,7 @@ func (r *Reconciler) exists() (bool, error) {
 	if err == nil {
 		switch instance.Status {
 		case "TERMINATED":
-			klog.Infof("Machine %q is considered as non existent as its status is %q", instance.Status)
+			klog.Infof("Machine %q is considered as non existent as its status is %q", r.machine.Name, instance.Status)
 			return false, nil
 		default:
 			klog.Infof("Machine %q already exists", r.machine.Name)
