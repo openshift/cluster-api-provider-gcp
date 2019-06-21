@@ -2,9 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/machine"
+	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
 	clusterapis "github.com/openshift/cluster-api/pkg/apis"
 	"github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset"
 	capimachine "github.com/openshift/cluster-api/pkg/controller/machine"
@@ -15,9 +18,17 @@ import (
 )
 
 func main() {
+	var printVersion bool
+	flag.BoolVar(&printVersion, "version", false, "print version and exit")
+
 	klog.InitFlags(nil)
 	flag.Set("logtostderr", "true")
 	flag.Parse()
+
+	if printVersion {
+		fmt.Println(version.String)
+		os.Exit(0)
+	}
 
 	cfg := config.GetConfigOrDie()
 
