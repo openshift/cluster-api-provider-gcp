@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	scopeFailFmt      = "failed to create scope for machine %q: %v"
+	scopeFailFmt      = "%s: failed to create scope for machine: %v"
 	createEventAction = "Create"
 	updateEventAction = "Update"
 	deleteEventAction = "Delete"
@@ -55,13 +55,13 @@ func (a *Actuator) handleMachineError(machine *machinev1.Machine, err *apierrors
 		a.eventRecorder.Eventf(machine, corev1.EventTypeWarning, "Failed"+eventAction, "%v", err.Reason)
 	}
 
-	klog.Errorf("Machine error: %v", err.Message)
+	klog.Errorf("%s: Machine error: %v", machine.Name, err.Message)
 	return err
 }
 
 // Create creates a machine and is invoked by the machine controller.
 func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
-	klog.Infof("Creating machine %q", machine.Name)
+	klog.Infof("%s: Creating machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
@@ -80,7 +80,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 }
 
 func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) (bool, error) {
-	klog.Infof("Checking if machine %q exists", machine.Name)
+	klog.Infof("%s: Checking if machine exists", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
@@ -98,7 +98,7 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 }
 
 func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
-	klog.Infof("Updating machine %q", machine.Name)
+	klog.Infof("%s: Updating machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
@@ -117,7 +117,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 }
 
 func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
-	klog.Infof("Deleting machine %v", machine.Name)
+	klog.Infof("%s: Deleting machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,

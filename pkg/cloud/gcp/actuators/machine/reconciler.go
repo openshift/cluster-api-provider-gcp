@@ -139,7 +139,7 @@ func (r *Reconciler) update() error {
 // if a failedCondition is passed it updates the providerStatus.Conditions and return
 // otherwise it fetches the relevant cloud instance and reconcile the rest of the fields
 func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCPMachineProviderCondition) error {
-	klog.Infof("Reconciling machine object %q with cloud state", r.machine.Name)
+	klog.Infof("%s: Reconciling machine object with cloud state", r.machine.Name)
 	if failedCondition != nil {
 		r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, *failedCondition)
 		return nil
@@ -185,7 +185,7 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 		r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, succeedCondition)
 
 		if freshInstance.Status != "RUNNING" {
-			klog.Infof("machine %q status is %q, requeuing...", r.machine.Name, freshInstance.Status)
+			klog.Infof("%s: machine status is %q, requeuing...", r.machine.Name, freshInstance.Status)
 			return &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
 		}
 	}
@@ -239,7 +239,7 @@ func (r *Reconciler) exists() (bool, error) {
 		}
 	}
 	if isNotFoundError(err) {
-		klog.Infof("Machine %q does not exist", r.machine.Name)
+		klog.Infof("%s: Machine does not exist", r.machine.Name)
 		return false, nil
 	}
 	return false, fmt.Errorf("error getting running instances: %v", err)
@@ -252,13 +252,13 @@ func (r *Reconciler) delete() error {
 		return err
 	}
 	if !exists {
-		klog.Infof("Machine %v not found during delete, skipping", r.machine.Name)
+		klog.Infof("%s: Machine not found during delete, skipping", r.machine.Name)
 		return nil
 	}
 	if _, err = r.computeService.InstancesDelete(string(r.machine.UID), r.projectID, r.providerSpec.Zone, r.machine.Name); err != nil {
 		return fmt.Errorf("failed to delete instance via compute service: %v", err)
 	}
-	klog.Infof("machine %q status is exists, requeuing...", r.machine.Name)
+	klog.Infof("%s: machine status is exists, requeuing...", r.machine.Name)
 	return &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
 }
 
