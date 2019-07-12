@@ -173,7 +173,7 @@
 
 [[projects]]
   branch = "openshift-4.2-cluster-api-0.1.0"
-  digest = "1:39b28a2133488606e41fd0f6f13ec4239169424432fb0eb0dadb9d6f8ee4bf91"
+  digest = "1:54dfec845e2fb5631fa1fc556a677a473a7efe663df4a4808621dca5e0358b23"
   name = "github.com/openshift/cluster-api"
   packages = [
     "pkg/apis",
@@ -182,23 +182,27 @@
     "pkg/apis/machine/common",
     "pkg/apis/machine/v1beta1",
     "pkg/client/clientset_generated/clientset",
+    "pkg/client/clientset_generated/clientset/fake",
     "pkg/client/clientset_generated/clientset/scheme",
     "pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1",
+    "pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1/fake",
     "pkg/client/clientset_generated/clientset/typed/machine/v1beta1",
+    "pkg/client/clientset_generated/clientset/typed/machine/v1beta1/fake",
     "pkg/controller/error",
     "pkg/controller/machine",
+    "pkg/errors",
     "pkg/util",
   ]
   pruneopts = "T"
-  revision = "e911af77e9a33cfb45f82ba9778876d715cdb4ea"
+  revision = "72ebbaa0456c052d886259dc26420644178a0c5f"
 
 [[projects]]
   branch = "master"
-  digest = "1:f7646c654e93258958dba300641f8f674d5a9ed015c11119793ba1156e2acbe9"
+  digest = "1:b79de44700bc7fc32b4f898e283754fa027616f87074be1cf65a7be5a961cc85"
   name = "github.com/openshift/kubernetes-drain"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c2e51be1758efa30d71a4d30dc4e2db86b70a4df"
+  revision = "4b061affbd00bfc62036a5cd3a57493db6c94151"
 
 [[projects]]
   digest = "1:e5d0bd87abc2781d14e274807a470acd180f0499f8bf5bb18606e9ec22ad9de9"
@@ -621,6 +625,7 @@
   name = "k8s.io/client-go"
   packages = [
     "discovery",
+    "discovery/fake",
     "dynamic",
     "kubernetes",
     "kubernetes/scheme",
@@ -751,7 +756,7 @@
   revision = "c55fbcfc754a5b2ec2fbae8fb9dcac36bdba6a12"
 
 [[projects]]
-  digest = "1:3bc002a07940198311845d0096d598ef5048ccf19be3feead372c6e1336b3933"
+  digest = "1:cd4ccccc3ed5ddace16fc70f0d492f39453649cf64fce14814f7e56f0400ed87"
   name = "sigs.k8s.io/controller-runtime"
   packages = [
     "pkg/cache",
@@ -778,7 +783,6 @@
     "pkg/reconcile",
     "pkg/recorder",
     "pkg/runtime/inject",
-    "pkg/runtime/scheme",
     "pkg/runtime/signals",
     "pkg/scheme",
     "pkg/source",
@@ -808,9 +812,11 @@
     "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1",
     "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1",
     "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset",
+    "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/fake",
     "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1",
     "github.com/openshift/cluster-api/pkg/controller/error",
     "github.com/openshift/cluster-api/pkg/controller/machine",
+    "github.com/openshift/cluster-api/pkg/errors",
     "github.com/pkg/errors",
     "golang.org/x/oauth2",
     "golang.org/x/oauth2/google",
@@ -820,14 +826,16 @@
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/client-go/kubernetes/scheme",
+    "k8s.io/client-go/tools/record",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/klog",
     "sigs.k8s.io/controller-runtime/pkg/client",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
     "sigs.k8s.io/controller-runtime/pkg/client/fake",
     "sigs.k8s.io/controller-runtime/pkg/manager",
-    "sigs.k8s.io/controller-runtime/pkg/runtime/scheme",
     "sigs.k8s.io/controller-runtime/pkg/runtime/signals",
+    "sigs.k8s.io/controller-runtime/pkg/scheme",
     "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
