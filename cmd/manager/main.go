@@ -16,13 +16,20 @@ import (
 
 func main() {
 	klog.InitFlags(nil)
+	watchNamespace := flag.String("namespace", "", "Namespace that the controller watches to reconcile machine-api objects. If unspecified, the controller watches for machine-api objects across all namespaces.")
 	flag.Set("logtostderr", "true")
 	flag.Parse()
 
 	cfg := config.GetConfigOrDie()
 
+	opts := manager.Options{}
+	if *watchNamespace != "" {
+		opts.Namespace = *watchNamespace
+		klog.Infof("Watching machine-api objects only in namespace %q for reconciliation.", opts.Namespace)
+	}
+
 	// Setup a Manager
-	mgr, err := manager.New(cfg, manager.Options{})
+	mgr, err := manager.New(cfg, opts)
 	if err != nil {
 		klog.Fatalf("Failed to set up overall controller manager: %v", err)
 	}
