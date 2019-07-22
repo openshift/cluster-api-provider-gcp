@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	credentialsSecretKey = "serviceAccountJSON"
+	credentialsSecretKey = "service_account.json"
 )
 
 // machineScopeParams defines the input parameters used to create a new MachineScope.
