@@ -2,7 +2,6 @@ package machine
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -206,7 +205,7 @@ func (r *Reconciler) getCustomUserData() (string, error) {
 	if !exists {
 		return "", fmt.Errorf("secret %v/%v does not have %q field set. Thus, no user data applied when creating an instance", r.machine.GetNamespace(), r.providerSpec.UserDataSecret.Name, userDataSecretKey)
 	}
-	return base64.StdEncoding.EncodeToString(data), nil
+	return string(data), nil
 }
 
 func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineProviderSpec) error {
