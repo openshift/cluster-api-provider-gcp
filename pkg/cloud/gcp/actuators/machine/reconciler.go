@@ -71,9 +71,14 @@ func (r *Reconciler) create() error {
 
 	// networking
 	var networkInterfaces = []*compute.NetworkInterface{}
+
 	for _, nic := range r.providerSpec.NetworkInterfaces {
+		accessConfigs := []*compute.AccessConfig{}
+		if nic.PublicIP {
+			accessConfigs = append(accessConfigs, &compute.AccessConfig{})
+		}
 		computeNIC := &compute.NetworkInterface{
-			AccessConfigs: []*compute.AccessConfig{{}},
+			AccessConfigs: accessConfigs,
 		}
 		if len(nic.Network) != 0 {
 			computeNIC.Network = fmt.Sprintf("projects/%s/global/networks/%s", r.projectID, nic.Network)
