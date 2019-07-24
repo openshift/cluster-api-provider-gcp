@@ -54,6 +54,10 @@ func (c *GCPComputeServiceMock) ZonesGet(project string, zone string) (*compute.
 	return nil, nil
 }
 
+func (c *GCPComputeServiceMock) BasePath() string {
+	return "path/"
+}
+
 func NewComputeServiceMock() (*compute.Instance, *GCPComputeServiceMock) {
 	var receivedInstance compute.Instance
 	computeServiceMock := GCPComputeServiceMock{
