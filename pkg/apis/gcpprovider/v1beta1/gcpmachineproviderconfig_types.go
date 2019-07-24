@@ -59,6 +59,7 @@ type GCPMetadata struct {
 
 // GCPNetworkInterface describes network interfaces for GCP
 type GCPNetworkInterface struct {
+	PublicIP   bool   `json:"publicIP,omitempty"`
 	Network    string `json:"network,omitempty"`
 	Subnetwork string `json:"subnetwork,omitempty"`
 }
