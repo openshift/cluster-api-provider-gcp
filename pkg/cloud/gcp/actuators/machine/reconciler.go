@@ -63,7 +63,7 @@ func (r *Reconciler) create() error {
 				DiskSizeGb:  disk.SizeGb,
 				DiskType:    fmt.Sprintf("zones/%s/diskTypes/%s", zone, disk.Type),
 				Labels:      disk.Labels,
-				SourceImage: disk.Image,
+				SourceImage: googleapi.ResolveRelative(r.computeService.BasePath(), fmt.Sprintf("%s/global/images/%s", r.projectID, disk.Image)),
 			},
 		})
 	}

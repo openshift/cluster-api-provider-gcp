@@ -14,6 +14,7 @@ type GCPComputeService interface {
 	InstancesGet(project string, zone string, instance string) (*compute.Instance, error)
 	ZonesGet(project string, zone string) (*compute.Zone, error)
 	ZoneOperationsGet(project string, zone string, operation string) (*compute.Operation, error)
+	BasePath() string
 }
 
 type computeService struct {
@@ -51,4 +52,8 @@ func (c *computeService) InstancesDelete(requestId string, project string, zone 
 
 func (c *computeService) ZonesGet(project string, zone string) (*compute.Zone, error) {
 	return c.service.Zones.Get(project, zone).Do()
+}
+
+func (c *computeService) BasePath() string {
+	return c.service.BasePath
 }
