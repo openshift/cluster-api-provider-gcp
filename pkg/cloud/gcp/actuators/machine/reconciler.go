@@ -172,7 +172,7 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 		})
 		// [INSTANCE_NAME].c.[PROJECT_ID].internal
 		nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
-			Type:    "AltInternalDNS",
+			Type:    corev1.NodeInternalDNS,
 			Address: fmt.Sprintf("%s.c.%s.internal", r.machine.Name, r.projectID),
 		})
 
