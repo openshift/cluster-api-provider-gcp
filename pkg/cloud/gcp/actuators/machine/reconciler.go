@@ -20,6 +20,7 @@ import (
 const (
 	userDataSecretKey   = "userData"
 	requeueAfterSeconds = 20
+	instanceLinkFmt     = "https://www.googleapis.com/compute/v1/projects/%s/zones/%s/instances/%s"
 )
 
 // Reconciler are list of services required by machine actuator, easy to create a fake
@@ -136,6 +137,10 @@ func (r *Reconciler) create() error {
 }
 
 func (r *Reconciler) update() error {
+	// Add target pools, if necessary
+	if err := r.processTargetPools(true, r.addInstanceToTargetPool); err != nil {
+		return err
+	}
 	return r.reconcileMachineWithCloudState(nil)
 }
 
@@ -217,6 +222,13 @@ func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineP
 	// TODO (alberto): First validation should happen via webhook before the object is persisted.
 	// This is a complementary validation to fail early in case of lacking proper webhook validation.
 	// Default values can also be set here
+	if providerSpec.TargetPools != nil {
+		for _, pool := range providerSpec.TargetPools {
+			if pool == "" {
+				return fmt.Errorf("all target pools must have valid name")
+			}
+		}
+	}
 	return nil
 }
 
@@ -251,6 +263,10 @@ func (r *Reconciler) exists() (bool, error) {
 
 // Returns true if machine exists.
 func (r *Reconciler) delete() error {
+	// Remove instance from target pools, if necessary
+	if err := r.processTargetPools(false, r.deleteInstanceFromTargetPool); err != nil {
+		return err
+	}
 	exists, err := r.exists()
 	if err != nil {
 		return err
@@ -277,4 +293,63 @@ func isNotFoundError(err error) bool {
 		return t.Code == 404
 	}
 	return false
+}
+
+func fmtInstanceSelfLink(project, zone, name string) string {
+	return fmt.Sprintf(instanceLinkFmt, project, zone, name)
+}
+
+func (r *Reconciler) instanceExistsInPool(instanceLink string, pool string) (bool, error) {
+	// Get target pool
+	tp, err := r.computeService.TargetPoolsGet(r.projectID, r.providerSpec.Region, pool)
+	if err != nil {
+		return false, fmt.Errorf("unable to get targetpool: %v", err)
+	}
+
+	for _, link := range tp.Instances {
+		if instanceLink == link {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+type poolProcessor func(instanceLink, pool string) error
+
+func (r *Reconciler) processTargetPools(desired bool, poolFunc poolProcessor) error {
+	instanceSelfLink := fmtInstanceSelfLink(r.projectID, r.providerSpec.Zone, r.machine.Name)
+	// TargetPools may be empty/nil, and that's okay.
+	for _, pool := range r.providerSpec.TargetPools {
+		present, err := r.instanceExistsInPool(instanceSelfLink, pool)
+		if err != nil {
+			return err
+		}
+		if present != desired {
+			klog.Infof("%v: reconciling instance for targetpool with cloud provider; desired state: %v", r.machine.Name, desired)
+			err := poolFunc(instanceSelfLink, pool)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r *Reconciler) addInstanceToTargetPool(instanceLink string, pool string) error {
+	_, err := r.computeService.TargetPoolsAddInstance(r.projectID, r.providerSpec.Region, pool, instanceLink)
+	// Probably safe to disregard the returned operation; it either worked or it didn't.
+	// Even if the instance doesn't exist, it will return without error and the non-existent
+	// instance will be associated.
+	if err != nil {
+		return fmt.Errorf("failed to add instance %v to target pool %v: %v", r.machine.Name, pool, err)
+	}
+	return nil
+}
+
+func (r *Reconciler) deleteInstanceFromTargetPool(instanceLink string, pool string) error {
+	_, err := r.computeService.TargetPoolsRemoveInstance(r.projectID, r.providerSpec.Region, pool, instanceLink)
+	if err != nil {
+		return fmt.Errorf("failed to remove instance %v from target pool %v: %v", r.machine.Name, pool, err)
+	}
+	return nil
 }
