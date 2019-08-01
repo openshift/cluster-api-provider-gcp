@@ -33,6 +33,7 @@ type GCPMachineProviderSpec struct {
 	MachineType        string                 `json:"machineType"`
 	Region             string                 `json:"region"`
 	Zone               string                 `json:"zone"`
+	ProjectID          string                 `json:"projectID,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

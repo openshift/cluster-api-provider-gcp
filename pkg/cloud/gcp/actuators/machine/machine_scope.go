@@ -63,9 +63,12 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		return nil, fmt.Errorf("failed to get serviceAccountJSON: %v", err)
 	}
 
-	projectID, err := getProjectIDFromJSONKey([]byte(serviceAccountJSON))
-	if err != nil {
-		return nil, fmt.Errorf("error getting project from JSON key: %v", err)
+	projectID := providerSpec.ProjectID
+	if len(projectID) == 0 {
+		projectID, err = getProjectIDFromJSONKey([]byte(serviceAccountJSON))
+		if err != nil {
+			return nil, fmt.Errorf("error getting project from JSON key: %v", err)
+		}
 	}
 
 	oauthClient, err := createOauth2Client(serviceAccountJSON, compute.CloudPlatformScope)
