@@ -71,12 +71,11 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
 		return a.handleMachineError(machine, apierrors.CreateMachine(fmtErr), createEventAction)
 	}
-	defer scope.Close()
 	if err := newReconciler(scope).create(); err != nil {
 		return a.handleMachineError(machine, apierrors.CreateMachine(err.Error()), createEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, createEventAction, "Created Machine %v", machine.Name)
-	return nil
+	return scope.Close()
 }
 
 func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) (bool, error) {
@@ -108,12 +107,11 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
 		return a.handleMachineError(machine, apierrors.UpdateMachine(fmtErr), updateEventAction)
 	}
-	defer scope.Close()
 	if err := newReconciler(scope).update(); err != nil {
 		return a.handleMachineError(machine, apierrors.UpdateMachine(err.Error()), updateEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, updateEventAction, "Updated Machine %v", machine.Name)
-	return nil
+	return scope.Close()
 }
 
 func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
