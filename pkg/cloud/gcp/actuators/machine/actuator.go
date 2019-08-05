@@ -10,7 +10,6 @@ import (
 	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	mapiclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
-	apierrors "github.com/openshift/cluster-api/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog"
@@ -50,12 +49,11 @@ func NewActuator(params ActuatorParams) *Actuator {
 
 // Set corresponding event based on error. It also returns the original error
 // for convenience, so callers can do "return handleMachineError(...)".
-func (a *Actuator) handleMachineError(machine *machinev1.Machine, err *apierrors.MachineError, eventAction string) error {
+func (a *Actuator) handleMachineError(machine *machinev1.Machine, err error, eventAction string) error {
 	if eventAction != noEventAction {
-		a.eventRecorder.Eventf(machine, corev1.EventTypeWarning, "Failed"+eventAction, "%v", err.Reason)
+		a.eventRecorder.Eventf(machine, corev1.EventTypeWarning, "Failed"+eventAction, "%v", err)
 	}
 
-	klog.Errorf("%s: Machine error: %v", machine.Name, err.Message)
 	return err
 }
 
@@ -69,10 +67,10 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	})
 	if err != nil {
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
-		return a.handleMachineError(machine, apierrors.CreateMachine(fmtErr), createEventAction)
+		return a.handleMachineError(machine, fmt.Errorf(fmtErr), createEventAction)
 	}
 	if err := newReconciler(scope).create(); err != nil {
-		return a.handleMachineError(machine, apierrors.CreateMachine(err.Error()), createEventAction)
+		return a.handleMachineError(machine, err, createEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, createEventAction, "Created Machine %v", machine.Name)
 	return scope.Close()
@@ -105,10 +103,10 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 	})
 	if err != nil {
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
-		return a.handleMachineError(machine, apierrors.UpdateMachine(fmtErr), updateEventAction)
+		return a.handleMachineError(machine, fmt.Errorf(fmtErr), updateEventAction)
 	}
 	if err := newReconciler(scope).update(); err != nil {
-		return a.handleMachineError(machine, apierrors.UpdateMachine(err.Error()), updateEventAction)
+		return a.handleMachineError(machine, err, updateEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, updateEventAction, "Updated Machine %v", machine.Name)
 	return scope.Close()
@@ -123,10 +121,10 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	})
 	if err != nil {
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
-		return a.handleMachineError(machine, apierrors.DeleteMachine(fmtErr), deleteEventAction)
+		return a.handleMachineError(machine, fmt.Errorf(fmtErr), deleteEventAction)
 	}
 	if err := newReconciler(scope).delete(); err != nil {
-		return a.handleMachineError(machine, apierrors.DeleteMachine(err.Error()), deleteEventAction)
+		return a.handleMachineError(machine, err, deleteEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, deleteEventAction, "Deleted machine %v", machine.Name)
 	return nil
