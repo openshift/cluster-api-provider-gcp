@@ -15,6 +15,9 @@ type GCPComputeService interface {
 	ZonesGet(project string, zone string) (*compute.Zone, error)
 	ZoneOperationsGet(project string, zone string, operation string) (*compute.Operation, error)
 	BasePath() string
+	TargetPoolsGet(project string, region string, name string) (*compute.TargetPool, error)
+	TargetPoolsAddInstance(project string, region string, name string, instance string) (*compute.Operation, error)
+	TargetPoolsRemoveInstance(project string, region string, name string, instance string) (*compute.Operation, error)
 }
 
 type computeService struct {
@@ -56,4 +59,30 @@ func (c *computeService) ZonesGet(project string, zone string) (*compute.Zone, e
 
 func (c *computeService) BasePath() string {
 	return c.service.BasePath
+}
+
+func (c *computeService) TargetPoolsGet(project string, region string, name string) (*compute.TargetPool, error) {
+	return c.service.TargetPools.Get(project, region, name).Do()
+}
+
+func (c *computeService) TargetPoolsAddInstance(project string, region string, name string, instanceLink string) (*compute.Operation, error) {
+	rb := &compute.TargetPoolsAddInstanceRequest{
+		Instances: []*compute.InstanceReference{
+			{
+				Instance: instanceLink,
+			},
+		},
+	}
+	return c.service.TargetPools.AddInstance(project, region, name, rb).Do()
+}
+
+func (c *computeService) TargetPoolsRemoveInstance(project string, region string, name string, instanceLink string) (*compute.Operation, error) {
+	rb := &compute.TargetPoolsRemoveInstanceRequest{
+		Instances: []*compute.InstanceReference{
+			{
+				Instance: instanceLink,
+			},
+		},
+	}
+	return c.service.TargetPools.RemoveInstance(project, region, name, rb).Do()
 }

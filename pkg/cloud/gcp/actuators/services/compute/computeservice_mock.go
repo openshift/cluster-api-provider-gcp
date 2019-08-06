@@ -4,6 +4,11 @@ import (
 	compute "google.golang.org/api/compute/v1"
 )
 
+const (
+	NoMachinesInPool  = "NoMachinesInPool"
+	WithMachineInPool = "WithMachineInPool"
+)
+
 type GCPComputeServiceMock struct {
 	mockInstancesInsert   func(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
 	mockZoneOperationsGet func(project string, zone string, operation string) (*compute.Operation, error)
@@ -56,6 +61,28 @@ func (c *GCPComputeServiceMock) ZonesGet(project string, zone string) (*compute.
 
 func (c *GCPComputeServiceMock) BasePath() string {
 	return "path/"
+}
+
+func (c *GCPComputeServiceMock) TargetPoolsGet(project string, region string, name string) (*compute.TargetPool, error) {
+	if region == NoMachinesInPool {
+		return &compute.TargetPool{}, nil
+	}
+	if region == WithMachineInPool {
+		return &compute.TargetPool{
+			Instances: []string{
+				"https://www.googleapis.com/compute/v1/projects/testProject/zones/zone1/instances/testInstance",
+			},
+		}, nil
+	}
+	return nil, nil
+}
+
+func (c *GCPComputeServiceMock) TargetPoolsAddInstance(project string, region string, name string, instance string) (*compute.Operation, error) {
+	return nil, nil
+}
+
+func (c *GCPComputeServiceMock) TargetPoolsRemoveInstance(project string, region string, name string, instance string) (*compute.Operation, error) {
+	return nil, nil
 }
 
 func NewComputeServiceMock() (*compute.Instance, *GCPComputeServiceMock) {

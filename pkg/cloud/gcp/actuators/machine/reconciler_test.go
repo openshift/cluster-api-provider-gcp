@@ -143,3 +143,113 @@ func TestDelete(t *testing.T) {
 		}
 	}
 }
+
+func TestFmtInstanceSelfLink(t *testing.T) {
+	expected := "https://www.googleapis.com/compute/v1/projects/a/zones/b/instances/c"
+	res := fmtInstanceSelfLink("a", "b", "c")
+	if res != expected {
+		t.Errorf("Unexpected result from fmtInstanceSelfLink")
+	}
+}
+
+type poolFuncTracker struct {
+	called bool
+}
+
+func (p *poolFuncTracker) track(_, _ string) error {
+	p.called = true
+	return nil
+}
+
+func newPoolTracker() *poolFuncTracker {
+	return &poolFuncTracker{
+		called: false,
+	}
+}
+
+func TestProcessTargetPools(t *testing.T) {
+	_, mockComputeService := computeservice.NewComputeServiceMock()
+	projecID := "testProject"
+	instanceName := "testInstance"
+	tpPresent := []string{
+		"pool1",
+	}
+	tpEmpty := []string{}
+	machineScope := machineScope{
+		machine: &machinev1beta1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      instanceName,
+				Namespace: "",
+			},
+		},
+		coreClient: controllerfake.NewFakeClient(),
+		providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
+			Zone: "zone1",
+		},
+		projectID:      projecID,
+		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
+		computeService: mockComputeService,
+	}
+	tCases := []struct {
+		expectedCall bool
+		desired      bool
+		region       string
+		targetPools  []string
+	}{
+		{
+			// Delete when present
+			expectedCall: true,
+			desired:      false,
+			region:       computeservice.WithMachineInPool,
+			targetPools:  tpPresent,
+		},
+		{
+			// Create when absent
+			expectedCall: true,
+			desired:      true,
+			region:       computeservice.NoMachinesInPool,
+			targetPools:  tpPresent,
+		},
+		{
+			// Delete when absent
+			expectedCall: false,
+			desired:      false,
+			region:       computeservice.NoMachinesInPool,
+			targetPools:  tpPresent,
+		},
+		{
+			// Create when present
+			expectedCall: false,
+			desired:      true,
+			region:       computeservice.WithMachineInPool,
+			targetPools:  tpPresent,
+		},
+		{
+			// Return early when TP is empty list
+			expectedCall: false,
+			desired:      true,
+			region:       computeservice.WithMachineInPool,
+			targetPools:  tpEmpty,
+		},
+		{
+			// Return early when TP is nil
+			expectedCall: false,
+			desired:      true,
+			region:       computeservice.WithMachineInPool,
+			targetPools:  nil,
+		},
+	}
+	for i, tc := range tCases {
+		pt := newPoolTracker()
+		machineScope.providerSpec.Region = tc.region
+		machineScope.providerSpec.TargetPools = tc.targetPools
+		rec := newReconciler(&machineScope)
+		err := rec.processTargetPools(tc.desired, pt.track)
+		if err != nil {
+			t.Errorf("unexpected error from ptp")
+		}
+		if pt.called != tc.expectedCall {
+			t.Errorf("tc %v: expected didn't match observed: %v, %v", i, tc.expectedCall, pt.called)
+		}
+	}
+}
