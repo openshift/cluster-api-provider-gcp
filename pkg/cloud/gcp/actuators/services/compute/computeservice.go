@@ -3,6 +3,7 @@ package computeservice
 import (
 	"net/http"
 
+	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
 	"google.golang.org/api/compute/v1"
 )
 
@@ -30,6 +31,7 @@ func NewComputeService(oauthClient *http.Client) (*computeService, error) {
 	if err != nil {
 		return nil, err
 	}
+	service.UserAgent = "gcpprovider.openshift.io/" + version.Version.String()
 	return &computeService{
 		service: service,
 	}, nil
