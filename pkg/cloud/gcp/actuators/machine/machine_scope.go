@@ -11,13 +11,11 @@ import (
 	"google.golang.org/api/compute/v1"
 
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
-	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	apicorev1 "k8s.io/api/core/v1"
 )
 
 // machineScopeParams defines the input parameters used to create a new MachineScope.
 type machineScopeParams struct {
-	machine           *machinev1.Machine
 	credentialsSecret *apicorev1.Secret
 	projectID         string
 }
@@ -26,7 +24,6 @@ type machineScopeParams struct {
 type machineScope struct {
 	projectID      string
 	computeService computeservice.GCPComputeService
-	machine        *machinev1.Machine
 }
 
 // newMachineScope creates a new MachineScope from the supplied parameters.
@@ -62,13 +59,7 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 	return &machineScope{
 		projectID:      projectID,
 		computeService: computeService,
-		machine:        params.machine,
 	}, nil
-}
-
-// Close the MachineScope by persisting the machine spec, machine status after reconciling.
-func (s *machineScope) Close() error {
-	return nil
 }
 
 func getProjectIDFromJSONKey(content []byte) (string, error) {

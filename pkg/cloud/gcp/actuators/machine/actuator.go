@@ -110,7 +110,6 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	scope, err := newMachineScope(machineScopeParams{
-		machine:           machine,
 		credentialsSecret: credentialsSecret,
 		projectID:         providerSpec.ProjectID,
 	})
@@ -174,7 +173,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	machine = modMachine
 
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, createEventAction, "Created Machine %v", machine.Name)
-	return scope.Close()
+	return nil
 }
 
 func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) (bool, error) {
@@ -192,7 +191,6 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	scope, err := newMachineScope(machineScopeParams{
-		machine:           machine,
 		credentialsSecret: credentialsSecret,
 		projectID:         providerSpec.ProjectID,
 	})
@@ -223,7 +221,6 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	scope, err := newMachineScope(machineScopeParams{
-		machine:           machine,
 		credentialsSecret: credentialsSecret,
 		projectID:         providerSpec.ProjectID,
 	})
@@ -272,7 +269,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, updateEventAction, "Updated Machine %v", machine.Name)
-	return scope.Close()
+	return nil
 }
 
 func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
@@ -290,7 +287,6 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	scope, err := newMachineScope(machineScopeParams{
-		machine:           machine,
 		credentialsSecret: credentialsSecret,
 		projectID:         providerSpec.ProjectID,
 	})
