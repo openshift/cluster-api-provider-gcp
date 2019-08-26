@@ -35,26 +35,26 @@ func newReconciler(scope *machineScope) *Reconciler {
 }
 
 // Create creates machine if and only if machine exists, handled by cluster-api
-func (r *Reconciler) create() (*compute.Instance, error) {
-	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
+func (r *Reconciler) create(machine *machinev1.Machine, providerSpec *v1beta1.GCPMachineProviderSpec) (*compute.Instance, error) {
+	if err := validateMachine(*machine, *providerSpec); err != nil {
 		return nil, fmt.Errorf("failed validating machine provider spec: %v", err)
 	}
 
-	zone := r.providerSpec.Zone
+	zone := providerSpec.Zone
 	instance := &compute.Instance{
-		CanIpForward:       r.providerSpec.CanIPForward,
-		DeletionProtection: r.providerSpec.DeletionProtection,
-		Labels:             r.providerSpec.Labels,
-		MachineType:        fmt.Sprintf("zones/%s/machineTypes/%s", zone, r.providerSpec.MachineType),
-		Name:               r.machine.Name,
+		CanIpForward:       providerSpec.CanIPForward,
+		DeletionProtection: providerSpec.DeletionProtection,
+		Labels:             providerSpec.Labels,
+		MachineType:        fmt.Sprintf("zones/%s/machineTypes/%s", zone, providerSpec.MachineType),
+		Name:               machine.Name,
 		Tags: &compute.Tags{
-			Items: r.providerSpec.Tags,
+			Items: providerSpec.Tags,
 		},
 	}
 
 	// disks
 	var disks = []*compute.AttachedDisk{}
-	for _, disk := range r.providerSpec.Disks {
+	for _, disk := range providerSpec.Disks {
 		disks = append(disks, &compute.AttachedDisk{
 			AutoDelete: disk.AutoDelete,
 			Boot:       disk.Boot,
@@ -71,7 +71,7 @@ func (r *Reconciler) create() (*compute.Instance, error) {
 	// networking
 	var networkInterfaces = []*compute.NetworkInterface{}
 
-	for _, nic := range r.providerSpec.NetworkInterfaces {
+	for _, nic := range providerSpec.NetworkInterfaces {
 		accessConfigs := []*compute.AccessConfig{}
 		if nic.PublicIP {
 			accessConfigs = append(accessConfigs, &compute.AccessConfig{})
@@ -83,7 +83,7 @@ func (r *Reconciler) create() (*compute.Instance, error) {
 			computeNIC.Network = fmt.Sprintf("projects/%s/global/networks/%s", r.projectID, nic.Network)
 		}
 		if len(nic.Subnetwork) != 0 {
-			computeNIC.Subnetwork = fmt.Sprintf("regions/%s/subnetworks/%s", r.providerSpec.Region, nic.Subnetwork)
+			computeNIC.Subnetwork = fmt.Sprintf("regions/%s/subnetworks/%s", providerSpec.Region, nic.Subnetwork)
 		}
 		networkInterfaces = append(networkInterfaces, computeNIC)
 	}
@@ -91,7 +91,7 @@ func (r *Reconciler) create() (*compute.Instance, error) {
 
 	// serviceAccounts
 	var serviceAccounts = []*compute.ServiceAccount{}
-	for _, sa := range r.providerSpec.ServiceAccounts {
+	for _, sa := range providerSpec.ServiceAccounts {
 		serviceAccounts = append(serviceAccounts, &compute.ServiceAccount{
 			Email:  sa.Email,
 			Scopes: sa.Scopes,
@@ -100,7 +100,7 @@ func (r *Reconciler) create() (*compute.Instance, error) {
 	instance.ServiceAccounts = serviceAccounts
 
 	// userData
-	userData, err := r.getCustomUserData()
+	userData, err := r.getCustomUserData(machine, providerSpec)
 	if err != nil {
 		return nil, fmt.Errorf("error getting custom user data: %v", err)
 	}
@@ -110,7 +110,7 @@ func (r *Reconciler) create() (*compute.Instance, error) {
 			Value: &userData,
 		},
 	}
-	for _, metadata := range r.providerSpec.Metadata {
+	for _, metadata := range providerSpec.Metadata {
 		metadataItems = append(metadataItems, &compute.MetadataItems{
 			Key:   metadata.Key,
 			Value: metadata.Value,
@@ -125,7 +125,7 @@ func (r *Reconciler) create() (*compute.Instance, error) {
 		return nil, fmt.Errorf("failed to create instance via compute service: %v", err)
 	}
 
-	freshInstance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)
+	freshInstance, err := r.computeService.InstancesGet(r.projectID, providerSpec.Zone, machine.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance via compute service: %v", err)
 	}
@@ -133,13 +133,13 @@ func (r *Reconciler) create() (*compute.Instance, error) {
 	return freshInstance, nil
 }
 
-func (r *Reconciler) update() (*compute.Instance, error) {
+func (r *Reconciler) update(machine *machinev1.Machine, providerSpec *v1beta1.GCPMachineProviderSpec) (*compute.Instance, error) {
 	// Add target pools, if necessary
-	if err := r.processTargetPools(true, r.addInstanceToTargetPool); err != nil {
+	if err := r.processTargetPools(true, providerSpec.TargetPools, r.addInstanceToTargetPool, providerSpec.Region, providerSpec.Zone, machine.Name); err != nil {
 		return nil, err
 	}
 
-	freshInstance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)
+	freshInstance, err := r.computeService.InstancesGet(r.projectID, providerSpec.Zone, machine.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance via compute service: %v", err)
 	}
@@ -147,18 +147,18 @@ func (r *Reconciler) update() (*compute.Instance, error) {
 	return freshInstance, nil
 }
 
-func (r *Reconciler) getCustomUserData() (string, error) {
-	if r.providerSpec.UserDataSecret == nil {
+func (r *Reconciler) getCustomUserData(machine *machinev1.Machine, providerSpec *v1beta1.GCPMachineProviderSpec) (string, error) {
+	if providerSpec.UserDataSecret == nil {
 		return "", nil
 	}
 	var userDataSecret apicorev1.Secret
 
-	if err := r.coreClient.Get(context.Background(), client.ObjectKey{Namespace: r.machine.GetNamespace(), Name: r.providerSpec.UserDataSecret.Name}, &userDataSecret); err != nil {
-		return "", fmt.Errorf("error getting user data secret %q in namespace %q: %v", r.providerSpec.UserDataSecret.Name, r.machine.GetNamespace(), err)
+	if err := r.coreClient.Get(context.Background(), client.ObjectKey{Namespace: machine.GetNamespace(), Name: providerSpec.UserDataSecret.Name}, &userDataSecret); err != nil {
+		return "", fmt.Errorf("error getting user data secret %q in namespace %q: %v", providerSpec.UserDataSecret.Name, machine.GetNamespace(), err)
 	}
 	data, exists := userDataSecret.Data[userDataSecretKey]
 	if !exists {
-		return "", fmt.Errorf("secret %v/%v does not have %q field set. Thus, no user data applied when creating an instance", r.machine.GetNamespace(), r.providerSpec.UserDataSecret.Name, userDataSecretKey)
+		return "", fmt.Errorf("secret %v/%v does not have %q field set. Thus, no user data applied when creating an instance", machine.GetNamespace(), providerSpec.UserDataSecret.Name, userDataSecretKey)
 	}
 	return string(data), nil
 }
@@ -178,57 +178,57 @@ func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineP
 }
 
 // Returns true if machine exists.
-func (r *Reconciler) exists() (bool, error) {
-	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
+func (r *Reconciler) exists(machine *machinev1.Machine, providerSpec *v1beta1.GCPMachineProviderSpec) (bool, error) {
+	if err := validateMachine(*machine, *providerSpec); err != nil {
 		return false, fmt.Errorf("failed validating machine provider spec: %v", err)
 	}
-	zone := r.providerSpec.Zone
+	zone := providerSpec.Zone
 	// Need to verify that our project/zone exists before checking machine, as
 	// invalid project/zone produces same 404 error as no machine.
-	if err := r.validateZone(); err != nil {
+	if err := r.validateZone(providerSpec.Zone); err != nil {
 		return false, fmt.Errorf("unable to verify project/zone exists: %v/%v; err: %v", r.projectID, zone, err)
 	}
-	instance, err := r.computeService.InstancesGet(r.projectID, zone, r.machine.Name)
+	instance, err := r.computeService.InstancesGet(r.projectID, zone, machine.Name)
 	if err == nil {
 		switch instance.Status {
 		case "TERMINATED":
-			klog.Infof("Machine %q is considered as non existent as its status is %q", r.machine.Name, instance.Status)
+			klog.Infof("Machine %q is considered as non existent as its status is %q", machine.Name, instance.Status)
 			return false, nil
 		default:
-			klog.Infof("Machine %q already exists", r.machine.Name)
+			klog.Infof("Machine %q already exists", machine.Name)
 			return true, nil
 		}
 	}
 	if isNotFoundError(err) {
-		klog.Infof("%s: Machine does not exist", r.machine.Name)
+		klog.Infof("%s: Machine does not exist", machine.Name)
 		return false, nil
 	}
 	return false, fmt.Errorf("error getting running instances: %v", err)
 }
 
 // Returns true if machine exists.
-func (r *Reconciler) delete() error {
+func (r *Reconciler) delete(machine *machinev1.Machine, providerSpec *v1beta1.GCPMachineProviderSpec) error {
 	// Remove instance from target pools, if necessary
-	if err := r.processTargetPools(false, r.deleteInstanceFromTargetPool); err != nil {
+	if err := r.processTargetPools(false, providerSpec.TargetPools, r.deleteInstanceFromTargetPool, providerSpec.Region, providerSpec.Zone, machine.Name); err != nil {
 		return err
 	}
-	exists, err := r.exists()
+	exists, err := r.exists(machine, providerSpec)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		klog.Infof("%s: Machine not found during delete, skipping", r.machine.Name)
+		klog.Infof("%s: Machine not found during delete, skipping", machine.Name)
 		return nil
 	}
-	if _, err = r.computeService.InstancesDelete(string(r.machine.UID), r.projectID, r.providerSpec.Zone, r.machine.Name); err != nil {
+	if _, err = r.computeService.InstancesDelete(string(machine.UID), r.projectID, providerSpec.Zone, machine.Name); err != nil {
 		return fmt.Errorf("failed to delete instance via compute service: %v", err)
 	}
-	klog.Infof("%s: machine status is exists, requeuing...", r.machine.Name)
+	klog.Infof("%s: machine status is exists, requeuing...", machine.Name)
 	return &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
 }
 
-func (r *Reconciler) validateZone() error {
-	_, err := r.computeService.ZonesGet(r.projectID, r.providerSpec.Zone)
+func (r *Reconciler) validateZone(zone string) error {
+	_, err := r.computeService.ZonesGet(r.projectID, zone)
 	return err
 }
 
@@ -244,9 +244,9 @@ func fmtInstanceSelfLink(project, zone, name string) string {
 	return fmt.Sprintf(instanceLinkFmt, project, zone, name)
 }
 
-func (r *Reconciler) instanceExistsInPool(instanceLink string, pool string) (bool, error) {
+func (r *Reconciler) instanceExistsInPool(instanceLink string, pool, region string) (bool, error) {
 	// Get target pool
-	tp, err := r.computeService.TargetPoolsGet(r.projectID, r.providerSpec.Region, pool)
+	tp, err := r.computeService.TargetPoolsGet(r.projectID, region, pool)
 	if err != nil {
 		return false, fmt.Errorf("unable to get targetpool: %v", err)
 	}
@@ -259,19 +259,19 @@ func (r *Reconciler) instanceExistsInPool(instanceLink string, pool string) (boo
 	return false, nil
 }
 
-type poolProcessor func(instanceLink, pool string) error
+type poolProcessor func(instanceLink, pool, zone, instanceName string) error
 
-func (r *Reconciler) processTargetPools(desired bool, poolFunc poolProcessor) error {
-	instanceSelfLink := fmtInstanceSelfLink(r.projectID, r.providerSpec.Zone, r.machine.Name)
+func (r *Reconciler) processTargetPools(desired bool, targetPools []string, poolFunc poolProcessor, region, zone, instanceName string) error {
+	instanceSelfLink := fmtInstanceSelfLink(r.projectID, zone, instanceName)
 	// TargetPools may be empty/nil, and that's okay.
-	for _, pool := range r.providerSpec.TargetPools {
-		present, err := r.instanceExistsInPool(instanceSelfLink, pool)
+	for _, pool := range targetPools {
+		present, err := r.instanceExistsInPool(instanceSelfLink, pool, region)
 		if err != nil {
 			return err
 		}
 		if present != desired {
-			klog.Infof("%v: reconciling instance for targetpool with cloud provider; desired state: %v", r.machine.Name, desired)
-			err := poolFunc(instanceSelfLink, pool)
+			klog.Infof("%v: reconciling instance for targetpool with cloud provider; desired state: %v", instanceName, desired)
+			err := poolFunc(instanceSelfLink, pool, region, instanceName)
 			if err != nil {
 				return err
 			}
@@ -280,21 +280,21 @@ func (r *Reconciler) processTargetPools(desired bool, poolFunc poolProcessor) er
 	return nil
 }
 
-func (r *Reconciler) addInstanceToTargetPool(instanceLink string, pool string) error {
-	_, err := r.computeService.TargetPoolsAddInstance(r.projectID, r.providerSpec.Region, pool, instanceLink)
+func (r *Reconciler) addInstanceToTargetPool(instanceLink string, pool string, region, instanceName string) error {
+	_, err := r.computeService.TargetPoolsAddInstance(r.projectID, region, pool, instanceLink)
 	// Probably safe to disregard the returned operation; it either worked or it didn't.
 	// Even if the instance doesn't exist, it will return without error and the non-existent
 	// instance will be associated.
 	if err != nil {
-		return fmt.Errorf("failed to add instance %v to target pool %v: %v", r.machine.Name, pool, err)
+		return fmt.Errorf("failed to add instance %v to target pool %v: %v", instanceName, pool, err)
 	}
 	return nil
 }
 
-func (r *Reconciler) deleteInstanceFromTargetPool(instanceLink string, pool string) error {
-	_, err := r.computeService.TargetPoolsRemoveInstance(r.projectID, r.providerSpec.Region, pool, instanceLink)
+func (r *Reconciler) deleteInstanceFromTargetPool(instanceLink string, pool string, region, instanceName string) error {
+	_, err := r.computeService.TargetPoolsRemoveInstance(r.projectID, region, pool, instanceLink)
 	if err != nil {
-		return fmt.Errorf("failed to remove instance %v from target pool %v: %v", r.machine.Name, pool, err)
+		return fmt.Errorf("failed to remove instance %v from target pool %v: %v", instanceName, pool, err)
 	}
 	return nil
 }

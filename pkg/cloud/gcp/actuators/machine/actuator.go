@@ -81,8 +81,14 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return a.handleMachineError(machine, fmt.Errorf(fmtErr), createEventAction)
 	}
 
+	providerSpec, err := providerConfigFromMachine(machine, a.codec)
+	if err != nil {
+		a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, createEventAction, "Invalid machine %q configuration: %v", machine.Name, err)
+		return fmt.Errorf("unable to decode machine provider config: %v", err)
+	}
+
 	reconciler := newReconciler(scope)
-	instance, err := reconciler.create()
+	instance, err := reconciler.create(machine, providerSpec)
 
 	if instance != nil {
 		modMachine, err := a.setMachineCloudProviderSpecifics(machine, instance)
@@ -149,12 +155,18 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 	if err != nil {
 		return false, fmt.Errorf(scopeFailFmt, machine.Name, err)
 	}
+
+	providerSpec, err := providerConfigFromMachine(machine, a.codec)
+	if err != nil {
+		return false, fmt.Errorf("unable to decode machine provider config: %v", err)
+	}
+
 	// The core machine controller calls exists() + create()/update() in the same reconciling operation.
 	// If exists() would store machineSpec/status object then create()/update() would still receive the local version.
 	// When create()/update() try to store machineSpec/status this might result in
 	// "Operation cannot be fulfilled; the object has been modified; please apply your changes to the latest version and try again."
 	// Therefore we don't close the scope here and we only store spec/status atomically either in create()/update()"
-	return newReconciler(scope).exists()
+	return newReconciler(scope).exists(machine, providerSpec)
 }
 
 func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
@@ -169,8 +181,14 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return a.handleMachineError(machine, fmt.Errorf(fmtErr), updateEventAction)
 	}
 
+	providerSpec, err := providerConfigFromMachine(machine, a.codec)
+	if err != nil {
+		a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, updateEventAction, "Invalid machine %q configuration: %v", machine.Name, err)
+		return fmt.Errorf("unable to decode machine provider config: %v", err)
+	}
+
 	reconciler := newReconciler(scope)
-	instance, err := reconciler.update()
+	instance, err := reconciler.update(machine, providerSpec)
 	if instance != nil {
 		modMachine, err := a.setMachineCloudProviderSpecifics(machine, instance)
 		if err != nil {
@@ -231,7 +249,13 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 		machine = modMachine
 	}
 
-	if err := newReconciler(scope).delete(); err != nil {
+	providerSpec, err := providerConfigFromMachine(machine, a.codec)
+	if err != nil {
+		a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, deleteEventAction, "Invalid machine %q configuration: %v", machine.Name, err)
+		return fmt.Errorf("unable to decode machine provider config: %v", err)
+	}
+
+	if err := newReconciler(scope).delete(machine, providerSpec); err != nil {
 		return a.handleMachineError(machine, err, deleteEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, deleteEventAction, "Deleted machine %v", machine.Name)
