@@ -7,11 +7,16 @@ import (
 	"context"
 	"fmt"
 
+	compute "google.golang.org/api/compute/v1"
+
 	providerconfig "github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	mapiclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
+	machinecontroller "github.com/openshift/cluster-api/pkg/controller/machine"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -132,4 +137,209 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, deleteEventAction, "Deleted machine %v", machine.Name)
 	return nil
+}
+
+func (a *Actuator) updateMachineProviderConditions(machine *machinev1.Machine, conditionType providerconfig.GCPMachineProviderConditionType, reason string, msg string, status corev1.ConditionStatus) (*machinev1.Machine, error) {
+	klog.Infof("%s: updating machine conditions", machine.Name)
+
+	gcpStatus := &providerconfig.GCPMachineProviderStatus{}
+	if err := a.codec.DecodeProviderStatus(machine.Status.ProviderStatus, gcpStatus); err != nil {
+		klog.Errorf("%s: error decoding machine provider status: %v", machine.Name, err)
+		return nil, err
+	}
+
+	gcpStatus.Conditions = reconcileProviderConditions(gcpStatus.Conditions, providerconfig.GCPMachineProviderCondition{
+		Type:    conditionType,
+		Status:  status,
+		Reason:  reason,
+		Message: msg,
+	})
+
+	modMachine, err := a.updateMachineStatus(machine, gcpStatus, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return modMachine, nil
+}
+
+func (a *Actuator) updateMachineStatus(machine *machinev1.Machine, gcpStatus *providerconfig.GCPMachineProviderStatus, networkAddresses []corev1.NodeAddress) (*machinev1.Machine, error) {
+	gcpStatusRaw, err := a.codec.EncodeProviderStatus(gcpStatus)
+	if err != nil {
+		klog.Errorf("%s: error encoding AWS provider status: %v", machine.Name, err)
+		return nil, err
+	}
+
+	machineCopy := machine.DeepCopy()
+	machineCopy.Status.ProviderStatus = gcpStatusRaw
+	if networkAddresses != nil {
+		machineCopy.Status.Addresses = networkAddresses
+	}
+
+	oldGCPStatus := &providerconfig.GCPMachineProviderStatus{}
+	if err := a.codec.DecodeProviderStatus(machine.Status.ProviderStatus, oldGCPStatus); err != nil {
+		klog.Errorf("%s: error updating machine status: %v", machine.Name, err)
+		return nil, err
+	}
+
+	if !equality.Semantic.DeepEqual(gcpStatus, oldGCPStatus) || !equality.Semantic.DeepEqual(machine.Status.Addresses, machineCopy.Status.Addresses) {
+		klog.Infof("%s: machine status has changed, updating", machine.Name)
+		time := metav1.Now()
+		machineCopy.Status.LastUpdated = &time
+
+		if err := a.coreClient.Status().Update(context.Background(), machineCopy); err != nil {
+			klog.Errorf("%s: error updating machine status: %v", machine.Name, err)
+			return nil, err
+		}
+		return machineCopy, nil
+	}
+
+	klog.Infof("%s: status unchanged", machine.Name)
+	return machine, nil
+}
+
+// providerConfigFromMachine gets the machine provider config MachineSetSpec from the
+// specified cluster-api MachineSpec.
+func providerConfigFromMachine(machine *machinev1.Machine, codec *providerconfig.GCPProviderConfigCodec) (*providerconfig.GCPMachineProviderSpec, error) {
+	if machine.Spec.ProviderSpec.Value == nil {
+		return nil, fmt.Errorf("unable to find machine provider config: Spec.ProviderSpec.Value is not set")
+	}
+
+	var config providerconfig.GCPMachineProviderSpec
+	if err := codec.DecodeProviderSpec(&machine.Spec.ProviderSpec, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
+
+// updateStatus calculates the new machine status, checks if anything has changed, and updates if so.
+func (a *Actuator) updateStatus(ctx context.Context, machine *machinev1.Machine, reconciler *Reconciler, instance *compute.Instance) (*machinev1.Machine, error) {
+	klog.Infof("%s: Updating status", machine.Name)
+
+	gcpStatus := &providerconfig.GCPMachineProviderStatus{}
+	if err := a.codec.DecodeProviderStatus(machine.Status.ProviderStatus, gcpStatus); err != nil {
+		klog.Errorf("%s: Error decoding machine provider status: %v", machine.Name, err)
+		return nil, err
+	}
+
+	providerSpec, err := providerConfigFromMachine(machine, a.codec)
+	if err != nil {
+		return nil, err
+	}
+
+	networkAddresses, err := reconciler.getNetworkAddresses(ctx, instance, machine, providerSpec.Zone)
+	if err != nil {
+		return nil, err
+	}
+
+	gcpStatus.InstanceState = &instance.Status
+	gcpStatus.InstanceID = &instance.Name
+
+	klog.Infof("%s: finished calculating GCP status", machine.Name)
+
+	modMachine, err := a.updateMachineStatus(machine, gcpStatus, networkAddresses)
+	if err != nil {
+		return nil, err
+	}
+
+	return modMachine, nil
+}
+
+func (a *Actuator) setDeletingState(ctx context.Context, machine *machinev1.Machine) (*machinev1.Machine, error) {
+	// Getting a vm object does not work here so let's assume
+	// an instance is really being deleted
+	gcpStatus := &providerconfig.GCPMachineProviderStatus{}
+	if err := a.codec.DecodeProviderStatus(machine.Status.ProviderStatus, gcpStatus); err != nil {
+		klog.Errorf("%s: Error decoding machine provider status: %v", machine.Name, err)
+		return nil, err
+	}
+
+	deleting := "DELETING"
+	gcpStatus.InstanceState = &deleting
+
+	modMachine, err := a.updateMachineStatus(machine, gcpStatus, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%s: error updating machine status: %v", modMachine.Name, err)
+	}
+
+	modMachine.Annotations[machinecontroller.MachineInstanceStateAnnotationName] = deleting
+
+	if err := a.coreClient.Update(ctx, modMachine); err != nil {
+		return nil, fmt.Errorf("%s: error updating machine spec: %v", modMachine.Name, err)
+	}
+
+	return modMachine, nil
+}
+
+// updateProviderID adds providerID in the machine spec
+func (a *Actuator) updateProviderID(machine *machinev1.Machine) (*machinev1.Machine, error) {
+	providerSpec, err := providerConfigFromMachine(machine, a.codec)
+	if err != nil {
+		return nil, err
+	}
+
+	projectID, err := a.getProjectID(machine, providerSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	// https://github.com/kubernetes/kubernetes/blob/8765fa2e48974e005ad16e65cb5c3acf5acff17b/staging/src/k8s.io/legacy-cloud-providers/gce/gce_util.go#L204
+	providerID := fmt.Sprintf("gce://%s/%s/%s", projectID, providerSpec.Zone, machine.Name)
+	klog.Infof("%s: setting ProviderID %s", machine.Name, providerID)
+
+	machineCopy := machine.DeepCopy()
+	machineCopy.Spec.ProviderID = &providerID
+
+	if err := a.coreClient.Update(context.Background(), machineCopy); err != nil {
+		return nil, fmt.Errorf("%s: error updating machine spec ProviderID: %v", machineCopy.Name, err)
+	}
+
+	return machineCopy, nil
+}
+
+func (a *Actuator) getProjectID(machine *machinev1.Machine, providerSpec *providerconfig.GCPMachineProviderSpec) (string, error) {
+	serviceAccountJSON, err := getCredentialsSecret(a.coreClient, *machine, *providerSpec)
+	if err != nil {
+		return "", fmt.Errorf("failed to get serviceAccountJSON: %v", err)
+	}
+
+	projectID := providerSpec.ProjectID
+	if len(projectID) == 0 {
+		projectID, err = getProjectIDFromJSONKey([]byte(serviceAccountJSON))
+		if err != nil {
+			return "", fmt.Errorf("error getting project from JSON key: %v", err)
+		}
+	}
+
+	return projectID, nil
+}
+
+func (a *Actuator) setMachineCloudProviderSpecifics(machine *machinev1.Machine, instance *compute.Instance) (*machinev1.Machine, error) {
+	machineCopy := machine.DeepCopy()
+
+	if machineCopy.Labels == nil {
+		machineCopy.Labels = make(map[string]string)
+	}
+
+	if machineCopy.Annotations == nil {
+		machineCopy.Annotations = make(map[string]string)
+	}
+
+	providerSpec, err := providerConfigFromMachine(machine, a.codec)
+	if err != nil {
+		return nil, err
+	}
+
+	machineCopy.Annotations[machinecontroller.MachineInstanceStateAnnotationName] = instance.Status
+	// TODO(jchaloup): detect all three from instance rather than
+	// always assuming it's the same as what is specified in the provider spec
+	machineCopy.Labels[machinecontroller.MachineInstanceTypeLabelName] = providerSpec.MachineType
+	machineCopy.Labels[machinecontroller.MachineRegionLabelName] = providerSpec.Region
+	machineCopy.Labels[machinecontroller.MachineAZLabelName] = providerSpec.Zone
+
+	if err := a.coreClient.Update(context.Background(), machineCopy); err != nil {
+		return nil, fmt.Errorf("%s: error updating machine cloud provider specifics: %v", machineCopy.Name, err)
+	}
+
+	return machineCopy, nil
 }

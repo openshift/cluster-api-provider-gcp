@@ -373,3 +373,31 @@ func (r *Reconciler) deleteInstanceFromTargetPool(instanceLink string, pool stri
 	}
 	return nil
 }
+
+func (r *Reconciler) getNetworkAddresses(ctx context.Context, instance *compute.Instance, machine *machinev1.Machine, zone string) ([]corev1.NodeAddress, error) {
+	if len(instance.NetworkInterfaces) < 1 {
+		return nil, fmt.Errorf("could not find network interfaces for instance %q", instance.Name)
+	}
+	networkInterface := instance.NetworkInterfaces[0]
+
+	nodeAddresses := []corev1.NodeAddress{{Type: corev1.NodeInternalIP, Address: networkInterface.NetworkIP}}
+	for _, config := range networkInterface.AccessConfigs {
+		nodeAddresses = append(nodeAddresses, corev1.NodeAddress{Type: corev1.NodeExternalIP, Address: config.NatIP})
+	}
+
+	// Since we don't know when the project was created, we must account for
+	// both types of internal-dns:
+	// https://cloud.google.com/compute/docs/internal-dns#instance-fully-qualified-domain-names
+	// [INSTANCE_NAME].[ZONE].c.[PROJECT_ID].internal (newer)
+	nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
+		Type:    corev1.NodeInternalDNS,
+		Address: fmt.Sprintf("%s.%s.c.%s.internal", machine.Name, zone, r.projectID),
+	})
+	// [INSTANCE_NAME].c.[PROJECT_ID].internal
+	nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
+		Type:    corev1.NodeInternalDNS,
+		Address: fmt.Sprintf("%s.c.%s.internal", machine.Name, r.projectID),
+	})
+
+	return nodeAddresses, nil
+}
