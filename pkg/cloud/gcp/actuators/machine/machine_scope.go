@@ -17,7 +17,6 @@ import (
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	machineclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
 	apicorev1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -99,39 +98,7 @@ func (s *machineScope) Close() error {
 		return errors.New("No machineClient is set for this scope")
 	}
 
-	latestMachine, err := s.storeMachineSpec(s.machine)
-	if err != nil {
-		return fmt.Errorf("[machinescope] failed to update machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
-	}
-
-	if _, err = s.storeMachineStatus(latestMachine); err != nil {
-		return fmt.Errorf("[machinescope] failed to store provider status for machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
-	}
-
 	return nil
-}
-
-func (s *machineScope) storeMachineSpec(machine *machinev1.Machine) (*machinev1.Machine, error) {
-	ext, err := v1beta1.RawExtensionFromProviderSpec(s.providerSpec)
-	if err != nil {
-		return nil, err
-	}
-
-	klog.V(4).Infof("Storing machine spec for %q, resourceVersion: %v, generation: %v", s.machine.Name, s.machine.ResourceVersion, s.machine.Generation)
-	machine.Spec.ProviderSpec.Value = ext
-	return s.machineClient.Update(machine)
-}
-
-func (s *machineScope) storeMachineStatus(machine *machinev1.Machine) (*machinev1.Machine, error) {
-	ext, err := v1beta1.RawExtensionFromProviderStatus(s.providerStatus)
-	if err != nil {
-		return nil, err
-	}
-
-	klog.V(4).Infof("Storing machine status for %q, resourceVersion: %v, generation: %v", s.machine.Name, s.machine.ResourceVersion, s.machine.Generation)
-	s.machine.Status.DeepCopyInto(&machine.Status)
-	machine.Status.ProviderStatus = ext
-	return s.machineClient.UpdateStatus(machine)
 }
 
 // This expects the https://github.com/openshift/cloud-credential-operator to make a secret

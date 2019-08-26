@@ -6,6 +6,7 @@ package machine
 import (
 	"context"
 	"fmt"
+	"time"
 
 	compute "google.golang.org/api/compute/v1"
 
@@ -13,6 +14,7 @@ import (
 	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	mapiclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
+	clustererror "github.com/openshift/cluster-api/pkg/controller/error"
 	machinecontroller "github.com/openshift/cluster-api/pkg/controller/machine"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -78,9 +80,61 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
 		return a.handleMachineError(machine, fmt.Errorf(fmtErr), createEventAction)
 	}
-	if err := newReconciler(scope).create(); err != nil {
+
+	reconciler := newReconciler(scope)
+	instance, err := reconciler.create()
+
+	if instance != nil {
+		modMachine, err := a.setMachineCloudProviderSpecifics(machine, instance)
+		if err != nil {
+			klog.Errorf("%s: error updating machine cloud provider specifics: %v", machine.Name, err)
+		} else {
+			machine = modMachine
+		}
+
+		modeMachine, err := a.updateStatus(ctx, machine, reconciler, instance)
+		if err != nil {
+			klog.Errorf("%s: error updating machine status: %v", machine.Name, err)
+		} else {
+			machine = modeMachine
+		}
+
+		modeMachine, err = a.updateProviderID(machine)
+		if err != nil {
+			klog.Errorf("%s: error updating machine provider ID: %v", machine.Name, err)
+		} else {
+			machine = modeMachine
+		}
+
+		if instance.Status != "RUNNING" {
+			errMsg := fmt.Errorf("%s: machine status is %q, requeuing...", machine.Name, instance.Status)
+			klog.Info(errMsg)
+
+			_, updateConditionError := a.updateMachineProviderConditions(machine, providerconfig.MachineCreated, machineCreationFailedReason, errMsg.Error(), corev1.ConditionFalse)
+			if updateConditionError != nil {
+				klog.Errorf("%s: error updating machine conditions: %v", machine.Name, updateConditionError)
+			}
+
+			return &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
+		}
+	}
+
+	if err != nil {
+		modMachine, updateConditionError := a.updateMachineProviderConditions(machine, providerconfig.MachineCreated, machineCreationFailedReason, err.Error(), corev1.ConditionFalse)
+		if updateConditionError != nil {
+			klog.Errorf("%s: error updating machine conditions: %v", machine.Name, updateConditionError)
+		} else {
+			machine = modMachine
+		}
 		return a.handleMachineError(machine, err, createEventAction)
 	}
+
+	modMachine, updateConditionError := a.updateMachineProviderConditions(machine, providerconfig.MachineCreated, machineCreationSucceedReason, machineCreationSucceedMessage, corev1.ConditionTrue)
+	if updateConditionError != nil {
+		return a.handleMachineError(machine, updateConditionError, createEventAction)
+	}
+	machine = modMachine
+
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, createEventAction, "Created Machine %v", machine.Name)
 	return scope.Close()
 }
@@ -114,9 +168,46 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
 		return a.handleMachineError(machine, fmt.Errorf(fmtErr), updateEventAction)
 	}
-	if err := newReconciler(scope).update(); err != nil {
+
+	reconciler := newReconciler(scope)
+	instance, err := reconciler.update()
+	if instance != nil {
+		modMachine, err := a.setMachineCloudProviderSpecifics(machine, instance)
+		if err != nil {
+			klog.Errorf("%s: error updating machine cloud provider specifics: %v", machine.Name, err)
+		} else {
+			machine = modMachine
+		}
+
+		modeMachine, err := a.updateStatus(ctx, machine, reconciler, instance)
+		if err != nil {
+			klog.Errorf("%s: error updating machine status: %v", machine.Name, err)
+		} else {
+			machine = modeMachine
+		}
+
+		modeMachine, err = a.updateProviderID(machine)
+		if err != nil {
+			klog.Errorf("%s: error updating machine provider ID: %v", machine.Name, err)
+		} else {
+			machine = modeMachine
+		}
+
+		// Create can fail before machine created condition is set. Meantime,
+		// instance in GCE can be already running so the condition will never
+		// get set to true. Thus, when we get to Update op, we already know
+		// the instance was succesfully created.
+		modMachine, updateConditionError := a.updateMachineProviderConditions(machine, providerconfig.MachineCreated, machineCreationSucceedReason, machineCreationSucceedMessage, corev1.ConditionTrue)
+		if updateConditionError != nil {
+			return a.handleMachineError(machine, updateConditionError, createEventAction)
+		}
+		machine = modMachine
+	}
+
+	if err != nil {
 		return a.handleMachineError(machine, err, updateEventAction)
 	}
+
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, updateEventAction, "Updated Machine %v", machine.Name)
 	return scope.Close()
 }
@@ -132,6 +223,14 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
 		return a.handleMachineError(machine, fmt.Errorf(fmtErr), deleteEventAction)
 	}
+
+	modMachine, err := a.setDeletingState(ctx, machine)
+	if err != nil {
+		klog.Errorf("unable to set machine deleting state: %v", err)
+	} else {
+		machine = modMachine
+	}
+
 	if err := newReconciler(scope).delete(); err != nil {
 		return a.handleMachineError(machine, err, deleteEventAction)
 	}
