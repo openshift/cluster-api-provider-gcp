@@ -37,7 +37,6 @@ type machineScope struct {
 	machineClient  machineclient.MachineInterface
 	coreClient     controllerclient.Client
 	projectID      string
-	providerID     string
 	computeService computeservice.GCPComputeService
 	machine        *machinev1.Machine
 	providerSpec   *v1beta1.GCPMachineProviderSpec
@@ -80,11 +79,9 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		return nil, fmt.Errorf("error creating compute service: %v", err)
 	}
 	return &machineScope{
-		machineClient: params.machineClient.Machines(params.machine.Namespace),
-		coreClient:    params.coreClient,
-		projectID:     projectID,
-		// https://github.com/kubernetes/kubernetes/blob/8765fa2e48974e005ad16e65cb5c3acf5acff17b/staging/src/k8s.io/legacy-cloud-providers/gce/gce_util.go#L204
-		providerID:     fmt.Sprintf("gce://%s/%s/%s", projectID, providerSpec.Zone, params.machine.Name),
+		machineClient:  params.machineClient.Machines(params.machine.Namespace),
+		coreClient:     params.coreClient,
+		projectID:      projectID,
 		computeService: computeService,
 		machine:        params.machine,
 		providerSpec:   providerSpec,
