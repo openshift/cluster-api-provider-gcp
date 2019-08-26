@@ -34,6 +34,10 @@ vet: ## Apply go vet to all go files
 unit: # Run unit test
 	$(DOCKER_CMD) go test -race -cover ./cmd/... ./pkg/...
 
+.PHONY: sec
+sec: # Run security static analysis
+	hack/gosec.sh ./...
+
 .PHONY: build
 build: ## build binaries
 	$(DOCKER_CMD) go build $(GOGCFLAGS) -o "bin/machine-controller-manager" \
