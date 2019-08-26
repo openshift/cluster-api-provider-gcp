@@ -1,122 +1,68 @@
 package machine
 
 import (
-	"fmt"
 	"testing"
 
 	gcpv1beta1 "github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1beta1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	controllerError "github.com/openshift/cluster-api/pkg/controller/error"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	controllerfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestCreate(t *testing.T) {
-	_, mockComputeService := computeservice.NewComputeServiceMock()
-	machineScope := machineScope{
-		machine: &machinev1beta1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "",
-				Namespace: "",
-			},
+func testMachine() *machinev1beta1.Machine {
+	return &machinev1beta1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "machine",
+			Namespace: "test",
 		},
-		coreClient:     controllerfake.NewFakeClient(),
-		providerSpec:   &gcpv1beta1.GCPMachineProviderSpec{},
-		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
-		computeService: mockComputeService,
-	}
-	reconciler := newReconciler(&machineScope)
-	if err := reconciler.create(); err != nil {
-		t.Errorf("reconciler was not expected to return error: %v", err)
-	}
-	if reconciler.providerStatus.Conditions[0].Type != gcpv1beta1.MachineCreated {
-		t.Errorf("Expected: %s, got %s", gcpv1beta1.MachineCreated, reconciler.providerStatus.Conditions[0].Type)
-	}
-	if reconciler.providerStatus.Conditions[0].Status != corev1.ConditionTrue {
-		t.Errorf("Expected: %s, got %s", corev1.ConditionTrue, reconciler.providerStatus.Conditions[0].Status)
-	}
-	if reconciler.providerStatus.Conditions[0].Reason != machineCreationSucceedReason {
-		t.Errorf("Expected: %s, got %s", machineCreationSucceedReason, reconciler.providerStatus.Conditions[0].Reason)
-	}
-	if reconciler.providerStatus.Conditions[0].Message != machineCreationSucceedMessage {
-		t.Errorf("Expected: %s, got %s", machineCreationSucceedMessage, reconciler.providerStatus.Conditions[0].Message)
 	}
 }
 
-func TestReconcileMachineWithCloudState(t *testing.T) {
+func testMachineProviderConfig() *gcpv1beta1.GCPMachineProviderSpec {
+	return &gcpv1beta1.GCPMachineProviderSpec{
+		Zone: "zone1",
+	}
+}
+
+func TestCreate(t *testing.T) {
 	_, mockComputeService := computeservice.NewComputeServiceMock()
 
-	zone := "us-east1-b"
-	projecID := "testProject"
-	instanceName := "testInstance"
+	machine := testMachine()
+	providerSpec := testMachineProviderConfig()
+
 	machineScope := machineScope{
-		machine: &machinev1beta1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      instanceName,
-				Namespace: "",
-			},
-		},
-		coreClient: controllerfake.NewFakeClient(),
-		providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
-			Zone: zone,
-		},
-		projectID:      projecID,
-		providerID:     fmt.Sprintf("gce://%s/%s/%s", projecID, zone, instanceName),
-		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
+		projectID:      "projectID",
 		computeService: mockComputeService,
 	}
 
-	expectedNodeAddresses := []corev1.NodeAddress{
-		{
-			Type:    "InternalIP",
-			Address: "10.0.0.15",
-		},
-		{
-			Type:    "ExternalIP",
-			Address: "35.243.147.143",
-		},
+	coreClient := controllerfake.NewFakeClient(machine)
+	reconciler := newReconciler(&machineScope, coreClient)
+	instance, err := reconciler.create(machine, providerSpec)
+	if instance == nil {
+		t.Error("reconciler was not expected to return nil instance")
 	}
-
-	r := newReconciler(&machineScope)
-	if err := r.reconcileMachineWithCloudState(nil); err != nil {
+	if err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
-	}
-	if r.machine.Status.Addresses[0] != expectedNodeAddresses[0] {
-		t.Errorf("Expected: %s, got: %s", expectedNodeAddresses[0], r.machine.Status.Addresses[0])
-	}
-	if r.machine.Status.Addresses[1] != expectedNodeAddresses[1] {
-		t.Errorf("Expected: %s, got: %s", expectedNodeAddresses[1], r.machine.Status.Addresses[1])
-	}
-
-	if r.providerID != *r.machine.Spec.ProviderID {
-		t.Errorf("Expected: %s, got: %s", r.providerID, *r.machine.Spec.ProviderID)
-	}
-	if *r.providerStatus.InstanceState != "RUNNING" {
-		t.Errorf("Expected: %s, got: %s", "RUNNING", *r.providerStatus.InstanceState)
-	}
-	if *r.providerStatus.InstanceID != instanceName {
-		t.Errorf("Expected: %s, got: %s", instanceName, *r.providerStatus.InstanceID)
 	}
 }
 
 func TestExists(t *testing.T) {
 	_, mockComputeService := computeservice.NewComputeServiceMock()
+
+	machine := testMachine()
+	providerSpec := testMachineProviderConfig()
+
 	machineScope := machineScope{
-		machine: &machinev1beta1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "",
-				Namespace: "",
-			},
-		},
-		coreClient:     controllerfake.NewFakeClient(),
-		providerSpec:   &gcpv1beta1.GCPMachineProviderSpec{},
-		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
+		projectID:      "projectID",
 		computeService: mockComputeService,
 	}
-	reconciler := newReconciler(&machineScope)
-	exists, err := reconciler.exists()
+
+	coreClient := controllerfake.NewFakeClient(machine)
+	reconciler := newReconciler(&machineScope, coreClient)
+
+	exists, err := reconciler.exists(machine, providerSpec)
 	if err != nil || exists != true {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
@@ -124,20 +70,18 @@ func TestExists(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	_, mockComputeService := computeservice.NewComputeServiceMock()
+	machine := testMachine()
+	providerSpec := testMachineProviderConfig()
+
 	machineScope := machineScope{
-		machine: &machinev1beta1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "",
-				Namespace: "",
-			},
-		},
-		coreClient:     controllerfake.NewFakeClient(),
-		providerSpec:   &gcpv1beta1.GCPMachineProviderSpec{},
-		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
+		projectID:      "projectID",
 		computeService: mockComputeService,
 	}
-	reconciler := newReconciler(&machineScope)
-	if err := reconciler.delete(); err != nil {
+
+	coreClient := controllerfake.NewFakeClient(machine)
+	reconciler := newReconciler(&machineScope, coreClient)
+
+	if err := reconciler.delete(machine, providerSpec); err != nil {
 		if _, ok := err.(*controllerError.RequeueAfterError); !ok {
 			t.Errorf("reconciler was not expected to return error: %v", err)
 		}
@@ -156,7 +100,7 @@ type poolFuncTracker struct {
 	called bool
 }
 
-func (p *poolFuncTracker) track(_, _ string) error {
+func (p *poolFuncTracker) track(_, _, _, _ string) error {
 	p.called = true
 	return nil
 }
@@ -175,21 +119,16 @@ func TestProcessTargetPools(t *testing.T) {
 		"pool1",
 	}
 	tpEmpty := []string{}
+
+	machine := testMachine()
+	machine.Name = instanceName
+	providerSpec := testMachineProviderConfig()
+
 	machineScope := machineScope{
-		machine: &machinev1beta1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      instanceName,
-				Namespace: "",
-			},
-		},
-		coreClient: controllerfake.NewFakeClient(),
-		providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
-			Zone: "zone1",
-		},
 		projectID:      projecID,
-		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 		computeService: mockComputeService,
 	}
+
 	tCases := []struct {
 		expectedCall bool
 		desired      bool
@@ -240,11 +179,10 @@ func TestProcessTargetPools(t *testing.T) {
 		},
 	}
 	for i, tc := range tCases {
+		coreClient := controllerfake.NewFakeClient(machine)
 		pt := newPoolTracker()
-		machineScope.providerSpec.Region = tc.region
-		machineScope.providerSpec.TargetPools = tc.targetPools
-		rec := newReconciler(&machineScope)
-		err := rec.processTargetPools(tc.desired, pt.track)
+		rec := newReconciler(&machineScope, coreClient)
+		err := rec.processTargetPools(tc.desired, tc.targetPools, pt.track, tc.region, providerSpec.Zone, machine.Name)
 		if err != nil {
 			t.Errorf("unexpected error from ptp")
 		}
