@@ -389,6 +389,10 @@ func (a *Actuator) updateProviderID(machine *machinev1.Machine) (*machinev1.Mach
 	machineCopy := machine.DeepCopy()
 	machineCopy.Spec.ProviderID = &providerID
 
+	if machine.Spec.ProviderID != nil && *machine.Spec.ProviderID == providerID {
+		return machine, nil
+	}
+
 	if err := a.coreClient.Update(context.Background(), machineCopy); err != nil {
 		return nil, fmt.Errorf("%s: error updating machine spec ProviderID: %v", machineCopy.Name, err)
 	}
@@ -435,6 +439,10 @@ func (a *Actuator) setMachineCloudProviderSpecifics(machine *machinev1.Machine, 
 	machineCopy.Labels[machinecontroller.MachineInstanceTypeLabelName] = providerSpec.MachineType
 	machineCopy.Labels[machinecontroller.MachineRegionLabelName] = providerSpec.Region
 	machineCopy.Labels[machinecontroller.MachineAZLabelName] = providerSpec.Zone
+
+	if equality.Semantic.DeepEqual(machine.Labels, machineCopy.Labels) && equality.Semantic.DeepEqual(machine.Annotations, machineCopy.Annotations) {
+		return machine, nil
+	}
 
 	if err := a.coreClient.Update(context.Background(), machineCopy); err != nil {
 		return nil, fmt.Errorf("%s: error updating machine cloud provider specifics: %v", machineCopy.Name, err)
