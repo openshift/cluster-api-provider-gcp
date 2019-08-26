@@ -25,11 +25,12 @@ import (
 )
 
 const (
-	scopeFailFmt      = "%s: failed to create scope for machine: %v"
-	createEventAction = "Create"
-	updateEventAction = "Update"
-	deleteEventAction = "Delete"
-	noEventAction     = ""
+	scopeFailFmt         = "%s: failed to create scope for machine: %v"
+	createEventAction    = "Create"
+	updateEventAction    = "Update"
+	deleteEventAction    = "Delete"
+	noEventAction        = ""
+	credentialsSecretKey = "service_account.json"
 )
 
 // Actuator is responsible for performing machine reconciliation.
@@ -68,18 +69,34 @@ func (a *Actuator) handleMachineError(machine *machinev1.Machine, err error, eve
 	return err
 }
 
+// This expects the https://github.com/openshift/cloud-credential-operator to make a secret
+// with a serviceAccount JSON Key content available. E.g:
+//
+//apiVersion: v1
+//kind: Secret
+//metadata:
+//  name: gcp-sa
+//  namespace: openshift-machine-api
+//type: Opaque
+//data:
+//  serviceAccountJSON: base64 encoded content of the file
+func (a *Actuator) getCredentialsSecret(machine *machinev1.Machine, spec *providerconfig.GCPMachineProviderSpec) (*corev1.Secret, error) {
+	credentialsSecret := &corev1.Secret{}
+
+	if err := a.coreClient.Get(context.Background(), controllerclient.ObjectKey{Namespace: machine.GetNamespace(), Name: spec.CredentialsSecret.Name}, credentialsSecret); err != nil {
+		return nil, fmt.Errorf("error getting credentials secret %q in namespace %q: %v", spec.CredentialsSecret.Name, machine.GetNamespace(), err)
+	}
+	_, exists := credentialsSecret.Data[credentialsSecretKey]
+	if !exists {
+		return nil, fmt.Errorf("secret %v/%v does not have %q field set. Thus, no credentials applied when creating an instance", machine.GetNamespace(), spec.CredentialsSecret.Name, credentialsSecretKey)
+	}
+
+	return credentialsSecret, nil
+}
+
 // Create creates a machine and is invoked by the machine controller.
 func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
 	klog.Infof("%s: Creating machine", machine.Name)
-	scope, err := newMachineScope(machineScopeParams{
-		machineClient: a.machineClient,
-		coreClient:    a.coreClient,
-		machine:       machine,
-	})
-	if err != nil {
-		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
-		return a.handleMachineError(machine, fmt.Errorf(fmtErr), createEventAction)
-	}
 
 	providerSpec, err := providerConfigFromMachine(machine, a.codec)
 	if err != nil {
@@ -87,7 +104,22 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return fmt.Errorf("unable to decode machine provider config: %v", err)
 	}
 
-	reconciler := newReconciler(scope)
+	credentialsSecret, err := a.getCredentialsSecret(machine, providerSpec)
+	if err != nil {
+		return fmt.Errorf("unable to get credentials secret: %v", err)
+	}
+
+	scope, err := newMachineScope(machineScopeParams{
+		machineClient:     a.machineClient,
+		machine:           machine,
+		credentialsSecret: credentialsSecret,
+	})
+	if err != nil {
+		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
+		return a.handleMachineError(machine, fmt.Errorf(fmtErr), createEventAction)
+	}
+
+	reconciler := newReconciler(scope, a.coreClient)
 	instance, err := reconciler.create(machine, providerSpec)
 
 	if instance != nil {
@@ -105,7 +137,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 			machine = modeMachine
 		}
 
-		modeMachine, err = a.updateProviderID(machine)
+		modeMachine, err = a.updateProviderID(machine, scope)
 		if err != nil {
 			klog.Errorf("%s: error updating machine provider ID: %v", machine.Name, err)
 		} else {
@@ -147,18 +179,25 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) (bool, error) {
 	klog.Infof("%s: Checking if machine exists", machine.Name)
-	scope, err := newMachineScope(machineScopeParams{
-		machineClient: a.machineClient,
-		coreClient:    a.coreClient,
-		machine:       machine,
-	})
-	if err != nil {
-		return false, fmt.Errorf(scopeFailFmt, machine.Name, err)
-	}
 
 	providerSpec, err := providerConfigFromMachine(machine, a.codec)
 	if err != nil {
+		a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, createEventAction, "Invalid machine %q configuration: %v", machine.Name, err)
 		return false, fmt.Errorf("unable to decode machine provider config: %v", err)
+	}
+
+	credentialsSecret, err := a.getCredentialsSecret(machine, providerSpec)
+	if err != nil {
+		return false, fmt.Errorf("unable to get credentials secret: %v", err)
+	}
+
+	scope, err := newMachineScope(machineScopeParams{
+		machineClient:     a.machineClient,
+		machine:           machine,
+		credentialsSecret: credentialsSecret,
+	})
+	if err != nil {
+		return false, fmt.Errorf(scopeFailFmt, machine.Name, err)
 	}
 
 	// The core machine controller calls exists() + create()/update() in the same reconciling operation.
@@ -166,28 +205,34 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 	// When create()/update() try to store machineSpec/status this might result in
 	// "Operation cannot be fulfilled; the object has been modified; please apply your changes to the latest version and try again."
 	// Therefore we don't close the scope here and we only store spec/status atomically either in create()/update()"
-	return newReconciler(scope).exists(machine, providerSpec)
+	return newReconciler(scope, a.coreClient).exists(machine, providerSpec)
 }
 
 func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
 	klog.Infof("%s: Updating machine", machine.Name)
+
+	providerSpec, err := providerConfigFromMachine(machine, a.codec)
+	if err != nil {
+		a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, createEventAction, "Invalid machine %q configuration: %v", machine.Name, err)
+		return fmt.Errorf("unable to decode machine provider config: %v", err)
+	}
+
+	credentialsSecret, err := a.getCredentialsSecret(machine, providerSpec)
+	if err != nil {
+		return fmt.Errorf("unable to get credentials secret: %v", err)
+	}
+
 	scope, err := newMachineScope(machineScopeParams{
-		machineClient: a.machineClient,
-		coreClient:    a.coreClient,
-		machine:       machine,
+		machineClient:     a.machineClient,
+		machine:           machine,
+		credentialsSecret: credentialsSecret,
 	})
 	if err != nil {
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
 		return a.handleMachineError(machine, fmt.Errorf(fmtErr), updateEventAction)
 	}
 
-	providerSpec, err := providerConfigFromMachine(machine, a.codec)
-	if err != nil {
-		a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, updateEventAction, "Invalid machine %q configuration: %v", machine.Name, err)
-		return fmt.Errorf("unable to decode machine provider config: %v", err)
-	}
-
-	reconciler := newReconciler(scope)
+	reconciler := newReconciler(scope, a.coreClient)
 	instance, err := reconciler.update(machine, providerSpec)
 	if instance != nil {
 		modMachine, err := a.setMachineCloudProviderSpecifics(machine, instance)
@@ -204,7 +249,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 			machine = modeMachine
 		}
 
-		modeMachine, err = a.updateProviderID(machine)
+		modeMachine, err = a.updateProviderID(machine, scope)
 		if err != nil {
 			klog.Errorf("%s: error updating machine provider ID: %v", machine.Name, err)
 		} else {
@@ -232,10 +277,22 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 
 func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *machinev1.Machine) error {
 	klog.Infof("%s: Deleting machine", machine.Name)
+
+	providerSpec, err := providerConfigFromMachine(machine, a.codec)
+	if err != nil {
+		a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, createEventAction, "Invalid machine %q configuration: %v", machine.Name, err)
+		return fmt.Errorf("unable to decode machine provider config: %v", err)
+	}
+
+	credentialsSecret, err := a.getCredentialsSecret(machine, providerSpec)
+	if err != nil {
+		return fmt.Errorf("unable to get credentials secret: %v", err)
+	}
+
 	scope, err := newMachineScope(machineScopeParams{
-		machineClient: a.machineClient,
-		coreClient:    a.coreClient,
-		machine:       machine,
+		machineClient:     a.machineClient,
+		machine:           machine,
+		credentialsSecret: credentialsSecret,
 	})
 	if err != nil {
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
@@ -249,13 +306,7 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 		machine = modMachine
 	}
 
-	providerSpec, err := providerConfigFromMachine(machine, a.codec)
-	if err != nil {
-		a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, deleteEventAction, "Invalid machine %q configuration: %v", machine.Name, err)
-		return fmt.Errorf("unable to decode machine provider config: %v", err)
-	}
-
-	if err := newReconciler(scope).delete(machine, providerSpec); err != nil {
+	if err := newReconciler(scope, a.coreClient).delete(machine, providerSpec); err != nil {
 		return a.handleMachineError(machine, err, deleteEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, deleteEventAction, "Deleted machine %v", machine.Name)
@@ -395,19 +446,14 @@ func (a *Actuator) setDeletingState(ctx context.Context, machine *machinev1.Mach
 }
 
 // updateProviderID adds providerID in the machine spec
-func (a *Actuator) updateProviderID(machine *machinev1.Machine) (*machinev1.Machine, error) {
+func (a *Actuator) updateProviderID(machine *machinev1.Machine, scope *machineScope) (*machinev1.Machine, error) {
 	providerSpec, err := providerConfigFromMachine(machine, a.codec)
 	if err != nil {
 		return nil, err
 	}
 
-	projectID, err := a.getProjectID(machine, providerSpec)
-	if err != nil {
-		return nil, err
-	}
-
 	// https://github.com/kubernetes/kubernetes/blob/8765fa2e48974e005ad16e65cb5c3acf5acff17b/staging/src/k8s.io/legacy-cloud-providers/gce/gce_util.go#L204
-	providerID := fmt.Sprintf("gce://%s/%s/%s", projectID, providerSpec.Zone, machine.Name)
+	providerID := fmt.Sprintf("gce://%s/%s/%s", scope.projectID, providerSpec.Zone, machine.Name)
 	klog.Infof("%s: setting ProviderID %s", machine.Name, providerID)
 
 	machineCopy := machine.DeepCopy()
@@ -422,23 +468,6 @@ func (a *Actuator) updateProviderID(machine *machinev1.Machine) (*machinev1.Mach
 	}
 
 	return machineCopy, nil
-}
-
-func (a *Actuator) getProjectID(machine *machinev1.Machine, providerSpec *providerconfig.GCPMachineProviderSpec) (string, error) {
-	serviceAccountJSON, err := getCredentialsSecret(a.coreClient, *machine, *providerSpec)
-	if err != nil {
-		return "", fmt.Errorf("failed to get serviceAccountJSON: %v", err)
-	}
-
-	projectID := providerSpec.ProjectID
-	if len(projectID) == 0 {
-		projectID, err = getProjectIDFromJSONKey([]byte(serviceAccountJSON))
-		if err != nil {
-			return "", fmt.Errorf("error getting project from JSON key: %v", err)
-		}
-	}
-
-	return projectID, nil
 }
 
 func (a *Actuator) setMachineCloudProviderSpecifics(machine *machinev1.Machine, instance *compute.Instance) (*machinev1.Machine, error) {

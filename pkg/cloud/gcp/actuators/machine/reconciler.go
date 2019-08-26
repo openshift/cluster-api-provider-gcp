@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -25,12 +26,14 @@ const (
 // Reconciler are list of services required by machine actuator, easy to create a fake
 type Reconciler struct {
 	*machineScope
+	coreClient controllerclient.Client
 }
 
 // NewReconciler populates all the services based on input scope
-func newReconciler(scope *machineScope) *Reconciler {
+func newReconciler(scope *machineScope, coreClient controllerclient.Client) *Reconciler {
 	return &Reconciler{
-		scope,
+		machineScope: scope,
+		coreClient:   coreClient,
 	}
 }
 

@@ -17,25 +17,18 @@ import (
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	machineclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
 	apicorev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	credentialsSecretKey = "service_account.json"
 )
 
 // machineScopeParams defines the input parameters used to create a new MachineScope.
 type machineScopeParams struct {
-	machineClient machineclient.MachineV1beta1Interface
-	coreClient    controllerclient.Client
-	machine       *machinev1.Machine
+	machineClient     machineclient.MachineV1beta1Interface
+	machine           *machinev1.Machine
+	credentialsSecret *apicorev1.Secret
 }
 
 // machineScope defines a scope defined around a machine and its cluster.
 type machineScope struct {
 	machineClient  machineclient.MachineInterface
-	coreClient     controllerclient.Client
 	projectID      string
 	computeService computeservice.GCPComputeService
 	machine        *machinev1.Machine
@@ -56,9 +49,12 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		return nil, errors.Wrap(err, "failed to get machine provider status")
 	}
 
-	serviceAccountJSON, err := getCredentialsSecret(params.coreClient, *params.machine, *providerSpec)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get serviceAccountJSON: %v", err)
+	var serviceAccountJSON string
+	if params.credentialsSecret != nil {
+		data, exists := params.credentialsSecret.Data[credentialsSecretKey]
+		if exists {
+			serviceAccountJSON = string(data)
+		}
 	}
 
 	projectID := providerSpec.ProjectID
@@ -80,7 +76,6 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 	}
 	return &machineScope{
 		machineClient:  params.machineClient.Machines(params.machine.Namespace),
-		coreClient:     params.coreClient,
 		projectID:      projectID,
 		computeService: computeService,
 		machine:        params.machine,
@@ -96,34 +91,6 @@ func (s *machineScope) Close() error {
 	}
 
 	return nil
-}
-
-// This expects the https://github.com/openshift/cloud-credential-operator to make a secret
-// with a serviceAccount JSON Key content available. E.g:
-//
-//apiVersion: v1
-//kind: Secret
-//metadata:
-//  name: gcp-sa
-//  namespace: openshift-machine-api
-//type: Opaque
-//data:
-//  serviceAccountJSON: base64 encoded content of the file
-func getCredentialsSecret(coreClient controllerclient.Client, machine machinev1.Machine, spec v1beta1.GCPMachineProviderSpec) (string, error) {
-	if spec.CredentialsSecret == nil {
-		return "", nil
-	}
-	var credentialsSecret apicorev1.Secret
-
-	if err := coreClient.Get(context.Background(), client.ObjectKey{Namespace: machine.GetNamespace(), Name: spec.CredentialsSecret.Name}, &credentialsSecret); err != nil {
-		return "", fmt.Errorf("error getting credentials secret %q in namespace %q: %v", spec.CredentialsSecret.Name, machine.GetNamespace(), err)
-	}
-	data, exists := credentialsSecret.Data[credentialsSecretKey]
-	if !exists {
-		return "", fmt.Errorf("secret %v/%v does not have %q field set. Thus, no credentials applied when creating an instance", machine.GetNamespace(), spec.CredentialsSecret.Name, credentialsSecretKey)
-	}
-
-	return string(data), nil
 }
 
 func getProjectIDFromJSONKey(content []byte) (string, error) {
