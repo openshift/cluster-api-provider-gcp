@@ -10,14 +10,6 @@
   version = "v0.38.0"
 
 [[projects]]
-  digest = "1:464aef731a5f82ded547c62e249a2e9ec59fbbc9ddab53cda7b9857852630a61"
-  name = "github.com/appscode/jsonpatch"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "7c0e3b262f30165a8ec3d0b4c6059fd92703bfb2"
-  version = "1.0.0"
-
-[[projects]]
   digest = "1:d6afaeed1502aa28e80a4ed0981d570ad91b2579193404256ce672ed0a609e0d"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
@@ -407,6 +399,14 @@
   revision = "3b6f9c0030f769fa3ded8a7f0d9420c71ac20caf"
 
 [[projects]]
+  digest = "1:7d4fd782f2a710d08834b2c01742b3bba7fb0248383f9cc6c3dc95b3025689d7"
+  name = "gomodules.xyz/jsonpatch"
+  packages = ["v2"]
+  pruneopts = "UT"
+  revision = "e8422f09d27ee2c8cfb2c7f8089eb9eeb0764849"
+  version = "v2.0.1"
+
+[[projects]]
   digest = "1:9a4d9ee52f1ca9294c3333997270c50324d1c719c68f9d5d9be9003cff21ae4b"
   name = "google.golang.org/api"
   packages = [
@@ -564,20 +564,10 @@
   version = "kubernetes-1.14.1"
 
 [[projects]]
-  digest = "1:a0ac3d2549ab736b793e58f479c4dddf78f0a462ac6d7c40ed47c7f7a901b6b3"
-  name = "k8s.io/apiextensions-apiserver"
-  packages = [
-    "pkg/apis/apiextensions",
-    "pkg/apis/apiextensions/v1beta1",
-  ]
-  pruneopts = "UT"
-  revision = "727a075fdec8319bf095330e344b3ccc668abc73"
-  version = "kubernetes-1.14.1"
-
-[[projects]]
-  digest = "1:d3bd6e479bfdd7cf56aa890d39a5fcace5efa48ded43485df7253ae34389d69c"
+  digest = "1:d2902ee0ef0a0422e6b81cde62ec7c97568272e8cb147e1f9c2c373e02a6b588"
   name = "k8s.io/apimachinery"
   packages = [
+    "pkg/api/equality",
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",
@@ -763,7 +753,8 @@
   revision = "c55fbcfc754a5b2ec2fbae8fb9dcac36bdba6a12"
 
 [[projects]]
-  digest = "1:cd4ccccc3ed5ddace16fc70f0d492f39453649cf64fce14814f7e56f0400ed87"
+  branch = "release-0.2"
+  digest = "1:7bf15ad8fd72733bf2221d609a315c871f6141f56dc055689c63120a01d05201"
   name = "sigs.k8s.io/controller-runtime"
   packages = [
     "pkg/cache",
@@ -773,7 +764,6 @@
     "pkg/client/config",
     "pkg/client/fake",
     "pkg/controller",
-    "pkg/conversion",
     "pkg/event",
     "pkg/handler",
     "pkg/internal/controller",
@@ -796,12 +786,11 @@
     "pkg/source/internal",
     "pkg/webhook",
     "pkg/webhook/admission",
-    "pkg/webhook/conversion",
     "pkg/webhook/internal/certwatcher",
     "pkg/webhook/internal/metrics",
   ]
   pruneopts = "UT"
-  revision = "96b67f231945a8e8550dbdd8bfbd550a0c68097b"
+  revision = "e1159d6655b260c4812fd0792cd1344ecc96a57e"
 
 [[projects]]
   digest = "1:7719608fe0b52a4ece56c2dde37bedd95b938677d1ab0f84b8a7852e4c59f849"
@@ -830,9 +819,11 @@
     "google.golang.org/api/compute/v1",
     "google.golang.org/api/googleapi",
     "k8s.io/api/core/v1",
+    "k8s.io/apimachinery/pkg/api/equality",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/apimachinery/pkg/runtime/serializer",
     "k8s.io/client-go/kubernetes/scheme",
     "k8s.io/client-go/tools/record",
     "k8s.io/code-generator/cmd/deepcopy-gen",
