@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/machine"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
 	clusterapis "github.com/openshift/cluster-api/pkg/apis"
-	"github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset"
 	capimachine "github.com/openshift/cluster-api/pkg/controller/machine"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -46,11 +45,6 @@ func main() {
 		klog.Fatalf("Failed to set up overall controller manager: %v", err)
 	}
 
-	cs, err := clientset.NewForConfig(cfg)
-	if err != nil {
-		klog.Fatalf("Failed to create client from configuration: %v", err)
-	}
-
 	codec, err := providerspecv1.NewCodec()
 	if err != nil {
 		klog.Fatalf("Unable to create codec: %v", err)
@@ -58,7 +52,6 @@ func main() {
 
 	// Initialize machine actuator.
 	machineActuator := machine.NewActuator(machine.ActuatorParams{
-		MachineClient: cs.MachineV1beta1(),
 		CoreClient:    mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("gcpcontroller"),
 		Codec:         codec,

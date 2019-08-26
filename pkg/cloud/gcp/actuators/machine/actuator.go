@@ -13,7 +13,6 @@ import (
 	providerconfig "github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
-	mapiclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
 	clustererror "github.com/openshift/cluster-api/pkg/controller/error"
 	machinecontroller "github.com/openshift/cluster-api/pkg/controller/machine"
 	corev1 "k8s.io/api/core/v1"
@@ -35,7 +34,6 @@ const (
 
 // Actuator is responsible for performing machine reconciliation.
 type Actuator struct {
-	machineClient mapiclient.MachineV1beta1Interface
 	coreClient    controllerclient.Client
 	eventRecorder record.EventRecorder
 	codec         *providerconfig.GCPProviderConfigCodec
@@ -43,7 +41,6 @@ type Actuator struct {
 
 // ActuatorParams holds parameter information for Actuator.
 type ActuatorParams struct {
-	MachineClient mapiclient.MachineV1beta1Interface
 	CoreClient    controllerclient.Client
 	EventRecorder record.EventRecorder
 	Codec         *providerconfig.GCPProviderConfigCodec
@@ -52,7 +49,6 @@ type ActuatorParams struct {
 // NewActuator returns an actuator.
 func NewActuator(params ActuatorParams) *Actuator {
 	return &Actuator{
-		machineClient: params.MachineClient,
 		coreClient:    params.CoreClient,
 		eventRecorder: params.EventRecorder,
 		codec:         params.Codec,
