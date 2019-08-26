@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis"
+	providerspecv1 "github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/machine"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
 	clusterapis "github.com/openshift/cluster-api/pkg/apis"
@@ -50,11 +51,17 @@ func main() {
 		klog.Fatalf("Failed to create client from configuration: %v", err)
 	}
 
+	codec, err := providerspecv1.NewCodec()
+	if err != nil {
+		klog.Fatalf("Unable to create codec: %v", err)
+	}
+
 	// Initialize machine actuator.
 	machineActuator := machine.NewActuator(machine.ActuatorParams{
 		MachineClient: cs.MachineV1beta1(),
 		CoreClient:    mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("gcpcontroller"),
+		Codec:         codec,
 	})
 
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
