@@ -10,7 +10,6 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 
-	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	apicorev1 "k8s.io/api/core/v1"
@@ -20,6 +19,7 @@ import (
 type machineScopeParams struct {
 	machine           *machinev1.Machine
 	credentialsSecret *apicorev1.Secret
+	projectID         string
 }
 
 // machineScope defines a scope defined around a machine and its cluster.
@@ -27,18 +27,14 @@ type machineScope struct {
 	projectID      string
 	computeService computeservice.GCPComputeService
 	machine        *machinev1.Machine
-	providerSpec   *v1beta1.GCPMachineProviderSpec
 }
 
 // newMachineScope creates a new MachineScope from the supplied parameters.
 // This is meant to be called for each machine actuator operation.
 func newMachineScope(params machineScopeParams) (*machineScope, error) {
-	providerSpec, err := v1beta1.ProviderSpecFromRawExtension(params.machine.Spec.ProviderSpec.Value)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get machine config: %v", err)
-	}
-
 	var serviceAccountJSON string
+	var err error
+
 	if params.credentialsSecret != nil {
 		data, exists := params.credentialsSecret.Data[credentialsSecretKey]
 		if exists {
@@ -46,7 +42,7 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		}
 	}
 
-	projectID := providerSpec.ProjectID
+	projectID := params.projectID
 	if len(projectID) == 0 {
 		projectID, err = getProjectIDFromJSONKey([]byte(serviceAccountJSON))
 		if err != nil {
@@ -67,7 +63,6 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		projectID:      projectID,
 		computeService: computeService,
 		machine:        params.machine,
-		providerSpec:   providerSpec,
 	}, nil
 }
 

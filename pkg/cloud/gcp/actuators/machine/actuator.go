@@ -112,6 +112,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	scope, err := newMachineScope(machineScopeParams{
 		machine:           machine,
 		credentialsSecret: credentialsSecret,
+		projectID:         providerSpec.ProjectID,
 	})
 	if err != nil {
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
@@ -193,6 +194,7 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 	scope, err := newMachineScope(machineScopeParams{
 		machine:           machine,
 		credentialsSecret: credentialsSecret,
+		projectID:         providerSpec.ProjectID,
 	})
 	if err != nil {
 		return false, fmt.Errorf(scopeFailFmt, machine.Name, err)
@@ -223,6 +225,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 	scope, err := newMachineScope(machineScopeParams{
 		machine:           machine,
 		credentialsSecret: credentialsSecret,
+		projectID:         providerSpec.ProjectID,
 	})
 	if err != nil {
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
@@ -289,6 +292,7 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	scope, err := newMachineScope(machineScopeParams{
 		machine:           machine,
 		credentialsSecret: credentialsSecret,
+		projectID:         providerSpec.ProjectID,
 	})
 	if err != nil {
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
