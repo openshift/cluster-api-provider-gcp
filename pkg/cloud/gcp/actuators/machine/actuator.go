@@ -110,7 +110,6 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	scope, err := newMachineScope(machineScopeParams{
-		machineClient:     a.machineClient,
 		machine:           machine,
 		credentialsSecret: credentialsSecret,
 	})
@@ -192,7 +191,6 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	scope, err := newMachineScope(machineScopeParams{
-		machineClient:     a.machineClient,
 		machine:           machine,
 		credentialsSecret: credentialsSecret,
 	})
@@ -223,7 +221,6 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	scope, err := newMachineScope(machineScopeParams{
-		machineClient:     a.machineClient,
 		machine:           machine,
 		credentialsSecret: credentialsSecret,
 	})
@@ -290,7 +287,6 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	scope, err := newMachineScope(machineScopeParams{
-		machineClient:     a.machineClient,
 		machine:           machine,
 		credentialsSecret: credentialsSecret,
 	})
