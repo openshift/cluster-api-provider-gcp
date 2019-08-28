@@ -153,53 +153,52 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 	if failedCondition != nil {
 		r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, *failedCondition)
 		return nil
-	} else {
-		freshInstance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)
-		if err != nil {
-			return fmt.Errorf("failed to get instance via compute service: %v", err)
-		}
+	}
+	freshInstance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)
+	if err != nil {
+		return fmt.Errorf("failed to get instance via compute service: %v", err)
+	}
 
-		if len(freshInstance.NetworkInterfaces) < 1 {
-			return fmt.Errorf("could not find network interfaces for instance %q", freshInstance.Name)
-		}
-		networkInterface := freshInstance.NetworkInterfaces[0]
+	if len(freshInstance.NetworkInterfaces) < 1 {
+		return fmt.Errorf("could not find network interfaces for instance %q", freshInstance.Name)
+	}
+	networkInterface := freshInstance.NetworkInterfaces[0]
 
-		nodeAddresses := []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: networkInterface.NetworkIP}}
-		for _, config := range networkInterface.AccessConfigs {
-			nodeAddresses = append(nodeAddresses, v1.NodeAddress{Type: v1.NodeExternalIP, Address: config.NatIP})
-		}
-		// Since we don't know when the project was created, we must account for
-		// both types of internal-dns:
-		// https://cloud.google.com/compute/docs/internal-dns#instance-fully-qualified-domain-names
-		// [INSTANCE_NAME].[ZONE].c.[PROJECT_ID].internal (newer)
-		nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
-			Type:    corev1.NodeInternalDNS,
-			Address: fmt.Sprintf("%s.%s.c.%s.internal", r.machine.Name, r.providerSpec.Zone, r.projectID),
-		})
-		// [INSTANCE_NAME].c.[PROJECT_ID].internal
-		nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
-			Type:    corev1.NodeInternalDNS,
-			Address: fmt.Sprintf("%s.c.%s.internal", r.machine.Name, r.projectID),
-		})
+	nodeAddresses := []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: networkInterface.NetworkIP}}
+	for _, config := range networkInterface.AccessConfigs {
+		nodeAddresses = append(nodeAddresses, v1.NodeAddress{Type: v1.NodeExternalIP, Address: config.NatIP})
+	}
+	// Since we don't know when the project was created, we must account for
+	// both types of internal-dns:
+	// https://cloud.google.com/compute/docs/internal-dns#instance-fully-qualified-domain-names
+	// [INSTANCE_NAME].[ZONE].c.[PROJECT_ID].internal (newer)
+	nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
+		Type:    corev1.NodeInternalDNS,
+		Address: fmt.Sprintf("%s.%s.c.%s.internal", r.machine.Name, r.providerSpec.Zone, r.projectID),
+	})
+	// [INSTANCE_NAME].c.[PROJECT_ID].internal
+	nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
+		Type:    corev1.NodeInternalDNS,
+		Address: fmt.Sprintf("%s.c.%s.internal", r.machine.Name, r.projectID),
+	})
 
-		r.machine.Spec.ProviderID = &r.providerID
-		r.machine.Status.Addresses = nodeAddresses
-		r.providerStatus.InstanceState = &freshInstance.Status
-		r.providerStatus.InstanceID = &freshInstance.Name
-		succeedCondition := v1beta1.GCPMachineProviderCondition{
-			Type:    v1beta1.MachineCreated,
-			Reason:  machineCreationSucceedReason,
-			Message: machineCreationSucceedMessage,
-			Status:  corev1.ConditionTrue,
-		}
-		r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, succeedCondition)
+	r.machine.Spec.ProviderID = &r.providerID
+	r.machine.Status.Addresses = nodeAddresses
+	r.providerStatus.InstanceState = &freshInstance.Status
+	r.providerStatus.InstanceID = &freshInstance.Name
+	succeedCondition := v1beta1.GCPMachineProviderCondition{
+		Type:    v1beta1.MachineCreated,
+		Reason:  machineCreationSucceedReason,
+		Message: machineCreationSucceedMessage,
+		Status:  corev1.ConditionTrue,
+	}
+	r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, succeedCondition)
 
-		r.setMachineCloudProviderSpecifics(freshInstance)
+	r.setMachineCloudProviderSpecifics(freshInstance)
 
-		if freshInstance.Status != "RUNNING" {
-			klog.Infof("%s: machine status is %q, requeuing...", r.machine.Name, freshInstance.Status)
-			return &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
-		}
+	if freshInstance.Status != "RUNNING" {
+		klog.Infof("%s: machine status is %q, requeuing...", r.machine.Name, freshInstance.Status)
+		return &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
 	}
 
 	return nil
