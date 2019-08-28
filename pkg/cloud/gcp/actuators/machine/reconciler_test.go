@@ -138,10 +138,16 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 	if providerID != *machine.Spec.ProviderID {
 		t.Errorf("Expected: %s, got: %s", providerID, *machine.Spec.ProviderID)
 	}
-	if *r.providerStatus.InstanceState != "RUNNING" {
+
+	gcpStatus := &gcpv1beta1.GCPMachineProviderStatus{}
+	if err := codec.DecodeProviderStatus(machine.Status.ProviderStatus, gcpStatus); err != nil {
+		t.Fatalf("Unable to decode provider status: %v", err)
+	}
+
+	if *gcpStatus.InstanceState != "RUNNING" {
 		t.Errorf("Expected: %s, got: %s", "RUNNING", *r.providerStatus.InstanceState)
 	}
-	if *r.providerStatus.InstanceID != instanceName {
+	if *gcpStatus.InstanceID != instanceName {
 		t.Errorf("Expected: %s, got: %s", instanceName, *r.providerStatus.InstanceID)
 	}
 }

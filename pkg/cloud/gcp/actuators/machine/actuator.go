@@ -270,6 +270,9 @@ func (a *Actuator) updateStatus(ctx context.Context, machine *machinev1.Machine,
 		return nil, err
 	}
 
+	gcpStatus.InstanceState = &instance.Status
+	gcpStatus.InstanceID = &instance.Name
+
 	klog.Infof("%s: finished calculating GCP status", machine.Name)
 
 	modMachine, err := a.updateMachineStatus(machine, gcpStatus, networkAddresses)
