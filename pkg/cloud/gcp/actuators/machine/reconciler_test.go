@@ -1,15 +1,19 @@
 package machine
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	gcpv1beta1 "github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1beta1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
+	capifake "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/fake"
 	controllerError "github.com/openshift/cluster-api/pkg/controller/error"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	controllerfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -48,20 +52,47 @@ func TestCreate(t *testing.T) {
 func TestReconcileMachineWithCloudState(t *testing.T) {
 	_, mockComputeService := computeservice.NewComputeServiceMock()
 
+	codec, err := gcpv1beta1.NewCodec()
+	if err != nil {
+		t.Fatalf("Unable to create codec: %v", err)
+	}
+
 	zone := "us-east1-b"
+	machineProviderSpec := &gcpv1beta1.GCPMachineProviderSpec{
+		Zone: zone,
+	}
 	projecID := "testProject"
 	instanceName := "testInstance"
+
+	providerSpec, err := codec.EncodeProviderSpec(machineProviderSpec)
+	if err != nil {
+		t.Fatalf("Unable to encode provider spec: %v", err)
+	}
+
+	machine := &machinev1beta1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      instanceName,
+			Namespace: "",
+		},
+		Spec: machinev1beta1.MachineSpec{
+			ProviderSpec: *providerSpec,
+		},
+	}
+
+	cs := capifake.NewSimpleClientset(machine)
+	actuator := NewActuator(ActuatorParams{
+		MachineClient: cs.MachineV1beta1(),
+		CoreClient:    fake.NewFakeClient(machine),
+		EventRecorder: &record.FakeRecorder{
+			Events: make(chan string, 1),
+		},
+		Codec: codec,
+	})
+
 	machineScope := machineScope{
-		machine: &machinev1beta1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      instanceName,
-				Namespace: "",
-			},
-		},
-		coreClient: controllerfake.NewFakeClient(),
-		providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
-			Zone: zone,
-		},
+		machine:        machine,
+		coreClient:     controllerfake.NewFakeClient(),
+		providerSpec:   machineProviderSpec,
 		projectID:      projecID,
 		providerID:     fmt.Sprintf("gce://%s/%s/%s", projecID, zone, instanceName),
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
@@ -80,13 +111,20 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 	}
 
 	r := newReconciler(&machineScope)
-	if _, err := r.reconcileMachineWithCloudState(nil); err != nil {
+	instance, err := r.reconcileMachineWithCloudState(nil)
+	if err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
-	if r.machine.Status.Addresses[0] != expectedNodeAddresses[0] {
+
+	machineMod, err := actuator.updateStatus(context.TODO(), machineScope.machine, r, instance)
+	if err != nil {
+		t.Fatalf("Unable to update machine status: %v", err)
+	}
+
+	if machineMod.Status.Addresses[0] != expectedNodeAddresses[0] {
 		t.Errorf("Expected: %s, got: %s", expectedNodeAddresses[0], r.machine.Status.Addresses[0])
 	}
-	if r.machine.Status.Addresses[1] != expectedNodeAddresses[1] {
+	if machineMod.Status.Addresses[1] != expectedNodeAddresses[1] {
 		t.Errorf("Expected: %s, got: %s", expectedNodeAddresses[1], r.machine.Status.Addresses[1])
 	}
 
