@@ -13,6 +13,7 @@ import (
 	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	mapiclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
+	machinecontroller "github.com/openshift/cluster-api/pkg/controller/machine"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,6 +82,13 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	instance, err := reconciler.create()
 
 	if instance != nil {
+		modMachine, err := a.setMachineCloudProviderSpecifics(machine, instance)
+		if err != nil {
+			klog.Errorf("%s: error updating machine cloud provider specifics: %v", machine.Name, err)
+		} else {
+			machine = modMachine
+		}
+
 		modeMachine, err := a.updateStatus(ctx, machine, reconciler, instance)
 		if err != nil {
 			klog.Errorf("%s: error updating machine status: %v", machine.Name, err)
@@ -130,6 +138,13 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 	instance, err := reconciler.create()
 
 	if instance != nil {
+		modMachine, err := a.setMachineCloudProviderSpecifics(machine, instance)
+		if err != nil {
+			klog.Errorf("%s: error updating machine cloud provider specifics: %v", machine.Name, err)
+		} else {
+			machine = modMachine
+		}
+
 		modeMachine, err := a.updateStatus(ctx, machine, reconciler, instance)
 		if err != nil {
 			klog.Errorf("%s: error updating machine status: %v", machine.Name, err)
@@ -157,6 +172,14 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
 		return a.handleMachineError(machine, fmt.Errorf(fmtErr), deleteEventAction)
 	}
+
+	modMachine, err := a.setDeletingState(ctx, machine)
+	if err != nil {
+		klog.Errorf("unable to set machine deleting state: %v", err)
+	} else {
+		machine = modMachine
+	}
+
 	if err := newReconciler(scope).delete(); err != nil {
 		return a.handleMachineError(machine, err, deleteEventAction)
 	}
@@ -241,4 +264,64 @@ func (a *Actuator) updateStatus(ctx context.Context, machine *machinev1.Machine,
 	}
 
 	return modMachine, nil
+}
+
+func (a *Actuator) setDeletingState(ctx context.Context, machine *machinev1.Machine) (*machinev1.Machine, error) {
+	// Getting a vm object does not work here so let's assume
+	// an instance is really being deleted
+	gcpStatus := &providerconfig.GCPMachineProviderStatus{}
+	if err := a.codec.DecodeProviderStatus(machine.Status.ProviderStatus, gcpStatus); err != nil {
+		klog.Errorf("%s: Error decoding machine provider status: %v", machine.Name, err)
+		return nil, err
+	}
+
+	deleting := "DELETING"
+	gcpStatus.InstanceState = &deleting
+
+	modMachine, err := a.updateMachineStatus(machine, gcpStatus, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%s: error updating machine status: %v", modMachine.Name, err)
+	}
+
+	modMachine.Annotations[machinecontroller.MachineInstanceStateAnnotationName] = deleting
+
+	if err := a.coreClient.Update(ctx, modMachine); err != nil {
+		return nil, fmt.Errorf("%s: error updating machine spec: %v", modMachine.Name, err)
+	}
+
+	return modMachine, nil
+}
+
+func (a *Actuator) setMachineCloudProviderSpecifics(machine *machinev1.Machine, instance *compute.Instance) (*machinev1.Machine, error) {
+	machineCopy := machine.DeepCopy()
+
+	if machineCopy.Labels == nil {
+		machineCopy.Labels = make(map[string]string)
+	}
+
+	if machineCopy.Annotations == nil {
+		machineCopy.Annotations = make(map[string]string)
+	}
+
+	providerSpec, err := providerConfigFromMachine(machine, a.codec)
+	if err != nil {
+		return nil, err
+	}
+
+	machineCopy.Annotations[machinecontroller.MachineInstanceStateAnnotationName] = instance.Status
+	// TODO(jchaloup): detect all three from instance rather than
+	// always assuming it's the same as what is specified in the provider spec
+	machineCopy.Labels[machinecontroller.MachineInstanceTypeLabelName] = providerSpec.MachineType
+	machineCopy.Labels[machinecontroller.MachineRegionLabelName] = providerSpec.Region
+	machineCopy.Labels[machinecontroller.MachineAZLabelName] = providerSpec.Zone
+
+	if equality.Semantic.DeepEqual(machine.Labels, machineCopy.Labels) && equality.Semantic.DeepEqual(machine.Annotations, machineCopy.Annotations) {
+		return machine, nil
+	}
+
+	if err := a.coreClient.Update(context.Background(), machineCopy); err != nil {
+		return nil, fmt.Errorf("%s: error updating machine cloud provider specifics: %v", machineCopy.Name, err)
+	}
+
+	return machineCopy, nil
 }

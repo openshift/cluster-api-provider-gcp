@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	clustererror "github.com/openshift/cluster-api/pkg/controller/error"
-	machinecontroller "github.com/openshift/cluster-api/pkg/controller/machine"
 	"google.golang.org/api/compute/v1"
 	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
@@ -170,31 +169,12 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 	}
 	r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, succeedCondition)
 
-	r.setMachineCloudProviderSpecifics(freshInstance)
-
 	if freshInstance.Status != "RUNNING" {
 		klog.Infof("%s: machine status is %q, requeuing...", r.machine.Name, freshInstance.Status)
 		return freshInstance, &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
 	}
 
 	return freshInstance, nil
-}
-
-func (r *Reconciler) setMachineCloudProviderSpecifics(instance *compute.Instance) {
-	if r.machine.Labels == nil {
-		r.machine.Labels = make(map[string]string)
-	}
-
-	if r.machine.Annotations == nil {
-		r.machine.Annotations = make(map[string]string)
-	}
-
-	r.machine.Annotations[machinecontroller.MachineInstanceStateAnnotationName] = instance.Status
-	// TODO(jchaloup): detect all three from instance rather than
-	// always assuming it's the same as what is specified in the provider spec
-	r.machine.Labels[machinecontroller.MachineInstanceTypeLabelName] = r.providerSpec.MachineType
-	r.machine.Labels[machinecontroller.MachineRegionLabelName] = r.providerSpec.Region
-	r.machine.Labels[machinecontroller.MachineAZLabelName] = r.providerSpec.Zone
 }
 
 func (r *Reconciler) getCustomUserData() (string, error) {
