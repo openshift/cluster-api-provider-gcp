@@ -158,7 +158,6 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 		return nil, fmt.Errorf("failed to get instance via compute service: %v", err)
 	}
 
-	r.machine.Spec.ProviderID = &r.providerID
 	r.providerStatus.InstanceState = &freshInstance.Status
 	r.providerStatus.InstanceID = &freshInstance.Name
 	succeedCondition := v1beta1.GCPMachineProviderCondition{

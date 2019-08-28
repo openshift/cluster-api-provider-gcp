@@ -61,8 +61,9 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 	machineProviderSpec := &gcpv1beta1.GCPMachineProviderSpec{
 		Zone: zone,
 	}
-	projecID := "testProject"
+	projectID := "testProject"
 	instanceName := "testInstance"
+	providerID := fmt.Sprintf("gce://%s/%s/%s", projectID, zone, instanceName)
 
 	providerSpec, err := codec.EncodeProviderSpec(machineProviderSpec)
 	if err != nil {
@@ -93,8 +94,7 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 		machine:        machine,
 		coreClient:     controllerfake.NewFakeClient(),
 		providerSpec:   machineProviderSpec,
-		projectID:      projecID,
-		providerID:     fmt.Sprintf("gce://%s/%s/%s", projecID, zone, instanceName),
+		projectID:      projectID,
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 		computeService: mockComputeService,
 	}
@@ -120,16 +120,23 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to update machine status: %v", err)
 	}
+	machine = machineMod
 
-	if machineMod.Status.Addresses[0] != expectedNodeAddresses[0] {
+	if machine.Status.Addresses[0] != expectedNodeAddresses[0] {
 		t.Errorf("Expected: %s, got: %s", expectedNodeAddresses[0], r.machine.Status.Addresses[0])
 	}
-	if machineMod.Status.Addresses[1] != expectedNodeAddresses[1] {
+	if machine.Status.Addresses[1] != expectedNodeAddresses[1] {
 		t.Errorf("Expected: %s, got: %s", expectedNodeAddresses[1], r.machine.Status.Addresses[1])
 	}
 
-	if r.providerID != *r.machine.Spec.ProviderID {
-		t.Errorf("Expected: %s, got: %s", r.providerID, *r.machine.Spec.ProviderID)
+	machineMod, err = actuator.updateProviderID(machine, projectID)
+	if err != nil {
+		t.Fatalf("Unable to update machine status: %v", err)
+	}
+	machine = machineMod
+
+	if providerID != *machine.Spec.ProviderID {
+		t.Errorf("Expected: %s, got: %s", providerID, *machine.Spec.ProviderID)
 	}
 	if *r.providerStatus.InstanceState != "RUNNING" {
 		t.Errorf("Expected: %s, got: %s", "RUNNING", *r.providerStatus.InstanceState)
@@ -207,7 +214,7 @@ func newPoolTracker() *poolFuncTracker {
 
 func TestProcessTargetPools(t *testing.T) {
 	_, mockComputeService := computeservice.NewComputeServiceMock()
-	projecID := "testProject"
+	projectID := "testProject"
 	instanceName := "testInstance"
 	tpPresent := []string{
 		"pool1",
@@ -224,7 +231,7 @@ func TestProcessTargetPools(t *testing.T) {
 		providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
 			Zone: "zone1",
 		},
-		projectID:      projecID,
+		projectID:      projectID,
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 		computeService: mockComputeService,
 	}

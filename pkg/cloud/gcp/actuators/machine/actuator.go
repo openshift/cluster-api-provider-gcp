@@ -95,6 +95,13 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		} else {
 			machine = modeMachine
 		}
+
+		modeMachine, err = a.updateProviderID(machine, scope.projectID)
+		if err != nil {
+			klog.Errorf("%s: error updating machine provider ID: %v", machine.Name, err)
+		} else {
+			machine = modeMachine
+		}
 	}
 
 	if err != nil {
@@ -148,6 +155,13 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 		modeMachine, err := a.updateStatus(ctx, machine, reconciler, instance)
 		if err != nil {
 			klog.Errorf("%s: error updating machine status: %v", machine.Name, err)
+		} else {
+			machine = modeMachine
+		}
+
+		modeMachine, err = a.updateProviderID(machine, scope.projectID)
+		if err != nil {
+			klog.Errorf("%s: error updating machine provider ID: %v", machine.Name, err)
 		} else {
 			machine = modeMachine
 		}
@@ -290,6 +304,27 @@ func (a *Actuator) setDeletingState(ctx context.Context, machine *machinev1.Mach
 	}
 
 	return modMachine, nil
+}
+
+// updateProviderID adds providerID in the machine spec
+func (a *Actuator) updateProviderID(machine *machinev1.Machine, projectID string) (*machinev1.Machine, error) {
+	providerSpec, err := providerConfigFromMachine(machine, a.codec)
+	if err != nil {
+		return nil, err
+	}
+
+	// https://github.com/kubernetes/kubernetes/blob/8765fa2e48974e005ad16e65cb5c3acf5acff17b/staging/src/k8s.io/legacy-cloud-providers/gce/gce_util.go#L204
+	providerID := fmt.Sprintf("gce://%s/%s/%s", projectID, providerSpec.Zone, machine.Name)
+	klog.Infof("%s: setting ProviderID %s", machine.Name, providerID)
+
+	machineCopy := machine.DeepCopy()
+	machineCopy.Spec.ProviderID = &providerID
+
+	if err := a.coreClient.Update(context.Background(), machineCopy); err != nil {
+		return nil, fmt.Errorf("%s: error updating machine spec ProviderID: %v", machineCopy.Name, err)
+	}
+
+	return machineCopy, nil
 }
 
 func (a *Actuator) setMachineCloudProviderSpecifics(machine *machinev1.Machine, instance *compute.Instance) (*machinev1.Machine, error) {
