@@ -73,7 +73,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
 		return a.handleMachineError(machine, fmt.Errorf(fmtErr), createEventAction)
 	}
-	if err := newReconciler(scope).create(); err != nil {
+	if _, err := newReconciler(scope).create(); err != nil {
 		return a.handleMachineError(machine, err, createEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, createEventAction, "Created Machine %v", machine.Name)
@@ -109,7 +109,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
 		return a.handleMachineError(machine, fmt.Errorf(fmtErr), updateEventAction)
 	}
-	if err := newReconciler(scope).update(); err != nil {
+	if _, err = newReconciler(scope).update(); err != nil {
 		return a.handleMachineError(machine, err, updateEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, updateEventAction, "Updated Machine %v", machine.Name)

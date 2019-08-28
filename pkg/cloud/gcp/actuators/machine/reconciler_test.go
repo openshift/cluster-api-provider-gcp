@@ -28,7 +28,7 @@ func TestCreate(t *testing.T) {
 		computeService: mockComputeService,
 	}
 	reconciler := newReconciler(&machineScope)
-	if err := reconciler.create(); err != nil {
+	if _, err := reconciler.create(); err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
 	if reconciler.providerStatus.Conditions[0].Type != gcpv1beta1.MachineCreated {
@@ -80,7 +80,7 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 	}
 
 	r := newReconciler(&machineScope)
-	if err := r.reconcileMachineWithCloudState(nil); err != nil {
+	if _, err := r.reconcileMachineWithCloudState(nil); err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
 	if r.machine.Status.Addresses[0] != expectedNodeAddresses[0] {

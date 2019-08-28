@@ -37,9 +37,9 @@ func newReconciler(scope *machineScope) *Reconciler {
 }
 
 // Create creates machine if and only if machine exists, handled by cluster-api
-func (r *Reconciler) create() error {
+func (r *Reconciler) create() (*compute.Instance, error) {
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
-		return fmt.Errorf("failed validating machine provider spec: %v", err)
+		return nil, fmt.Errorf("failed validating machine provider spec: %v", err)
 	}
 
 	zone := r.providerSpec.Zone
@@ -104,7 +104,7 @@ func (r *Reconciler) create() error {
 	// userData
 	userData, err := r.getCustomUserData()
 	if err != nil {
-		return fmt.Errorf("error getting custom user data: %v", err)
+		return nil, fmt.Errorf("error getting custom user data: %v", err)
 	}
 	var metadataItems = []*compute.MetadataItems{
 		{
@@ -124,23 +124,24 @@ func (r *Reconciler) create() error {
 
 	_, err = r.computeService.InstancesInsert(r.projectID, zone, instance)
 	if err != nil {
-		if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
+		instance, reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
 			Type:    v1beta1.MachineCreated,
 			Reason:  machineCreationFailedReason,
 			Message: err.Error(),
 			Status:  corev1.ConditionFalse,
-		}); reconcileWithCloudError != nil {
+		})
+		if reconcileWithCloudError != nil {
 			klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
 		}
-		return fmt.Errorf("failed to create instance via compute service: %v", err)
+		return instance, fmt.Errorf("failed to create instance via compute service: %v", err)
 	}
 	return r.reconcileMachineWithCloudState(nil)
 }
 
-func (r *Reconciler) update() error {
+func (r *Reconciler) update() (*compute.Instance, error) {
 	// Add target pools, if necessary
 	if err := r.processTargetPools(true, r.addInstanceToTargetPool); err != nil {
-		return err
+		return nil, err
 	}
 	return r.reconcileMachineWithCloudState(nil)
 }
@@ -148,19 +149,19 @@ func (r *Reconciler) update() error {
 // reconcileMachineWithCloudState reconcile machineSpec and status with the latest cloud state
 // if a failedCondition is passed it updates the providerStatus.Conditions and return
 // otherwise it fetches the relevant cloud instance and reconcile the rest of the fields
-func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCPMachineProviderCondition) error {
+func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCPMachineProviderCondition) (*compute.Instance, error) {
 	klog.Infof("%s: Reconciling machine object with cloud state", r.machine.Name)
 	if failedCondition != nil {
 		r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, *failedCondition)
-		return nil
+		return nil, nil
 	}
 	freshInstance, err := r.computeService.InstancesGet(r.projectID, r.providerSpec.Zone, r.machine.Name)
 	if err != nil {
-		return fmt.Errorf("failed to get instance via compute service: %v", err)
+		return nil, fmt.Errorf("failed to get instance via compute service: %v", err)
 	}
 
 	if len(freshInstance.NetworkInterfaces) < 1 {
-		return fmt.Errorf("could not find network interfaces for instance %q", freshInstance.Name)
+		return freshInstance, fmt.Errorf("could not find network interfaces for instance %q", freshInstance.Name)
 	}
 	networkInterface := freshInstance.NetworkInterfaces[0]
 
@@ -198,10 +199,10 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 
 	if freshInstance.Status != "RUNNING" {
 		klog.Infof("%s: machine status is %q, requeuing...", r.machine.Name, freshInstance.Status)
-		return &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
+		return freshInstance, &clustererror.RequeueAfterError{RequeueAfter: requeueAfterSeconds * time.Second}
 	}
 
-	return nil
+	return freshInstance, nil
 }
 
 func (r *Reconciler) setMachineCloudProviderSpecifics(instance *compute.Instance) {
