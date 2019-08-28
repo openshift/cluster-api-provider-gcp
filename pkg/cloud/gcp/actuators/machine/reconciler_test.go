@@ -19,14 +19,35 @@ import (
 
 func TestCreate(t *testing.T) {
 	_, mockComputeService := computeservice.NewComputeServiceMock()
-	machineScope := machineScope{
-		machine: &machinev1beta1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "",
-				Namespace: "",
-			},
+
+	codec, err := gcpv1beta1.NewCodec()
+	if err != nil {
+		t.Fatalf("Unable to create codec: %v", err)
+	}
+
+	instanceName := "testInstance"
+
+	machine := &machinev1beta1.Machine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      instanceName,
+			Namespace: "",
 		},
-		coreClient:     controllerfake.NewFakeClient(),
+	}
+
+	cs := capifake.NewSimpleClientset(machine)
+	coreClient := fake.NewFakeClient(machine)
+	actuator := NewActuator(ActuatorParams{
+		MachineClient: cs.MachineV1beta1(),
+		CoreClient:    coreClient,
+		EventRecorder: &record.FakeRecorder{
+			Events: make(chan string, 1),
+		},
+		Codec: codec,
+	})
+
+	machineScope := machineScope{
+		machine:        machine,
+		coreClient:     coreClient,
 		providerSpec:   &gcpv1beta1.GCPMachineProviderSpec{},
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 		computeService: mockComputeService,
@@ -35,16 +56,27 @@ func TestCreate(t *testing.T) {
 	if _, err := reconciler.create(); err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
-	if reconciler.providerStatus.Conditions[0].Type != gcpv1beta1.MachineCreated {
+
+	machineMod, err := actuator.updateMachineProviderConditions(machineScope.machine, gcpv1beta1.MachineCreated, machineCreationSucceedReason, machineCreationSucceedMessage, corev1.ConditionTrue)
+	if err != nil {
+		t.Fatalf("Unable to update machine status: %v", err)
+	}
+
+	gcpStatus := &gcpv1beta1.GCPMachineProviderStatus{}
+	if err := codec.DecodeProviderStatus(machineMod.Status.ProviderStatus, gcpStatus); err != nil {
+		t.Fatalf("Unable to decode provider status: %v", err)
+	}
+
+	if gcpStatus.Conditions[0].Type != gcpv1beta1.MachineCreated {
 		t.Errorf("Expected: %s, got %s", gcpv1beta1.MachineCreated, reconciler.providerStatus.Conditions[0].Type)
 	}
-	if reconciler.providerStatus.Conditions[0].Status != corev1.ConditionTrue {
+	if gcpStatus.Conditions[0].Status != corev1.ConditionTrue {
 		t.Errorf("Expected: %s, got %s", corev1.ConditionTrue, reconciler.providerStatus.Conditions[0].Status)
 	}
-	if reconciler.providerStatus.Conditions[0].Reason != machineCreationSucceedReason {
+	if gcpStatus.Conditions[0].Reason != machineCreationSucceedReason {
 		t.Errorf("Expected: %s, got %s", machineCreationSucceedReason, reconciler.providerStatus.Conditions[0].Reason)
 	}
-	if reconciler.providerStatus.Conditions[0].Message != machineCreationSucceedMessage {
+	if gcpStatus.Conditions[0].Message != machineCreationSucceedMessage {
 		t.Errorf("Expected: %s, got %s", machineCreationSucceedMessage, reconciler.providerStatus.Conditions[0].Message)
 	}
 }

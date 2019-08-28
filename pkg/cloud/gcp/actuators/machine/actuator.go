@@ -105,8 +105,20 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 
 	if err != nil {
+		modMachine, updateConditionError := a.updateMachineProviderConditions(machine, providerconfig.MachineCreated, machineCreationFailedReason, err.Error(), corev1.ConditionFalse)
+		if updateConditionError != nil {
+			klog.Errorf("%s: error updating machine conditions: %v", machine.Name, updateConditionError)
+		} else {
+			machine = modMachine
+		}
 		return a.handleMachineError(machine, err, createEventAction)
 	}
+
+	modMachine, updateConditionError := a.updateMachineProviderConditions(machine, providerconfig.MachineCreated, machineCreationSucceedReason, machineCreationSucceedMessage, corev1.ConditionTrue)
+	if updateConditionError != nil {
+		return a.handleMachineError(machine, updateConditionError, createEventAction)
+	}
+	machine = modMachine
 
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, createEventAction, "Created Machine %v", machine.Name)
 	return scope.Close()
@@ -165,6 +177,16 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 		} else {
 			machine = modeMachine
 		}
+
+		// Create can fail before machine created condition is set. Meantime,
+		// instance in GCE can be already running so the condition will never
+		// get set to true. Thus, when we get to Update op, we already know
+		// the instance was succesfully created.
+		modMachine, updateConditionError := a.updateMachineProviderConditions(machine, providerconfig.MachineCreated, machineCreationSucceedReason, machineCreationSucceedMessage, corev1.ConditionTrue)
+		if updateConditionError != nil {
+			return a.handleMachineError(machine, updateConditionError, createEventAction)
+		}
+		machine = modMachine
 	}
 
 	if err != nil {
@@ -199,6 +221,30 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, deleteEventAction, "Deleted machine %v", machine.Name)
 	return nil
+}
+
+func (a *Actuator) updateMachineProviderConditions(machine *machinev1.Machine, conditionType providerconfig.GCPMachineProviderConditionType, reason string, msg string, status corev1.ConditionStatus) (*machinev1.Machine, error) {
+	klog.Infof("%s: updating machine conditions", machine.Name)
+
+	gcpStatus := &providerconfig.GCPMachineProviderStatus{}
+	if err := a.codec.DecodeProviderStatus(machine.Status.ProviderStatus, gcpStatus); err != nil {
+		klog.Errorf("%s: error decoding machine provider status: %v", machine.Name, err)
+		return nil, err
+	}
+
+	gcpStatus.Conditions = reconcileProviderConditions(gcpStatus.Conditions, providerconfig.GCPMachineProviderCondition{
+		Type:    conditionType,
+		Status:  status,
+		Reason:  reason,
+		Message: msg,
+	})
+
+	modMachine, err := a.updateMachineStatus(machine, gcpStatus, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return modMachine, nil
 }
 
 func (a *Actuator) updateMachineStatus(machine *machinev1.Machine, gcpStatus *providerconfig.GCPMachineProviderStatus, networkAddresses []corev1.NodeAddress) (*machinev1.Machine, error) {

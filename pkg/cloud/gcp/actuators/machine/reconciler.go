@@ -122,15 +122,6 @@ func (r *Reconciler) create() (*compute.Instance, error) {
 
 	_, err = r.computeService.InstancesInsert(r.projectID, zone, instance)
 	if err != nil {
-		instance, reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
-			Type:    v1beta1.MachineCreated,
-			Reason:  machineCreationFailedReason,
-			Message: err.Error(),
-			Status:  corev1.ConditionFalse,
-		})
-		if reconcileWithCloudError != nil {
-			klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
-		}
 		return instance, fmt.Errorf("failed to create instance via compute service: %v", err)
 	}
 	return r.reconcileMachineWithCloudState(nil)
@@ -157,14 +148,6 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance via compute service: %v", err)
 	}
-
-	succeedCondition := v1beta1.GCPMachineProviderCondition{
-		Type:    v1beta1.MachineCreated,
-		Reason:  machineCreationSucceedReason,
-		Message: machineCreationSucceedMessage,
-		Status:  corev1.ConditionTrue,
-	}
-	r.providerStatus.Conditions = reconcileProviderConditions(r.providerStatus.Conditions, succeedCondition)
 
 	if freshInstance.Status != "RUNNING" {
 		klog.Infof("%s: machine status is %q, requeuing...", r.machine.Name, freshInstance.Status)
