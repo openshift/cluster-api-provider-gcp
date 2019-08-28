@@ -105,7 +105,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return fmt.Errorf("unable to get credentials secret: %v", err)
 	}
 
-	scope, err := newMachineScope(machineScopeParams{
+	scope, err := newScope(scopeParams{
 		credentialsSecret: credentialsSecret,
 		projectID:         providerSpec.ProjectID,
 	})
@@ -186,7 +186,7 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return false, fmt.Errorf("unable to get credentials secret: %v", err)
 	}
 
-	scope, err := newMachineScope(machineScopeParams{
+	scope, err := newScope(scopeParams{
 		credentialsSecret: credentialsSecret,
 		projectID:         providerSpec.ProjectID,
 	})
@@ -216,7 +216,7 @@ func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return fmt.Errorf("unable to get credentials secret: %v", err)
 	}
 
-	scope, err := newMachineScope(machineScopeParams{
+	scope, err := newScope(scopeParams{
 		credentialsSecret: credentialsSecret,
 		projectID:         providerSpec.ProjectID,
 	})
@@ -282,7 +282,7 @@ func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machi
 		return fmt.Errorf("unable to get credentials secret: %v", err)
 	}
 
-	scope, err := newMachineScope(machineScopeParams{
+	scope, err := newScope(scopeParams{
 		credentialsSecret: credentialsSecret,
 		projectID:         providerSpec.ProjectID,
 	})
@@ -438,7 +438,7 @@ func (a *Actuator) setDeletingState(ctx context.Context, machine *machinev1.Mach
 }
 
 // updateProviderID adds providerID in the machine spec
-func (a *Actuator) updateProviderID(machine *machinev1.Machine, scope *machineScope) (*machinev1.Machine, error) {
+func (a *Actuator) updateProviderID(machine *machinev1.Machine, scope *scope) (*machinev1.Machine, error) {
 	providerSpec, err := providerConfigFromMachine(machine, a.codec)
 	if err != nil {
 		return nil, err

@@ -14,21 +14,21 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 )
 
-// machineScopeParams defines the input parameters used to create a new MachineScope.
-type machineScopeParams struct {
+// scopeParams defines the input parameters used to create a new scope.
+type scopeParams struct {
 	credentialsSecret *apicorev1.Secret
 	projectID         string
 }
 
-// machineScope defines a scope defined around a machine and its cluster.
-type machineScope struct {
+// scope defines communication interface between the actuator and GCE
+type scope struct {
 	projectID      string
 	computeService computeservice.GCPComputeService
 }
 
-// newMachineScope creates a new MachineScope from the supplied parameters.
+// newScope creates a new scope from the supplied parameters.
 // This is meant to be called for each machine actuator operation.
-func newMachineScope(params machineScopeParams) (*machineScope, error) {
+func newScope(params scopeParams) (*scope, error) {
 	var serviceAccountJSON string
 	var err error
 
@@ -56,7 +56,7 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating compute service: %v", err)
 	}
-	return &machineScope{
+	return &scope{
 		projectID:      projectID,
 		computeService: computeService,
 	}, nil

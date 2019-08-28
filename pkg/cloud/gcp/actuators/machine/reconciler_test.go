@@ -32,13 +32,13 @@ func TestCreate(t *testing.T) {
 	machine := testMachine()
 	providerSpec := testMachineProviderConfig()
 
-	machineScope := machineScope{
+	scope := scope{
 		projectID:      "projectID",
 		computeService: mockComputeService,
 	}
 
 	coreClient := controllerfake.NewFakeClient(machine)
-	reconciler := newReconciler(&machineScope, coreClient)
+	reconciler := newReconciler(&scope, coreClient)
 	instance, err := reconciler.create(machine, providerSpec)
 	if instance == nil {
 		t.Error("reconciler was not expected to return nil instance")
@@ -54,13 +54,13 @@ func TestExists(t *testing.T) {
 	machine := testMachine()
 	providerSpec := testMachineProviderConfig()
 
-	machineScope := machineScope{
+	scope := scope{
 		projectID:      "projectID",
 		computeService: mockComputeService,
 	}
 
 	coreClient := controllerfake.NewFakeClient(machine)
-	reconciler := newReconciler(&machineScope, coreClient)
+	reconciler := newReconciler(&scope, coreClient)
 
 	exists, err := reconciler.exists(machine, providerSpec)
 	if err != nil || exists != true {
@@ -73,13 +73,13 @@ func TestDelete(t *testing.T) {
 	machine := testMachine()
 	providerSpec := testMachineProviderConfig()
 
-	machineScope := machineScope{
+	scope := scope{
 		projectID:      "projectID",
 		computeService: mockComputeService,
 	}
 
 	coreClient := controllerfake.NewFakeClient(machine)
-	reconciler := newReconciler(&machineScope, coreClient)
+	reconciler := newReconciler(&scope, coreClient)
 
 	if err := reconciler.delete(machine, providerSpec); err != nil {
 		if _, ok := err.(*controllerError.RequeueAfterError); !ok {
@@ -124,7 +124,7 @@ func TestProcessTargetPools(t *testing.T) {
 	machine.Name = instanceName
 	providerSpec := testMachineProviderConfig()
 
-	machineScope := machineScope{
+	scope := scope{
 		projectID:      projecID,
 		computeService: mockComputeService,
 	}
@@ -181,7 +181,7 @@ func TestProcessTargetPools(t *testing.T) {
 	for i, tc := range tCases {
 		coreClient := controllerfake.NewFakeClient(machine)
 		pt := newPoolTracker()
-		rec := newReconciler(&machineScope, coreClient)
+		rec := newReconciler(&scope, coreClient)
 		err := rec.processTargetPools(tc.desired, tc.targetPools, pt.track, tc.region, providerSpec.Zone, machine.Name)
 		if err != nil {
 			t.Errorf("unexpected error from ptp")

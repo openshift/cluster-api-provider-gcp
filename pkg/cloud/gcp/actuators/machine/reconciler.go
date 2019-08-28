@@ -25,15 +25,15 @@ const (
 
 // Reconciler are list of services required by machine actuator, easy to create a fake
 type Reconciler struct {
-	*machineScope
+	*scope
 	coreClient controllerclient.Client
 }
 
 // NewReconciler populates all the services based on input scope
-func newReconciler(scope *machineScope, coreClient controllerclient.Client) *Reconciler {
+func newReconciler(scope *scope, coreClient controllerclient.Client) *Reconciler {
 	return &Reconciler{
-		machineScope: scope,
-		coreClient:   coreClient,
+		scope:      scope,
+		coreClient: coreClient,
 	}
 }
 
