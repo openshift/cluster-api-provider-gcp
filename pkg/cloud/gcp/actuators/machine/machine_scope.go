@@ -17,6 +17,8 @@ import (
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	machineclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
 	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,6 +45,13 @@ type machineScope struct {
 	machine        *machinev1.Machine
 	providerSpec   *v1beta1.GCPMachineProviderSpec
 	providerStatus *v1beta1.GCPMachineProviderStatus
+
+	// origMachine captures original value of machine before it is updated (to
+	// skip object updated if nothing is changed)
+	origMachine *machinev1.Machine
+	// origProviderStatus captures original value of machine provider status
+	// before it is updated (to skip object updated if nothing is changed)
+	origProviderStatus *v1beta1.GCPMachineProviderStatus
 }
 
 // newMachineScope creates a new MachineScope from the supplied parameters.
@@ -90,6 +99,10 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		machine:        params.machine,
 		providerSpec:   providerSpec,
 		providerStatus: providerStatus,
+		// Once set, they can not be changed. Otherwise, status change computation
+		// might be invalid and result in skipping the status update.
+		origMachine:        params.machine.DeepCopy(),
+		origProviderStatus: providerStatus.DeepCopy(),
 	}, nil
 }
 
@@ -128,10 +141,17 @@ func (s *machineScope) storeMachineStatus(machine *machinev1.Machine) (*machinev
 		return nil, err
 	}
 
-	klog.V(4).Infof("Storing machine status for %q, resourceVersion: %v, generation: %v", s.machine.Name, s.machine.ResourceVersion, s.machine.Generation)
-	s.machine.Status.DeepCopyInto(&machine.Status)
-	machine.Status.ProviderStatus = ext
-	return s.machineClient.UpdateStatus(machine)
+	if !equality.Semantic.DeepEqual(s.providerStatus, s.origProviderStatus) || !equality.Semantic.DeepEqual(s.machine.Status.Addresses, s.origMachine.Status.Addresses) {
+		klog.V(4).Infof("Storing machine status for %q, resourceVersion: %v, generation: %v", s.machine.Name, s.machine.ResourceVersion, s.machine.Generation)
+		s.machine.Status.DeepCopyInto(&machine.Status)
+		machine.Status.ProviderStatus = ext
+
+		time := metav1.Now()
+		machine.Status.LastUpdated = &time
+		return s.machineClient.UpdateStatus(machine)
+	}
+	klog.Infof("%s: status unchanged", machine.Name)
+	return machine, nil
 }
 
 // This expects the https://github.com/openshift/cloud-credential-operator to make a secret

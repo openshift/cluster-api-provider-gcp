@@ -58,9 +58,8 @@ required = [
 
 [[override]]
   name = "sigs.k8s.io/controller-runtime"
-  # Pin the latest master HEAD to get support webhooks
-  # which are not yet released
-  revision="96b67f231945a8e8550dbdd8bfbd550a0c68097b"
+  # release-0.2 since it imports kubernetes 1.14
+  branch="release-0.2"
 
 # For dependency below: Refer to issue https://github.com/golang/dep/issues/1799
  [[override]]
