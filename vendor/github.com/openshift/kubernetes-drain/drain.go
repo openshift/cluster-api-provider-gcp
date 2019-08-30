@@ -502,12 +502,16 @@ func waitForDelete(pods []corev1.Pod, interval, timeout time.Duration, usingEvic
 		pendingPods := []corev1.Pod{}
 		for i, pod := range pods {
 			p, err := getPodFn(pod.Namespace, pod.Name)
-			if apierrors.IsNotFound(err) || (p != nil && p.ObjectMeta.UID != pod.ObjectMeta.UID) {
-				logf(logger, "pod %q removed (%s)", pod.Name, verbStr)
+			if apierrors.IsNotFound(err) {
+				logf(logger, "xxx not found pod %q removed (%s)", pod.Name, verbStr)
+				continue
+			} else if p != nil && p.ObjectMeta.UID != pod.ObjectMeta.UID {
+				logf(logger, "xxx pod doesn't match %v and %v", p.ObjectMeta.UID, pod.ObjectMeta.UID)
 				continue
 			} else if err != nil {
 				return false, err
 			} else {
+				logf(logger, "xxx appending pod %q", pod.Name)
 				pendingPods = append(pendingPods, pods[i])
 			}
 		}
