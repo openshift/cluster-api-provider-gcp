@@ -54,6 +54,11 @@ func (r *Reconciler) create() error {
 		},
 	}
 
+	if instance.Labels == nil {
+		instance.Labels = map[string]string{}
+	}
+	instance.Labels[fmt.Sprintf("kubernetes-io-cluster-%v", r.machine.Labels[machinev1.MachineClusterIDLabel])] = "owned"
+
 	// disks
 	var disks = []*compute.AttachedDisk{}
 	for _, disk := range r.providerSpec.Disks {
@@ -249,6 +254,11 @@ func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineP
 			}
 		}
 	}
+
+	if machine.Labels[machinev1.MachineClusterIDLabel] == "" {
+		return fmt.Errorf("machine is missing %q label", machinev1.MachineClusterIDLabel)
+	}
+
 	return nil
 }
 

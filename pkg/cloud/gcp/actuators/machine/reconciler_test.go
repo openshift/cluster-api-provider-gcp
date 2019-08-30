@@ -20,6 +20,9 @@ func TestCreate(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "",
 				Namespace: "",
+				Labels: map[string]string{
+					machinev1beta1.MachineClusterIDLabel: "CLUSTERID",
+				},
 			},
 		},
 		coreClient:     controllerfake.NewFakeClient(),
@@ -108,6 +111,9 @@ func TestExists(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "",
 				Namespace: "",
+				Labels: map[string]string{
+					machinev1beta1.MachineClusterIDLabel: "CLUSTERID",
+				},
 			},
 		},
 		coreClient:     controllerfake.NewFakeClient(),
@@ -129,6 +135,9 @@ func TestDelete(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "",
 				Namespace: "",
+				Labels: map[string]string{
+					machinev1beta1.MachineClusterIDLabel: "CLUSTERID",
+				},
 			},
 		},
 		coreClient:     controllerfake.NewFakeClient(),
