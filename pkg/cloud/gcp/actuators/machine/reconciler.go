@@ -9,6 +9,7 @@ import (
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	clustererror "github.com/openshift/cluster-api/pkg/controller/error"
 	machinecontroller "github.com/openshift/cluster-api/pkg/controller/machine"
+	clusterapiError "github.com/openshift/cluster-api/pkg/errors"
 	"google.golang.org/api/compute/v1"
 	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
@@ -261,8 +262,15 @@ func (r *Reconciler) exists() (bool, error) {
 	// Need to verify that our project/zone exists before checking machine, as
 	// invalid project/zone produces same 404 error as no machine.
 	if err := r.validateZone(); err != nil {
+		if isNotFoundError(err) {
+			// this error type bubbles back up to the machine-controller to allow
+			// us to delete machines that were never properly created due to
+			// invalid zone.
+			return false, clusterapiError.InvalidMachineConfiguration(fmt.Sprintf("%s: Machine does not exist", r.machine.Name))
+		}
 		return false, fmt.Errorf("unable to verify project/zone exists: %v/%v; err: %v", r.projectID, zone, err)
 	}
+
 	instance, err := r.computeService.InstancesGet(r.projectID, zone, r.machine.Name)
 	if err == nil {
 		switch instance.Status {
