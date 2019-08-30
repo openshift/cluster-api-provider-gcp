@@ -511,6 +511,10 @@ func waitForDelete(pods []corev1.Pod, interval, timeout time.Duration, usingEvic
 			} else if err != nil {
 				return false, err
 			} else {
+				if !p.ObjectMeta.DeletionTimestamp.IsZero() && time.Now().Sub(p.ObjectMeta.GetDeletionTimestamp().Time).Minutes() > 1 {
+					logf(logger, "xxx hit new condition %v", time.Now().Sub(p.ObjectMeta.GetDeletionTimestamp().Time).Minutes())
+					continue
+				}
 				logf(logger, "xxx appending pod %q", pod.Name)
 				pendingPods = append(pendingPods, pods[i])
 			}
