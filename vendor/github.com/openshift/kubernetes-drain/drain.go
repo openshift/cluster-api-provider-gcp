@@ -508,11 +508,11 @@ func waitForDelete(pods []corev1.Pod, interval, timeout time.Duration, usingEvic
 				logf(logger, "pod %q removed (%s)", pod.Name, verbStr)
 				continue
 			} else if err != nil {
-				logf(logger, "xxx: err not nil")
+				logf(logger, "xxx: err not nil %v", err)
 				return false, err
 			} else {
 				// Need to maybe make this tunable
-				logf(logger, "xxx hit else")
+				logf(logger, "xxx hit else %v", nodeReady)
 				/*
 				if !nodeReady && !p.ObjectMeta.DeletionTimestamp.IsZero() && time.Now().Sub(p.ObjectMeta.GetDeletionTimestamp().Time).Minutes() > 1 {
 					logf(logger, "xxx hit new condition")
