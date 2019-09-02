@@ -6,16 +6,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/pkg/errors"
-
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/compute/v1"
-
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	machineclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
+	"github.com/pkg/errors"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	compute "google.golang.org/api/compute/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,7 +94,10 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		// https://github.com/kubernetes/kubernetes/blob/8765fa2e48974e005ad16e65cb5c3acf5acff17b/staging/src/k8s.io/legacy-cloud-providers/gce/gce_util.go#L204
 		providerID:     fmt.Sprintf("gce://%s/%s/%s", projectID, providerSpec.Zone, params.machine.Name),
 		computeService: computeService,
-		machine:        params.machine,
+		// Deep copy the machine since it is changed outside
+		// of the machine scope by consumers of the machine
+		// scope (e.g. reconciler).
+		machine:        params.machine.DeepCopy(),
 		providerSpec:   providerSpec,
 		providerStatus: providerStatus,
 		// Once set, they can not be changed. Otherwise, status change computation
@@ -112,46 +113,66 @@ func (s *machineScope) Close() error {
 		return errors.New("No machineClient is set for this scope")
 	}
 
-	latestMachine, err := s.storeMachineSpec(s.machine)
-	if err != nil {
-		return fmt.Errorf("[machinescope] failed to update machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
+	// The machine status needs to be updated first since
+	// the next call to storeMachineSpec updates entire machine
+	// object. If done in the reverse order, the machine status
+	// could be updated without setting the LastUpdated field
+	// in the machine status. The following might occur:
+	// 1. machine object is updated (including its status)
+	// 2. the machine object is updated by different component/user meantime
+	// 3. storeMachineStatus is called but fails since the machine object
+	//    is outdated. The operation is reconciled but given the status
+	//    was already set in the previous call, the status is no longer updated
+	//    since the status updated condition is already false. Thus,
+	//    the LastUpdated is not set/updated properly.
+	if err := s.storeMachineStatus(); err != nil {
+		return fmt.Errorf("[machinescope] failed to store provider status for machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
 	}
 
-	if _, err = s.storeMachineStatus(latestMachine); err != nil {
-		return fmt.Errorf("[machinescope] failed to store provider status for machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
+	if err := s.storeMachineSpec(); err != nil {
+		return fmt.Errorf("[machinescope] failed to update machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
 	}
 
 	return nil
 }
 
-func (s *machineScope) storeMachineSpec(machine *machinev1.Machine) (*machinev1.Machine, error) {
+func (s *machineScope) storeMachineSpec() error {
 	ext, err := v1beta1.RawExtensionFromProviderSpec(s.providerSpec)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	klog.V(4).Infof("Storing machine spec for %q, resourceVersion: %v, generation: %v", s.machine.Name, s.machine.ResourceVersion, s.machine.Generation)
-	machine.Spec.ProviderSpec.Value = ext
-	return s.machineClient.Update(machine)
+	s.machine.Spec.ProviderSpec.Value = ext
+	latestMachine, err := s.machineClient.Update(s.machine)
+	if err != nil {
+		return err
+	}
+	s.machine = latestMachine
+	return nil
 }
 
-func (s *machineScope) storeMachineStatus(machine *machinev1.Machine) (*machinev1.Machine, error) {
+func (s *machineScope) storeMachineStatus() error {
+	if equality.Semantic.DeepEqual(s.providerStatus, s.origProviderStatus) && equality.Semantic.DeepEqual(s.machine.Status.Addresses, s.origMachine.Status.Addresses) {
+		klog.Infof("%s: status unchanged", s.machine.Name)
+		return nil
+	}
+
+	klog.V(4).Infof("Storing machine status for %q, resourceVersion: %v, generation: %v", s.machine.Name, s.machine.ResourceVersion, s.machine.Generation)
 	ext, err := v1beta1.RawExtensionFromProviderStatus(s.providerStatus)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if !equality.Semantic.DeepEqual(s.providerStatus, s.origProviderStatus) || !equality.Semantic.DeepEqual(s.machine.Status.Addresses, s.origMachine.Status.Addresses) {
-		klog.V(4).Infof("Storing machine status for %q, resourceVersion: %v, generation: %v", s.machine.Name, s.machine.ResourceVersion, s.machine.Generation)
-		s.machine.Status.DeepCopyInto(&machine.Status)
-		machine.Status.ProviderStatus = ext
-
-		time := metav1.Now()
-		machine.Status.LastUpdated = &time
-		return s.machineClient.UpdateStatus(machine)
+	s.machine.Status.ProviderStatus = ext
+	time := metav1.Now()
+	s.machine.Status.LastUpdated = &time
+	latestMachine, err := s.machineClient.UpdateStatus(s.machine)
+	if err != nil {
+		return err
 	}
-	klog.Infof("%s: status unchanged", machine.Name)
-	return machine, nil
+	s.machine = latestMachine
+	return nil
 }
 
 // This expects the https://github.com/openshift/cloud-credential-operator to make a secret
