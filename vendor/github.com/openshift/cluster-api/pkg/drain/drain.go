@@ -334,6 +334,12 @@ func getPodsForDeletion(client kubernetes.Interface, node *corev1.Node, options 
 	}
 
 	for _, pod := range podList.Items {
+		if !pod.ObjectMeta.DeletionTimestamp.IsZero() && time.Now().Sub(pod.ObjectMeta.GetDeletionTimestamp().Time).Minutes() > 1 {
+			if !isNodeReady(*node) {
+				fmt.Printf("xxx hit node unready/ pod deleted")
+				continue
+			}
+		}
 		podOk := true
 		for _, filt := range []podFilter{daemonSetOptions.daemonSetFilter, mirrorPodFilter, options.localStorageFilter, options.unreplicatedFilter} {
 			filterOk, w, f := filt(pod)
@@ -599,4 +605,13 @@ func logf(logger golog.Logger, format string, v ...interface{}) {
 	if logger != nil {
 		logger.Logf(format, v...)
 	}
+}
+
+func isNodeReady(node corev1.Node) bool {
+	for _, cond := range node.Status.Conditions {
+		if cond.Type == corev1.NodeReady && cond.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
