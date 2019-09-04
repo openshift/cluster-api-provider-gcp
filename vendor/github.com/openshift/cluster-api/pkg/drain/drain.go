@@ -438,9 +438,9 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 	} else {
 		globalTimeout = options.Timeout
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	for _, pod := range pods {
-		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-		defer cancel()
 		wg.Add(1)
 		fmt.Println("xxx staring evict for ", pod.ObjectMeta.Name)
 		go func(pod corev1.Pod, returnCh chan error) {
@@ -463,6 +463,7 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 							fmt.Println("xxx no error ", pod.ObjectMeta.Name)
 							// evict call successful, goto waitForDelete
 							breakToWait = true
+							//break
 						} else if apierrors.IsNotFound(err) {
 							// pod is missing, no need to waitForDelete
 							fmt.Println("xxx not found error ", pod.ObjectMeta.Name)
@@ -484,28 +485,18 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 				}
 			}
 			podArray := []corev1.Pod{pod}
-			for {
-			    select {
-		        // we hit global timeout
-		        case <-ctx.Done():
-		            fmt.Println("xxx: Hit global timeout: ", pod.ObjectMeta.Name)
-		            returnCh <- fmt.Errorf("error when evicting pod %q: global timeout", pod.Name)
-		            return
-		        // Try to do the things.
-		        default:
-		            _, err = waitForDelete(podArray, 1*time.Second, time.Duration(globalTimeout), true, options.Logger, getPodFn)
-		            fmt.Println("xxx waitfordelete ", pod.ObjectMeta.Name)
-		            if err == nil {
-		                fmt.Println("xxx waitfordelete no error", pod.ObjectMeta.Name)
-		                returnCh <- nil
-		                return
-		            } else {
-		                fmt.Println("xxx waitfordelete error ", pod.ObjectMeta.Name)
-		                returnCh <- fmt.Errorf("error when waiting for pod %q terminating: %v", pod.Name, err)
-		                return
-		            }
-				}
-			}
+
+            _, err = waitForDelete(podArray, 1*time.Second, time.Duration(globalTimeout), true, options.Logger, getPodFn)
+            fmt.Println("xxx waitfordelete ", pod.ObjectMeta.Name)
+            if err == nil {
+                fmt.Println("xxx waitfordelete no error", pod.ObjectMeta.Name)
+                returnCh <- nil
+                return
+            } else {
+                fmt.Println("xxx waitfordelete error ", pod.ObjectMeta.Name)
+                returnCh <- fmt.Errorf("error when waiting for pod %q terminating: %v", pod.Name, err)
+                return
+            }
 		}(pod, returnCh)
 		fmt.Println("xxx after gofun")
 	}
