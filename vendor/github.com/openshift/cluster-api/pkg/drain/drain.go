@@ -23,7 +23,7 @@ import (
 	"math"
 	"sort"
 	"strings"
-	"sync"
+	//"sync"
 	"time"
 
 	golog "github.com/go-log/log"
@@ -44,9 +44,6 @@ import (
 	typedpolicyv1beta1 "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 )
 
-var (
-	wg sync.WaitGroup
-)
 
 type DrainOptions struct {
 	// Continue even if there are pods not managed by a ReplicationController, ReplicaSet, Job, DaemonSet or StatefulSet.
@@ -343,7 +340,7 @@ func getPodsForDeletion(client kubernetes.Interface, node *corev1.Node, options 
 		if !pod.ObjectMeta.DeletionTimestamp.IsZero() && time.Now().Sub(pod.ObjectMeta.GetDeletionTimestamp().Time).Minutes() > 1 {
 			if !isNodeReady(*node) {
 				fmt.Printf("xxx hit node unready/ pod deleted %v \n", pod.ObjectMeta.Name)
-				// continue
+				continue
 			}
 		}
 		podOk := true
@@ -441,11 +438,8 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	for _, pod := range pods {
-		wg.Add(1)
 		fmt.Println("xxx staring evict for ", pod.ObjectMeta.Name)
 		go func(pod corev1.Pod, returnCh chan error) {
-			defer gofunDone()
-			defer wg.Done()
 			var err error
 			for {
 				breakToWait := false
@@ -502,9 +496,6 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 	}
 
 	var errors []error
-	fmt.Println("xxx starting wait for wg")
-	wg.Wait()
-	fmt.Println("xxx finished waiting for wg")
 	for _, _ = range pods {
 		select {
 		case err := <-returnCh:
@@ -513,6 +504,7 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 			}
 		}
 	}
+	fmt.Println("xxx finished getting from returnCh")
 	return utilerrors.NewAggregate(errors)
 }
 
