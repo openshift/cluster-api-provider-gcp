@@ -343,7 +343,7 @@ func getPodsForDeletion(client kubernetes.Interface, node *corev1.Node, options 
 		if !pod.ObjectMeta.DeletionTimestamp.IsZero() && time.Now().Sub(pod.ObjectMeta.GetDeletionTimestamp().Time).Minutes() > 1 {
 			if !isNodeReady(*node) {
 				fmt.Printf("xxx hit node unready/ pod deleted %v \n", pod.ObjectMeta.Name)
-				continue
+				// continue
 			}
 		}
 		podOk := true
@@ -421,64 +421,115 @@ func deleteOrEvictPods(client kubernetes.Interface, pods []corev1.Pod, options *
 		return deletePods(client.CoreV1(), pods, options, getPodFn)
 	}
 }
+func gofunDone() {
+	fmt.Println("xxx gofundone")
+}
+
+func doEvict(client typedpolicyv1beta1.PolicyV1beta1Interface, policyGroupVersion string, pod corev1.Pod, returnCh chan error, ctx context.Context, globalTimeout time.Duration, options *DrainOptions, getPodFn func(namespace, name string) (*corev1.Pod, error)) {
+	defer gofunDone()
+	defer wg.Done()
+	var err error
+	for {
+		breakToWait := false
+		select {
+			// we hit global timeout
+			case <-ctx.Done():
+				fmt.Println("xxx: Hit global timeout: ", pod.ObjectMeta.Name)
+				returnCh <- fmt.Errorf("error when evicting pod %q: global timeout", pod.Name)
+				return
+			// Try to do the things.
+			default:
+				fmt.Println("xxx attempting eviction ", pod.ObjectMeta.Name)
+				err = evictPod(client, pod, policyGroupVersion, options.GracePeriodSeconds)
+				if err == nil {
+					fmt.Println("xxx no error ", pod.ObjectMeta.Name)
+					// evict call successful, goto waitForDelete
+					breakToWait = true
+				} else if apierrors.IsNotFound(err) {
+					// pod is missing, no need to waitForDelete
+					fmt.Println("xxx not found error ", pod.ObjectMeta.Name)
+					returnCh <- nil
+					return
+				} else if apierrors.IsTooManyRequests(err) {
+					// Need to retry, so we sleep and we'll loop around.
+					logf(options.Logger, "error when evicting pod %q (will retry after 5s): %v", pod.Name, err)
+					time.Sleep(5 * time.Second)
+				} else {
+					// We hit some other error, no need to waitForDelete, just return the error.
+					returnCh <- fmt.Errorf("error when evicting pod %q: %v", pod.Name, err)
+					return
+				}
+		}
+		fmt.Println("xxx after select ", pod.ObjectMeta.Name)
+		if breakToWait {
+			break
+		}
+	}
+	podArray := []corev1.Pod{pod}
+	for {
+		select {
+		// we hit global timeout
+		case <-ctx.Done():
+			fmt.Println("xxx: Hit global timeout: ", pod.ObjectMeta.Name)
+			returnCh <- fmt.Errorf("error when evicting pod %q: global timeout", pod.Name)
+			return
+		// Try to do the things.
+		default:
+			_, err = waitForDelete(podArray, 1*time.Second, time.Duration(10*time.Second), true, options.Logger, getPodFn)
+			fmt.Println("xxx waitfordelete ", pod.ObjectMeta.Name)
+			if err == nil {
+				fmt.Println("xxx waitfordelete no error", pod.ObjectMeta.Name)
+				returnCh <- nil
+				return
+			} else {
+				fmt.Println("xxx waitfordelete error ", pod.ObjectMeta.Name)
+				return fmt.Errorf("error when waiting for pod %q terminating: %v", pod.Name, err)
+			}
+		}
+	}
+}
+
+func doEvict2(ctx context.Context) {
+	defer gofunDone()
+	defer wg.Done()
+	for {
+		select {
+		case <-time.After(2 * time.Second):
+			fmt.Println("Doing some work ")
+
+		// we received the signal of cancelation in this channel
+		case <-ctx.Done():
+			fmt.Println("Cancel the context ")
+			return
+		}
+	}
+}
 
 func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.Pod, policyGroupVersion string, options *DrainOptions, getPodFn func(namespace, name string) (*corev1.Pod, error)) error {
-	returnCh := make(chan error, 1)
+	returnCh := make(chan error, len(pods))
 	// 0 timeout means infinite, we use MaxInt64 to represent it.
+	/*
 	var globalTimeout time.Duration
 	if options.Timeout == 0 {
 		globalTimeout = time.Duration(math.MaxInt64)
 	} else {
 		globalTimeout = options.Timeout
 	}
-	ctx, cancel := context.WithTimeout(context.TODO(), 90*time.Second)
+	*/
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	var errors []error
 	for _, pod := range pods {
+		// returnCh <- fmt.Errorf("error when evicting pod %q", pod.Name)
 		wg.Add(1)
 		fmt.Println("xxx staring evict for ", pod.ObjectMeta.Name)
-		go func(pod corev1.Pod, returnCh chan error) {
-			defer wg.Done()
-			var err error
-			for {
-				select {
-					// we hit global timeout
-					case <-ctx.Done():
-						fmt.Println("xxx: Hit global timeout: ", pod.ObjectMeta.Name)
-						returnCh <- fmt.Errorf("error when evicting pod %q: global timeout", pod.Name)
-						return
-					// Try to do the things.
-					default:
-						fmt.Println("xxx attempting eviction ", pod.ObjectMeta.Name)
-						err = evictPod(client, pod, policyGroupVersion, options.GracePeriodSeconds)
-						if err == nil {
-							// evict call successful, goto waitForDelete
-							break
-						} else if apierrors.IsNotFound(err) {
-							// pod is missing, no need to waitForDelete
-							returnCh <- nil
-							return
-						} else if apierrors.IsTooManyRequests(err) {
-							// Need to retry, so we sleep and we'll loop around.
-							logf(options.Logger, "error when evicting pod %q (will retry after 5s): %v", pod.Name, err)
-							time.Sleep(5 * time.Second)
-						} else {
-							// We hit some other error, no need to waitForDelete, just return the error.
-							returnCh <- fmt.Errorf("error when evicting pod %q: %v", pod.Name, err)
-							return
-						}
-				}
-			}
-			podArray := []corev1.Pod{pod}
-			_, err = waitForDelete(podArray, 1*time.Second, time.Duration(globalTimeout), true, options.Logger, getPodFn)
-			if err == nil {
-				returnCh <- nil
-			} else {
-				returnCh <- fmt.Errorf("error when waiting for pod %q terminating: %v", pod.Name, err)
-			}
-		}(pod, returnCh)
+		go doEvict(client, policyGroupVersion, pod, returnCh, ctx, globalTimeout, options, getPodFn)
+		// err := go doEvict2(ctx)
+		fmt.Println("xxx after doEvict")
 	}
 
-	var errors []error
+
+	fmt.Println("xxx starting wait for wg")
 	wg.Wait()
 	fmt.Println("xxx finished waiting for wg")
 	for _, _ = range pods {
@@ -489,6 +540,7 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 			}
 		}
 	}
+	errors = []error{fmt.Errorf("adding an error"),}
 	return utilerrors.NewAggregate(errors)
 }
 
