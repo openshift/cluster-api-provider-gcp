@@ -457,7 +457,7 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 							fmt.Println("xxx no error ", pod.ObjectMeta.Name)
 							// evict call successful, goto waitForDelete
 							breakToWait = true
-							//break
+							break
 						} else if apierrors.IsNotFound(err) {
 							// pod is missing, no need to waitForDelete
 							fmt.Println("xxx not found error ", pod.ObjectMeta.Name)
