@@ -17,11 +17,13 @@ limitations under the License.
 package drain
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	golog "github.com/go-log/log"
@@ -40,6 +42,10 @@ import (
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	typedpolicyv1beta1 "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
+)
+
+var (
+	wg sync.WaitGroup
 )
 
 type DrainOptions struct {
@@ -336,7 +342,7 @@ func getPodsForDeletion(client kubernetes.Interface, node *corev1.Node, options 
 	for _, pod := range podList.Items {
 		if !pod.ObjectMeta.DeletionTimestamp.IsZero() && time.Now().Sub(pod.ObjectMeta.GetDeletionTimestamp().Time).Minutes() > 1 {
 			if !isNodeReady(*node) {
-				fmt.Printf("xxx hit node unready/ pod deleted")
+				fmt.Printf("xxx hit node unready/ pod deleted %v \n", pod.ObjectMeta.Name)
 				continue
 			}
 		}
@@ -418,7 +424,6 @@ func deleteOrEvictPods(client kubernetes.Interface, pods []corev1.Pod, options *
 
 func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.Pod, policyGroupVersion string, options *DrainOptions, getPodFn func(namespace, name string) (*corev1.Pod, error)) error {
 	returnCh := make(chan error, 1)
-	stopCh := make(chan struct{})
 	// 0 timeout means infinite, we use MaxInt64 to represent it.
 	var globalTimeout time.Duration
 	if options.Timeout == 0 {
@@ -426,29 +431,41 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 	} else {
 		globalTimeout = options.Timeout
 	}
-
+	ctx, cancel := context.WithTimeout(context.TODO(), 90*time.Second)
+	defer cancel()
 	for _, pod := range pods {
-		go func(pod corev1.Pod, returnCh chan error, stopCh chan struct{}) {
+		wg.Add(1)
+		fmt.Println("xxx staring evict for ", pod.ObjectMeta.Name)
+		go func(pod corev1.Pod, returnCh chan error) {
+			defer wg.Done()
 			var err error
 			for {
-				err = evictPod(client, pod, policyGroupVersion, options.GracePeriodSeconds)
-				if err == nil {
-					break
-				} else if apierrors.IsNotFound(err) {
-					returnCh <- nil
-					return
-				} else if apierrors.IsTooManyRequests(err) {
-					select {
-					case <-stopCh:
-						returnCh <- fmt.Errorf("global timeout!! Skip eviction retries for pod %q", pod.Name)
+				select {
+					// we hit global timeout
+					case <-ctx.Done():
+						fmt.Println("xxx: Hit global timeout: ", pod.ObjectMeta.Name)
+						returnCh <- fmt.Errorf("error when evicting pod %q: global timeout", pod.Name)
 						return
+					// Try to do the things.
 					default:
-						logf(options.Logger, "error when evicting pod %q (will retry after 5s): %v", pod.Name, err)
-						time.Sleep(5 * time.Second)
-					}
-				} else {
-					returnCh <- fmt.Errorf("error when evicting pod %q: %v", pod.Name, err)
-					return
+						fmt.Println("xxx attempting eviction ", pod.ObjectMeta.Name)
+						err = evictPod(client, pod, policyGroupVersion, options.GracePeriodSeconds)
+						if err == nil {
+							// evict call successful, goto waitForDelete
+							break
+						} else if apierrors.IsNotFound(err) {
+							// pod is missing, no need to waitForDelete
+							returnCh <- nil
+							return
+						} else if apierrors.IsTooManyRequests(err) {
+							// Need to retry, so we sleep and we'll loop around.
+							logf(options.Logger, "error when evicting pod %q (will retry after 5s): %v", pod.Name, err)
+							time.Sleep(5 * time.Second)
+						} else {
+							// We hit some other error, no need to waitForDelete, just return the error.
+							returnCh <- fmt.Errorf("error when evicting pod %q: %v", pod.Name, err)
+							return
+						}
 				}
 			}
 			podArray := []corev1.Pod{pod}
@@ -458,24 +475,18 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 			} else {
 				returnCh <- fmt.Errorf("error when waiting for pod %q terminating: %v", pod.Name, err)
 			}
-		}(pod, returnCh, stopCh)
+		}(pod, returnCh)
 	}
 
-	doneCount := 0
 	var errors []error
-
-	globalTimeoutCh := time.After(globalTimeout)
-	numPods := len(pods)
-	for doneCount < numPods {
+	wg.Wait()
+	fmt.Println("xxx finished waiting for wg")
+	for _, _ = range pods {
 		select {
 		case err := <-returnCh:
-			doneCount++
 			if err != nil {
 				errors = append(errors, err)
 			}
-		case <-globalTimeoutCh:
-			logf(options.Logger, "Closing stopCh")
-			close(stopCh)
 		}
 	}
 	return utilerrors.NewAggregate(errors)
