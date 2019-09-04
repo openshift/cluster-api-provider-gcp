@@ -418,15 +418,9 @@ func deleteOrEvictPods(client kubernetes.Interface, pods []corev1.Pod, options *
 		return deletePods(client.CoreV1(), pods, options, getPodFn)
 	}
 }
-func gofunDone() {
-	fmt.Println("xxx gofundone")
-}
-
-func doEvict(pod corev1.Pod, returnCh chan error, ctx context.Context) {
-
-}
 
 func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.Pod, policyGroupVersion string, options *DrainOptions, getPodFn func(namespace, name string) (*corev1.Pod, error)) error {
+	// Need to use same len as pods here or we'll have a deadlock.
 	returnCh := make(chan error, len(pods))
 	// 0 timeout means infinite, we use MaxInt64 to represent it.
 	var globalTimeout time.Duration
@@ -444,8 +438,8 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 			for {
 				breakToWait := false
 				select {
-					// we hit global timeout
 					case <-ctx.Done():
+						// We pretty much only hit this in case of PDBs.
 						fmt.Println("xxx: Hit global timeout: ", pod.ObjectMeta.Name)
 						returnCh <- fmt.Errorf("error when evicting pod %q: global timeout", pod.Name)
 						return
@@ -456,6 +450,8 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 						if err == nil {
 							fmt.Println("xxx no error ", pod.ObjectMeta.Name)
 							// evict call successful, goto waitForDelete
+							// We need to break twice since we're in a select,
+							// thus breakToWait var.
 							breakToWait = true
 							break
 						} else if apierrors.IsNotFound(err) {
@@ -469,6 +465,9 @@ func evictPods(client typedpolicyv1beta1.PolicyV1beta1Interface, pods []corev1.P
 							time.Sleep(5 * time.Second)
 						} else {
 							// We hit some other error, no need to waitForDelete, just return the error.
+							// Maybe we want to not use the chan or return here so we can retry?
+							// If so, we should capture the error message and combine it with the
+							// timeout case above.
 							returnCh <- fmt.Errorf("error when evicting pod %q: %v", pod.Name, err)
 							return
 						}
