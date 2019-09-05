@@ -8,6 +8,13 @@ VERSION     ?= $(shell git describe --always --abbrev=7)
 REPO_PATH   ?= github.com/openshift/cluster-api-provider-gcp
 LD_FLAGS    ?= -X $(REPO_PATH)/pkg/version.Raw=$(VERSION) -extldflags -static
 
+GO111MODULE = on
+export GO111MODULE
+GOFLAGS += -mod=vendor
+export GOFLAGS
+GOPROXY ?=
+export GOPROXY
+
 NO_DOCKER ?= 0
 ifeq ($(NO_DOCKER), 1)
   DOCKER_CMD =
@@ -17,6 +24,16 @@ else
   DOCKER_CMD := docker run --rm -e CGO_ENABLED=1 -v "$(PWD)":/go/src/github.com/openshift/cluster-api-provider-gcp:Z -w /go/src/openshift/cluster-api-provider-gcp openshift/origin-release:golang-1.12
   IMAGE_BUILD_CMD = docker build
 endif
+
+.PHONY: vendor
+vendor:
+	go mod tidy
+	go mod vendor
+	go mod verify
+
+.PHONY: generate
+generate:
+	go generate ./pkg/... ./cmd/...
 
 .PHONY: fmt
 fmt: ## Go fmt your code
