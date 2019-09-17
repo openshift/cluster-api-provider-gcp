@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
-	github.com/openshift/cluster-api v0.0.0-20190829140302-072f7d777dc8
+	github.com/openshift/cluster-api v0.0.0-20190917100308-655e2d6ccdd5
 	github.com/pborman/uuid v0.0.0-20180906182336-adf5a7427709 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.2 // indirect
