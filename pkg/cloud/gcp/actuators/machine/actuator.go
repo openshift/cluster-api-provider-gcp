@@ -66,8 +66,7 @@ func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machi
 		machine:       machine,
 	})
 	if err != nil {
-		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
-		return a.handleMachineError(machine, fmt.Errorf(fmtErr), createEventAction)
+		return a.handleMachineError(machine, err, createEventAction)
 	}
 	if err := newReconciler(scope).create(); err != nil {
 		// Update machine and machine status in case it was modified
