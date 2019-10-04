@@ -10,7 +10,7 @@ require (
 	github.com/imdario/mergo v0.3.7 // indirect
 
 	// kube-1.16.0
-	github.com/openshift/cluster-api v0.0.0-20191003080455-24cfb34ea1f9
+	github.com/openshift/cluster-api v0.0.0-20191004145247-2f02e328bd96
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90 // indirect
 	github.com/prometheus/common v0.3.0 // indirect
