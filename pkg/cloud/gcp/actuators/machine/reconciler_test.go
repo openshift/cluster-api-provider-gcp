@@ -8,8 +8,11 @@ import (
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1beta1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	controllerError "github.com/openshift/cluster-api/pkg/controller/error"
+	machineapierrors "github.com/openshift/cluster-api/pkg/errors"
+	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 	controllerfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -259,6 +262,88 @@ func TestProcessTargetPools(t *testing.T) {
 		}
 		if pt.called != tc.expectedCall {
 			t.Errorf("tc %v: expected didn't match observed: %v, %v", i, tc.expectedCall, pt.called)
+		}
+	}
+}
+
+func TestGetUserData(t *testing.T) {
+	userDataSecretName := "test"
+	defaultNamespace := "test"
+	userDataBlob := "test"
+	machineScope := machineScope{
+		machine: &machinev1beta1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "",
+				Namespace: defaultNamespace,
+			},
+		},
+		providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
+			UserDataSecret: &corev1.LocalObjectReference{
+				Name: userDataSecretName,
+			},
+		},
+		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
+	}
+	reconciler := newReconciler(&machineScope)
+
+	testCases := []struct {
+		secret *apiv1.Secret
+		error  error
+	}{
+		{
+			secret: &apiv1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      userDataSecretName,
+					Namespace: defaultNamespace,
+				},
+				Data: map[string][]byte{
+					userDataSecretKey: []byte(userDataBlob),
+				},
+			},
+			error: nil,
+		},
+		{
+			secret: &apiv1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "notFound",
+					Namespace: defaultNamespace,
+				},
+				Data: map[string][]byte{
+					userDataSecretKey: []byte(userDataBlob),
+				},
+			},
+			error: &machineapierrors.MachineError{},
+		},
+		{
+			secret: &apiv1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      userDataSecretName,
+					Namespace: defaultNamespace,
+				},
+				Data: map[string][]byte{
+					"badKey": []byte(userDataBlob),
+				},
+			},
+			error: &machineapierrors.MachineError{},
+		},
+	}
+
+	for _, tc := range testCases {
+		reconciler.coreClient = controllerfake.NewFakeClientWithScheme(scheme.Scheme, tc.secret)
+		userData, err := reconciler.getCustomUserData()
+		if tc.error != nil {
+			if err == nil {
+				t.Fatal("Expected error")
+			}
+			_, expectMachineError := tc.error.(*machineapierrors.MachineError)
+			_, gotMachineError := err.(*machineapierrors.MachineError)
+			if expectMachineError && !gotMachineError || !expectMachineError && gotMachineError {
+				t.Errorf("Expected %T, got: %T", tc.error, err)
+			}
+		} else {
+			if userData != userDataBlob {
+				t.Errorf("Expected: %v, got: %v", userDataBlob, userData)
+			}
 		}
 	}
 }

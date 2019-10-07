@@ -10,12 +10,14 @@ import (
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	machineclient "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/typed/machine/v1beta1"
+	machineapierros "github.com/openshift/cluster-api/pkg/errors"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	compute "google.golang.org/api/compute/v1"
+	"google.golang.org/api/compute/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	apimachineryerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,35 +59,35 @@ type machineScope struct {
 func newMachineScope(params machineScopeParams) (*machineScope, error) {
 	providerSpec, err := v1beta1.ProviderSpecFromRawExtension(params.machine.Spec.ProviderSpec.Value)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get machine config: %v", err)
+		return nil, machineapierros.InvalidMachineConfiguration("failed to get machine config: %v", err)
 	}
 
 	providerStatus, err := v1beta1.ProviderStatusFromRawExtension(params.machine.Status.ProviderStatus)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get machine provider status")
+		return nil, machineapierros.InvalidMachineConfiguration("failed to get machine provider status: %v", err.Error())
 	}
 
 	serviceAccountJSON, err := getCredentialsSecret(params.coreClient, *params.machine, *providerSpec)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get serviceAccountJSON: %v", err)
+		return nil, err
 	}
 
 	projectID := providerSpec.ProjectID
 	if len(projectID) == 0 {
 		projectID, err = getProjectIDFromJSONKey([]byte(serviceAccountJSON))
 		if err != nil {
-			return nil, fmt.Errorf("error getting project from JSON key: %v", err)
+			return nil, machineapierros.InvalidMachineConfiguration("error getting project from JSON key: %v", err)
 		}
 	}
 
 	oauthClient, err := createOauth2Client(serviceAccountJSON, compute.CloudPlatformScope)
 	if err != nil {
-		return nil, fmt.Errorf("error creating oauth client: %v", err)
+		return nil, machineapierros.InvalidMachineConfiguration("error creating oauth client: %v", err)
 	}
 
 	computeService, err := computeservice.NewComputeService(oauthClient)
 	if err != nil {
-		return nil, fmt.Errorf("error creating compute service: %v", err)
+		return nil, machineapierros.InvalidMachineConfiguration("error creating compute service: %v", err)
 	}
 	return &machineScope{
 		machineClient: params.machineClient.Machines(params.machine.Namespace),
@@ -193,11 +195,14 @@ func getCredentialsSecret(coreClient controllerclient.Client, machine machinev1.
 	var credentialsSecret apicorev1.Secret
 
 	if err := coreClient.Get(context.Background(), client.ObjectKey{Namespace: machine.GetNamespace(), Name: spec.CredentialsSecret.Name}, &credentialsSecret); err != nil {
+		if apimachineryerrors.IsNotFound(err) {
+			machineapierros.InvalidMachineConfiguration("credentials secret %q in namespace %q not found: %v", spec.CredentialsSecret.Name, machine.GetNamespace(), err.Error())
+		}
 		return "", fmt.Errorf("error getting credentials secret %q in namespace %q: %v", spec.CredentialsSecret.Name, machine.GetNamespace(), err)
 	}
 	data, exists := credentialsSecret.Data[credentialsSecretKey]
 	if !exists {
-		return "", fmt.Errorf("secret %v/%v does not have %q field set. Thus, no credentials applied when creating an instance", machine.GetNamespace(), spec.CredentialsSecret.Name, credentialsSecretKey)
+		return "", machineapierros.InvalidMachineConfiguration("secret %v/%v does not have %q field set. Thus, no credentials applied when creating an instance", machine.GetNamespace(), spec.CredentialsSecret.Name, credentialsSecretKey)
 	}
 
 	return string(data), nil

@@ -5,16 +5,20 @@ import (
 	"fmt"
 	"time"
 
+	"strconv"
+	"strings"
+
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
 	clustererror "github.com/openshift/cluster-api/pkg/controller/error"
 	machinecontroller "github.com/openshift/cluster-api/pkg/controller/machine"
-	clusterapiError "github.com/openshift/cluster-api/pkg/errors"
+	machineapierros "github.com/openshift/cluster-api/pkg/errors"
 	"google.golang.org/api/compute/v1"
 	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	apimachineryerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -40,7 +44,7 @@ func newReconciler(scope *machineScope) *Reconciler {
 // Create creates machine if and only if machine exists, handled by cluster-api
 func (r *Reconciler) create() error {
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
-		return fmt.Errorf("failed validating machine provider spec: %v", err)
+		return machineapierros.InvalidMachineConfiguration("failed validating machine provider spec: %v", err)
 	}
 
 	zone := r.providerSpec.Zone
@@ -137,6 +141,14 @@ func (r *Reconciler) create() error {
 			Status:  corev1.ConditionFalse,
 		}); reconcileWithCloudError != nil {
 			klog.Errorf("Failed to reconcile machine with cloud state: %v", reconcileWithCloudError)
+		}
+		if googleError, ok := err.(*googleapi.Error); ok {
+			// we return InvalidMachineConfiguration for 4xx errors which by convention signal client misconfiguration
+			// https://tools.ietf.org/html/rfc2616#section-6.1.1
+			if strings.HasPrefix(strconv.Itoa(googleError.Code), "4") {
+				klog.Infof("Error launching instance: %v", googleError)
+				return machineapierros.InvalidMachineConfiguration("error launching instance: %v", googleError.Error())
+			}
 		}
 		return fmt.Errorf("failed to create instance via compute service: %v", err)
 	}
@@ -235,11 +247,14 @@ func (r *Reconciler) getCustomUserData() (string, error) {
 	var userDataSecret apicorev1.Secret
 
 	if err := r.coreClient.Get(context.Background(), client.ObjectKey{Namespace: r.machine.GetNamespace(), Name: r.providerSpec.UserDataSecret.Name}, &userDataSecret); err != nil {
+		if apimachineryerrors.IsNotFound(err) {
+			return "", machineapierros.InvalidMachineConfiguration("user data secret %q in namespace %q not found: %v", r.providerSpec.UserDataSecret.Name, r.machine.GetNamespace(), err)
+		}
 		return "", fmt.Errorf("error getting user data secret %q in namespace %q: %v", r.providerSpec.UserDataSecret.Name, r.machine.GetNamespace(), err)
 	}
 	data, exists := userDataSecret.Data[userDataSecretKey]
 	if !exists {
-		return "", fmt.Errorf("secret %v/%v does not have %q field set. Thus, no user data applied when creating an instance", r.machine.GetNamespace(), r.providerSpec.UserDataSecret.Name, userDataSecretKey)
+		return "", machineapierros.InvalidMachineConfiguration("secret %v/%v does not have %q field set. Thus, no user data applied when creating an instance", r.machine.GetNamespace(), r.providerSpec.UserDataSecret.Name, userDataSecretKey)
 	}
 	return string(data), nil
 }
@@ -251,13 +266,13 @@ func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineP
 	if providerSpec.TargetPools != nil {
 		for _, pool := range providerSpec.TargetPools {
 			if pool == "" {
-				return fmt.Errorf("all target pools must have valid name")
+				return machineapierros.InvalidMachineConfiguration("all target pools must have valid name")
 			}
 		}
 	}
 
 	if machine.Labels[machinev1.MachineClusterIDLabel] == "" {
-		return fmt.Errorf("machine is missing %q label", machinev1.MachineClusterIDLabel)
+		return machineapierros.InvalidMachineConfiguration("machine is missing %q label", machinev1.MachineClusterIDLabel)
 	}
 
 	return nil
@@ -276,7 +291,7 @@ func (r *Reconciler) exists() (bool, error) {
 			// this error type bubbles back up to the machine-controller to allow
 			// us to delete machines that were never properly created due to
 			// invalid zone.
-			return false, clusterapiError.InvalidMachineConfiguration(fmt.Sprintf("%s: Machine does not exist", r.machine.Name))
+			return false, machineapierros.InvalidMachineConfiguration(fmt.Sprintf("%s: Machine does not exist", r.machine.Name))
 		}
 		return false, fmt.Errorf("unable to verify project/zone exists: %v/%v; err: %v", r.projectID, zone, err)
 	}
