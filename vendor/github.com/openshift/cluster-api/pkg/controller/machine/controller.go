@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-log/log/info"
 	clusterv1 "github.com/openshift/cluster-api/pkg/apis/cluster/v1alpha1"
 	commonerrors "github.com/openshift/cluster-api/pkg/apis/machine/common"
 	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
@@ -346,28 +345,35 @@ func (r *ReconcileMachine) drainNode(machine *machinev1.Machine) error {
 		return fmt.Errorf("unable to get node %q: %v", machine.Status.NodeRef.Name, err)
 	}
 
-	if err := kubedrain.Drain(
-		kubeClient,
-		[]*corev1.Node{node},
-		&kubedrain.DrainOptions{
-			Force:              true,
-			IgnoreDaemonsets:   true,
-			DeleteLocalData:    true,
-			GracePeriodSeconds: -1,
-			Logger:             info.New(klog.V(0)),
-			// If a pod is not evicted in 20 second, retry the eviction next time the
-			// machine gets reconciled again (to allow other machines to be reconciled)
-			Timeout: 20 * time.Second,
-		},
-	); err != nil {
+	drainer := &kubedrain.Helper{
+		Client:              kubeClient,
+		Force:               true,
+		IgnoreAllDaemonSets: true,
+		DeleteLocalData:     true,
+		GracePeriodSeconds:  -1,
+		// If a pod is not evicted in 20 second, retry the eviction next time the
+		// machine gets reconciled again (to allow other machines to be reconciled)
+		Timeout:               20 * time.Second,
+		OnPodDeletedOrEvicted: onPodDeletedOrEvicted,
+		Out:                   writer{klog.Info},
+		ErrOut:                writer{klog.Error},
+		DryRun:                false,
+	}
+
+	if err := kubedrain.RunCordonOrUncordon(drainer, node, true); err != nil {
 		// Machine still tries to terminate after drain failure
-		klog.Warningf("drain failed for machine %q: %v", machine.Name, err)
+		klog.Errorf("%q: node cordon failed %q; %v", machine.Name, node.Name, err)
+		return fmt.Errorf("unable to cordon node %s: %v", node.Name, err)
+	}
+
+	if err := kubedrain.RunNodeDrain(drainer, node.Name); err != nil {
+		// Machine still tries to terminate after drain failure
+		klog.Warningf("%q: drain failed for node %q; %v", machine.Name, node.Name, err)
 		return &controllerError.RequeueAfterError{RequeueAfter: 20 * time.Second}
 	}
 
-	klog.Infof("drain successful for machine %q", machine.Name)
+	klog.Infof("Drain successful for machine %q", machine.Name)
 	r.eventRecorder.Eventf(machine, corev1.EventTypeNormal, "Deleted", "Node %q drained", node.Name)
-
 	return nil
 }
 
@@ -455,4 +461,26 @@ func machineIsFailed(machine *machinev1.Machine) bool {
 		return true
 	}
 	return false
+}
+
+// writer implements io.Writer interface as a pass-through for klog.
+type writer struct {
+	logFunc func(args ...interface{})
+}
+
+// Write passes string(p) into writer's logFunc and always returns len(p)
+func (w writer) Write(p []byte) (n int, err error) {
+	w.logFunc(string(p))
+	return len(p), nil
+}
+
+// onPodDeletedOrEvicted is called by drain.Helper, when the pod has been deleted or evicted
+func onPodDeletedOrEvicted(pod *corev1.Pod, usingEviction bool) {
+	var verbStr string
+	if usingEviction {
+		verbStr = "evicted"
+	} else {
+		verbStr = "deleted"
+	}
+	klog.Infof("pod %s/%s %s\n", pod.Namespace, pod.Name, verbStr)
 }
