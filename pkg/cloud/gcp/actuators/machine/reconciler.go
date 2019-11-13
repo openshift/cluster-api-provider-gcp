@@ -297,15 +297,8 @@ func (r *Reconciler) exists() (bool, error) {
 	}
 
 	instance, err := r.computeService.InstancesGet(r.projectID, zone, r.machine.Name)
-	if err == nil {
-		switch instance.Status {
-		case "TERMINATED":
-			klog.Infof("Machine %q is considered as non existent as its status is %q", r.machine.Name, instance.Status)
-			return false, nil
-		default:
-			klog.Infof("Machine %q already exists", r.machine.Name)
-			return true, nil
-		}
+	if instance != nil && err == nil {
+		return true, nil
 	}
 	if isNotFoundError(err) {
 		klog.Infof("%s: Machine does not exist", r.machine.Name)
