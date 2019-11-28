@@ -8,9 +8,9 @@ import (
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/machine"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
-	clusterapis "github.com/openshift/cluster-api/pkg/apis"
-	"github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset"
-	capimachine "github.com/openshift/cluster-api/pkg/controller/machine"
+	"github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
+	capimachine "github.com/openshift/machine-api-operator/pkg/controller/machine"
+	clientset "github.com/openshift/machine-api-operator/pkg/generated/clientset/versioned/typed/machine/v1beta1"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -55,7 +55,7 @@ func main() {
 
 	// Initialize machine actuator.
 	machineActuator := machine.NewActuator(machine.ActuatorParams{
-		MachineClient: cs.MachineV1beta1(),
+		MachineClient: cs,
 		CoreClient:    mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("gcpcontroller"),
 	})
@@ -64,7 +64,7 @@ func main() {
 		klog.Fatal(err)
 	}
 
-	if err := clusterapis.AddToScheme(mgr.GetScheme()); err != nil {
+	if err := v1beta1.AddToScheme(mgr.GetScheme()); err != nil {
 		klog.Fatal(err)
 	}
 
