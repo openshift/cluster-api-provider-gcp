@@ -3,8 +3,8 @@ package machine
 import (
 	"testing"
 
-	machinev1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
-	capifake "github.com/openshift/cluster-api/pkg/client/clientset_generated/clientset/fake"
+	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
+	capifake "github.com/openshift/machine-api-operator/pkg/generated/clientset/versioned/fake"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
