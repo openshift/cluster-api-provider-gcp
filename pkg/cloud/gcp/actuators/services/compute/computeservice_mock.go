@@ -10,16 +10,16 @@ const (
 )
 
 type GCPComputeServiceMock struct {
-	mockInstancesInsert   func(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
+	MockInstancesInsert   func(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
 	mockZoneOperationsGet func(project string, zone string, operation string) (*compute.Operation, error)
 	mockInstancesGet      func(project string, zone string, instance string) (*compute.Instance, error)
 }
 
 func (c *GCPComputeServiceMock) InstancesInsert(project string, zone string, instance *compute.Instance) (*compute.Operation, error) {
-	if c.mockInstancesInsert == nil {
+	if c.MockInstancesInsert == nil {
 		return nil, nil
 	}
-	return c.mockInstancesInsert(project, zone, instance)
+	return c.MockInstancesInsert(project, zone, instance)
 }
 
 func (c *GCPComputeServiceMock) InstancesDelete(requestId string, project string, zone string, instance string) (*compute.Operation, error) {
@@ -88,7 +88,7 @@ func (c *GCPComputeServiceMock) TargetPoolsRemoveInstance(project string, region
 func NewComputeServiceMock() (*compute.Instance, *GCPComputeServiceMock) {
 	var receivedInstance compute.Instance
 	computeServiceMock := GCPComputeServiceMock{
-		mockInstancesInsert: func(project string, zone string, instance *compute.Instance) (*compute.Operation, error) {
+		MockInstancesInsert: func(project string, zone string, instance *compute.Instance) (*compute.Operation, error) {
 			receivedInstance = *instance
 			return &compute.Operation{
 				Status: "DONE",

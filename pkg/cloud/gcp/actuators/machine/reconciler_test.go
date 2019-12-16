@@ -8,6 +8,9 @@ import (
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1beta1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	machinecontroller "github.com/openshift/machine-api-operator/pkg/controller/machine"
+	"github.com/pkg/errors"
+	compute "google.golang.org/api/compute/v1"
+	googleapi "google.golang.org/api/googleapi"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,37 +19,154 @@ import (
 )
 
 func TestCreate(t *testing.T) {
-	_, mockComputeService := computeservice.NewComputeServiceMock()
-	machineScope := machineScope{
-		machine: &machinev1beta1.Machine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "",
-				Namespace: "",
-				Labels: map[string]string{
-					machinev1beta1.MachineClusterIDLabel: "CLUSTERID",
+	cases := []struct {
+		name                string
+		labels              map[string]string
+		providerSpec        *gcpv1beta1.GCPMachineProviderSpec
+		expectedCondition   *gcpv1beta1.GCPMachineProviderCondition
+		secret              *apiv1.Secret
+		mockInstancesInsert func(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
+		expectedError       error
+	}{
+		{
+			name: "Successfully create machine",
+			expectedCondition: &gcpv1beta1.GCPMachineProviderCondition{
+				Type:    gcpv1beta1.MachineCreated,
+				Status:  corev1.ConditionTrue,
+				Reason:  machineCreationSucceedReason,
+				Message: machineCreationSucceedMessage,
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Fail on invalid target pools",
+			providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
+				TargetPools: []string{""},
+			},
+			expectedError: errors.New("failed validating machine provider spec: all target pools must have valid name"),
+		},
+		{
+			name: "Fail on invalid missing machine label",
+			labels: map[string]string{
+				machinev1beta1.MachineClusterIDLabel: "",
+			},
+			expectedError: errors.New("failed validating machine provider spec: machine is missing \"machine.openshift.io/cluster-api-cluster\" label"),
+		},
+		{
+			name: "Fail on invalid user data secret",
+			providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
+				UserDataSecret: &corev1.LocalObjectReference{
+					Name: "notvalid",
 				},
 			},
+			secret: &apiv1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "notvalid",
+				},
+				Data: map[string][]byte{
+					"badKey": []byte(""),
+				},
+			},
+			expectedError: errors.New("error getting custom user data: secret /notvalid does not have \"userData\" field set. Thus, no user data applied when creating an instance"),
 		},
-		coreClient:     controllerfake.NewFakeClient(),
-		providerSpec:   &gcpv1beta1.GCPMachineProviderSpec{},
-		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
-		computeService: mockComputeService,
+		{
+			name:          "Fail on compute service error",
+			expectedError: errors.New("failed to create instance via compute service: fail"),
+			expectedCondition: &gcpv1beta1.GCPMachineProviderCondition{
+				Type:    gcpv1beta1.MachineCreated,
+				Status:  corev1.ConditionFalse,
+				Reason:  machineCreationFailedReason,
+				Message: "fail",
+			},
+			mockInstancesInsert: func(project string, zone string, instance *compute.Instance) (*compute.Operation, error) {
+				return nil, errors.New("fail")
+			},
+		},
+		{
+			name:          "Fail on google api error",
+			expectedError: machinecontroller.InvalidMachineConfiguration("error launching instance: %v", "googleapi: Error 400: error"),
+			expectedCondition: &gcpv1beta1.GCPMachineProviderCondition{
+				Type:    gcpv1beta1.MachineCreated,
+				Status:  corev1.ConditionFalse,
+				Reason:  machineCreationFailedReason,
+				Message: "googleapi: Error 400: error",
+			},
+			mockInstancesInsert: func(project string, zone string, instance *compute.Instance) (*compute.Operation, error) {
+				return nil, &googleapi.Error{Message: "error", Code: 400}
+			},
+		},
 	}
-	reconciler := newReconciler(&machineScope)
-	if err := reconciler.create(); err != nil {
-		t.Errorf("reconciler was not expected to return error: %v", err)
-	}
-	if reconciler.providerStatus.Conditions[0].Type != gcpv1beta1.MachineCreated {
-		t.Errorf("Expected: %s, got %s", gcpv1beta1.MachineCreated, reconciler.providerStatus.Conditions[0].Type)
-	}
-	if reconciler.providerStatus.Conditions[0].Status != corev1.ConditionTrue {
-		t.Errorf("Expected: %s, got %s", corev1.ConditionTrue, reconciler.providerStatus.Conditions[0].Status)
-	}
-	if reconciler.providerStatus.Conditions[0].Reason != machineCreationSucceedReason {
-		t.Errorf("Expected: %s, got %s", machineCreationSucceedReason, reconciler.providerStatus.Conditions[0].Reason)
-	}
-	if reconciler.providerStatus.Conditions[0].Message != machineCreationSucceedMessage {
-		t.Errorf("Expected: %s, got %s", machineCreationSucceedMessage, reconciler.providerStatus.Conditions[0].Message)
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, mockComputeService := computeservice.NewComputeServiceMock()
+			providerSpec := &gcpv1beta1.GCPMachineProviderSpec{}
+			labels := map[string]string{
+				machinev1beta1.MachineClusterIDLabel: "CLUSTERID",
+			}
+
+			if tc.providerSpec != nil {
+				providerSpec = tc.providerSpec
+			}
+
+			if tc.labels != nil {
+				labels = tc.labels
+			}
+
+			machineScope := machineScope{
+				machine: &machinev1beta1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "",
+						Namespace: "",
+						Labels:    labels,
+					},
+				},
+				coreClient:     controllerfake.NewFakeClient(),
+				providerSpec:   providerSpec,
+				providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
+				computeService: mockComputeService,
+			}
+
+			reconciler := newReconciler(&machineScope)
+
+			if tc.secret != nil {
+				reconciler.coreClient = controllerfake.NewFakeClientWithScheme(scheme.Scheme, tc.secret)
+			}
+
+			if tc.mockInstancesInsert != nil {
+				mockComputeService.MockInstancesInsert = tc.mockInstancesInsert
+			}
+
+			err := reconciler.create()
+
+			if tc.expectedCondition != nil {
+				if reconciler.providerStatus.Conditions[0].Type != tc.expectedCondition.Type {
+					t.Errorf("Expected: %s, got %s", tc.expectedCondition.Type, reconciler.providerStatus.Conditions[0].Type)
+				}
+				if reconciler.providerStatus.Conditions[0].Status != tc.expectedCondition.Status {
+					t.Errorf("Expected: %s, got %s", tc.expectedCondition.Status, reconciler.providerStatus.Conditions[0].Status)
+				}
+				if reconciler.providerStatus.Conditions[0].Reason != tc.expectedCondition.Reason {
+					t.Errorf("Expected: %s, got %s", tc.expectedCondition.Reason, reconciler.providerStatus.Conditions[0].Reason)
+				}
+				if reconciler.providerStatus.Conditions[0].Message != tc.expectedCondition.Message {
+					t.Errorf("Expected: %s, got %s", tc.expectedCondition.Message, reconciler.providerStatus.Conditions[0].Message)
+				}
+			}
+
+			if tc.expectedError != nil {
+				if err == nil {
+					t.Error("reconciler was expected to return error")
+				}
+				if err.Error() != tc.expectedError.Error() {
+					t.Errorf("Expected: %v, got %v", tc.expectedError, err)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("reconciler was not expected to return error: %v", err)
+				}
+			}
+		})
 	}
 }
 
