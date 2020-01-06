@@ -10,8 +10,6 @@ import (
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	machineapierros "github.com/openshift/machine-api-operator/pkg/controller/machine"
-	machineclient "github.com/openshift/machine-api-operator/pkg/generated/clientset/versioned/typed/machine/v1beta1"
-	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
@@ -30,14 +28,12 @@ const (
 
 // machineScopeParams defines the input parameters used to create a new MachineScope.
 type machineScopeParams struct {
-	machineClient machineclient.MachineV1beta1Interface
-	coreClient    controllerclient.Client
-	machine       *machinev1.Machine
+	coreClient controllerclient.Client
+	machine    *machinev1.Machine
 }
 
 // machineScope defines a scope defined around a machine and its cluster.
 type machineScope struct {
-	machineClient  machineclient.MachineInterface
 	coreClient     controllerclient.Client
 	projectID      string
 	providerID     string
@@ -90,9 +86,8 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		return nil, machineapierros.InvalidMachineConfiguration("error creating compute service: %v", err)
 	}
 	return &machineScope{
-		machineClient: params.machineClient.Machines(params.machine.Namespace),
-		coreClient:    params.coreClient,
-		projectID:     projectID,
+		coreClient: params.coreClient,
+		projectID:  projectID,
 		// https://github.com/kubernetes/kubernetes/blob/8765fa2e48974e005ad16e65cb5c3acf5acff17b/staging/src/k8s.io/legacy-cloud-providers/gce/gce_util.go#L204
 		providerID:     fmt.Sprintf("gce://%s/%s/%s", projectID, providerSpec.Zone, params.machine.Name),
 		computeService: computeService,
@@ -111,10 +106,6 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 
 // Close the MachineScope by persisting the machine spec, machine status after reconciling.
 func (s *machineScope) Close() error {
-	if s.machineClient == nil {
-		return errors.New("No machineClient is set for this scope")
-	}
-
 	// The machine status needs to be updated first since
 	// the next call to storeMachineSpec updates entire machine
 	// object. If done in the reverse order, the machine status
@@ -146,11 +137,12 @@ func (s *machineScope) storeMachineSpec() error {
 
 	klog.V(4).Infof("Storing machine spec for %q, resourceVersion: %v, generation: %v", s.machine.Name, s.machine.ResourceVersion, s.machine.Generation)
 	s.machine.Spec.ProviderSpec.Value = ext
-	latestMachine, err := s.machineClient.Update(s.machine)
+
+	err = s.coreClient.Update(context.Background(), s.machine)
 	if err != nil {
 		return err
 	}
-	s.machine = latestMachine
+
 	return nil
 }
 
@@ -169,11 +161,10 @@ func (s *machineScope) storeMachineStatus() error {
 	s.machine.Status.ProviderStatus = ext
 	time := metav1.Now()
 	s.machine.Status.LastUpdated = &time
-	latestMachine, err := s.machineClient.UpdateStatus(s.machine)
+	err = s.coreClient.Status().Update(context.Background(), s.machine)
 	if err != nil {
 		return err
 	}
-	s.machine = latestMachine
 	return nil
 }
 
