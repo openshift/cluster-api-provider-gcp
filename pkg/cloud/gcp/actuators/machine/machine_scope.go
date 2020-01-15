@@ -48,6 +48,8 @@ type machineScope struct {
 	// origProviderStatus captures original value of machine provider status
 	// before it is updated (to skip object updated if nothing is changed)
 	origProviderStatus *v1beta1.GCPMachineProviderStatus
+
+	machineToBePatched controllerclient.Patch
 }
 
 // newMachineScope creates a new MachineScope from the supplied parameters.
@@ -101,6 +103,7 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		// might be invalid and result in skipping the status update.
 		origMachine:        params.machine.DeepCopy(),
 		origProviderStatus: providerStatus.DeepCopy(),
+		machineToBePatched: controllerclient.MergeFrom(params.machine.DeepCopy()),
 	}, nil
 }
 
@@ -118,18 +121,22 @@ func (s *machineScope) Close() error {
 	//    was already set in the previous call, the status is no longer updated
 	//    since the status updated condition is already false. Thus,
 	//    the LastUpdated is not set/updated properly.
-	if err := s.storeMachineStatus(); err != nil {
-		return fmt.Errorf("[machinescope] failed to store provider status for machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
+	if err := s.setMachineStatus(); err != nil {
+		return fmt.Errorf("[machinescope] failed to set provider status for machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
 	}
 
-	if err := s.storeMachineSpec(); err != nil {
-		return fmt.Errorf("[machinescope] failed to update machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
+	if err := s.setMachineSpec(); err != nil {
+		return fmt.Errorf("[machinescope] failed to set machine spec %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
+	}
+
+	if err := s.PatchMachine(); err != nil {
+		return fmt.Errorf("[machinescope] failed to patch machine %q in namespace %q: %v", s.machine.Name, s.machine.Namespace, err)
 	}
 
 	return nil
 }
 
-func (s *machineScope) storeMachineSpec() error {
+func (s *machineScope) setMachineSpec() error {
 	ext, err := v1beta1.RawExtensionFromProviderSpec(s.providerSpec)
 	if err != nil {
 		return err
@@ -138,15 +145,10 @@ func (s *machineScope) storeMachineSpec() error {
 	klog.V(4).Infof("Storing machine spec for %q, resourceVersion: %v, generation: %v", s.machine.Name, s.machine.ResourceVersion, s.machine.Generation)
 	s.machine.Spec.ProviderSpec.Value = ext
 
-	err = s.coreClient.Update(context.Background(), s.machine)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func (s *machineScope) storeMachineStatus() error {
+func (s *machineScope) setMachineStatus() error {
 	if equality.Semantic.DeepEqual(s.providerStatus, s.origProviderStatus) && equality.Semantic.DeepEqual(s.machine.Status.Addresses, s.origMachine.Status.Addresses) {
 		klog.Infof("%s: status unchanged", s.machine.Name)
 		return nil
@@ -161,10 +163,29 @@ func (s *machineScope) storeMachineStatus() error {
 	s.machine.Status.ProviderStatus = ext
 	time := metav1.Now()
 	s.machine.Status.LastUpdated = &time
-	err = s.coreClient.Status().Update(context.Background(), s.machine)
-	if err != nil {
+
+	return nil
+}
+
+func (s *machineScope) PatchMachine() error {
+	klog.V(3).Infof("%q: patching machine", s.machine.GetName())
+
+	statusCopy := *s.machine.Status.DeepCopy()
+
+	// patch machine
+	if err := s.coreClient.Patch(context.Background(), s.machine, s.machineToBePatched); err != nil {
+		klog.Errorf("Failed to patch machine %q: %v", s.machine.GetName(), err)
 		return err
 	}
+
+	s.machine.Status = statusCopy
+
+	// patch status
+	if err := s.coreClient.Status().Patch(context.Background(), s.machine, s.machineToBePatched); err != nil {
+		klog.Errorf("Failed to patch machine status %q: %v", s.machine.GetName(), err)
+		return err
+	}
+
 	return nil
 }
 
