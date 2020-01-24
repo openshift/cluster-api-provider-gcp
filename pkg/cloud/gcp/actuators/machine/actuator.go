@@ -28,13 +28,16 @@ type Actuator struct {
 	machineClient mapiclient.MachineV1beta1Interface
 	coreClient    controllerclient.Client
 	eventRecorder record.EventRecorder
+
+	reconcilerBuilder func(scope *MachineScope) *Reconciler
 }
 
 // ActuatorParams holds parameter information for Actuator.
 type ActuatorParams struct {
-	MachineClient mapiclient.MachineV1beta1Interface
-	CoreClient    controllerclient.Client
-	EventRecorder record.EventRecorder
+	MachineClient     mapiclient.MachineV1beta1Interface
+	CoreClient        controllerclient.Client
+	EventRecorder     record.EventRecorder
+	ReconcilerBuilder func(scope *MachineScope) *Reconciler
 }
 
 // NewActuator returns an actuator.
@@ -43,6 +46,8 @@ func NewActuator(params ActuatorParams) *Actuator {
 		machineClient: params.MachineClient,
 		coreClient:    params.CoreClient,
 		eventRecorder: params.EventRecorder,
+
+		reconcilerBuilder: params.ReconcilerBuilder,
 	}
 }
 
@@ -59,7 +64,7 @@ func (a *Actuator) handleMachineError(machine *machinev1.Machine, err error, eve
 // Create creates a machine and is invoked by the machine controller.
 func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Creating machine", machine.Name)
-	scope, err := newMachineScope(machineScopeParams{
+	scope, err := NewMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
 		machine:       machine,
@@ -67,7 +72,7 @@ func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error
 	if err != nil {
 		return a.handleMachineError(machine, err, createEventAction)
 	}
-	if err := newReconciler(scope).create(); err != nil {
+	if err := a.reconcilerBuilder(scope).Create(); err != nil {
 		// Update machine and machine status in case it was modified
 		scope.Close()
 		return a.handleMachineError(machine, err, createEventAction)
@@ -78,7 +83,7 @@ func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error
 
 func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool, error) {
 	klog.Infof("%s: Checking if machine exists", machine.Name)
-	scope, err := newMachineScope(machineScopeParams{
+	scope, err := NewMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
 		machine:       machine,
@@ -91,12 +96,12 @@ func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool
 	// When create()/update() try to store machineSpec/status this might result in
 	// "Operation cannot be fulfilled; the object has been modified; please apply your changes to the latest version and try again."
 	// Therefore we don't close the scope here and we only store spec/status atomically either in create()/update()"
-	return newReconciler(scope).exists()
+	return a.reconcilerBuilder(scope).Exists()
 }
 
 func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Updating machine", machine.Name)
-	scope, err := newMachineScope(machineScopeParams{
+	scope, err := NewMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
 		machine:       machine,
@@ -105,7 +110,7 @@ func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
 		return a.handleMachineError(machine, fmt.Errorf(fmtErr), updateEventAction)
 	}
-	if err := newReconciler(scope).update(); err != nil {
+	if err := a.reconcilerBuilder(scope).Update(); err != nil {
 		// Update machine and machine status in case it was modified
 		scope.Close()
 		return a.handleMachineError(machine, err, updateEventAction)
@@ -116,7 +121,7 @@ func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error
 
 func (a *Actuator) Delete(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Deleting machine", machine.Name)
-	scope, err := newMachineScope(machineScopeParams{
+	scope, err := NewMachineScope(machineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
 		machine:       machine,
@@ -125,7 +130,7 @@ func (a *Actuator) Delete(ctx context.Context, machine *machinev1.Machine) error
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
 		return a.handleMachineError(machine, fmt.Errorf(fmtErr), deleteEventAction)
 	}
-	if err := newReconciler(scope).delete(); err != nil {
+	if err := a.reconcilerBuilder(scope).Delete(); err != nil {
 		return a.handleMachineError(machine, err, deleteEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, deleteEventAction, "Deleted machine %v", machine.Name)

@@ -35,8 +35,8 @@ type machineScopeParams struct {
 	machine       *machinev1.Machine
 }
 
-// machineScope defines a scope defined around a machine and its cluster.
-type machineScope struct {
+// MachineScope defines a scope defined around a machine and its cluster.
+type MachineScope struct {
 	machineClient  machineclient.MachineInterface
 	coreClient     controllerclient.Client
 	projectID      string
@@ -54,9 +54,9 @@ type machineScope struct {
 	origProviderStatus *v1beta1.GCPMachineProviderStatus
 }
 
-// newMachineScope creates a new MachineScope from the supplied parameters.
+// NewMachineScope creates a new MachineScope from the supplied parameters.
 // This is meant to be called for each machine actuator operation.
-func newMachineScope(params machineScopeParams) (*machineScope, error) {
+func NewMachineScope(params machineScopeParams) (*MachineScope, error) {
 	providerSpec, err := v1beta1.ProviderSpecFromRawExtension(params.machine.Spec.ProviderSpec.Value)
 	if err != nil {
 		return nil, machineapierros.InvalidMachineConfiguration("failed to get machine config: %v", err)
@@ -89,7 +89,7 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 	if err != nil {
 		return nil, machineapierros.InvalidMachineConfiguration("error creating compute service: %v", err)
 	}
-	return &machineScope{
+	return &MachineScope{
 		machineClient: params.machineClient.Machines(params.machine.Namespace),
 		coreClient:    params.coreClient,
 		projectID:     projectID,
@@ -110,7 +110,7 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 }
 
 // Close the MachineScope by persisting the machine spec, machine status after reconciling.
-func (s *machineScope) Close() error {
+func (s *MachineScope) Close() error {
 	if s.machineClient == nil {
 		return errors.New("No machineClient is set for this scope")
 	}
@@ -138,7 +138,7 @@ func (s *machineScope) Close() error {
 	return nil
 }
 
-func (s *machineScope) storeMachineSpec() error {
+func (s *MachineScope) storeMachineSpec() error {
 	ext, err := v1beta1.RawExtensionFromProviderSpec(s.providerSpec)
 	if err != nil {
 		return err
@@ -154,7 +154,7 @@ func (s *machineScope) storeMachineSpec() error {
 	return nil
 }
 
-func (s *machineScope) storeMachineStatus() error {
+func (s *MachineScope) storeMachineStatus() error {
 	if equality.Semantic.DeepEqual(s.providerStatus, s.origProviderStatus) && equality.Semantic.DeepEqual(s.machine.Status.Addresses, s.origMachine.Status.Addresses) {
 		klog.Infof("%s: status unchanged", s.machine.Name)
 		return nil

@@ -55,9 +55,10 @@ func main() {
 
 	// Initialize machine actuator.
 	machineActuator := machine.NewActuator(machine.ActuatorParams{
-		MachineClient: cs,
-		CoreClient:    mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor("gcpcontroller"),
+		MachineClient:     cs,
+		CoreClient:        mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor("gcpcontroller"),
+		ReconcilerBuilder: machine.NewReconciler,
 	})
 
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {

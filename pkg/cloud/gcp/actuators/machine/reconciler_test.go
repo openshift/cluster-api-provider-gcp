@@ -113,7 +113,7 @@ func TestCreate(t *testing.T) {
 				labels = tc.labels
 			}
 
-			machineScope := machineScope{
+			machineScope := MachineScope{
 				machine: &machinev1beta1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "",
@@ -127,7 +127,7 @@ func TestCreate(t *testing.T) {
 				computeService: mockComputeService,
 			}
 
-			reconciler := newReconciler(&machineScope)
+			reconciler := NewReconciler(&machineScope)
 
 			if tc.secret != nil {
 				reconciler.coreClient = controllerfake.NewFakeClientWithScheme(scheme.Scheme, tc.secret)
@@ -137,7 +137,7 @@ func TestCreate(t *testing.T) {
 				mockComputeService.MockInstancesInsert = tc.mockInstancesInsert
 			}
 
-			err := reconciler.create()
+			err := reconciler.Create()
 
 			if tc.expectedCondition != nil {
 				if reconciler.providerStatus.Conditions[0].Type != tc.expectedCondition.Type {
@@ -176,7 +176,7 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 	zone := "us-east1-b"
 	projecID := "testProject"
 	instanceName := "testInstance"
-	machineScope := machineScope{
+	machineScope := MachineScope{
 		machine: &machinev1beta1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      instanceName,
@@ -204,7 +204,7 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 		},
 	}
 
-	r := newReconciler(&machineScope)
+	r := NewReconciler(&machineScope)
 	if err := r.reconcileMachineWithCloudState(nil); err != nil {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
@@ -228,7 +228,7 @@ func TestReconcileMachineWithCloudState(t *testing.T) {
 
 func TestExists(t *testing.T) {
 	_, mockComputeService := computeservice.NewComputeServiceMock()
-	machineScope := machineScope{
+	machineScope := MachineScope{
 		machine: &machinev1beta1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "",
@@ -243,8 +243,8 @@ func TestExists(t *testing.T) {
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 		computeService: mockComputeService,
 	}
-	reconciler := newReconciler(&machineScope)
-	exists, err := reconciler.exists()
+	reconciler := NewReconciler(&machineScope)
+	exists, err := reconciler.Exists()
 	if err != nil || exists != true {
 		t.Errorf("reconciler was not expected to return error: %v", err)
 	}
@@ -252,7 +252,7 @@ func TestExists(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	_, mockComputeService := computeservice.NewComputeServiceMock()
-	machineScope := machineScope{
+	machineScope := MachineScope{
 		machine: &machinev1beta1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "",
@@ -267,8 +267,8 @@ func TestDelete(t *testing.T) {
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 		computeService: mockComputeService,
 	}
-	reconciler := newReconciler(&machineScope)
-	if err := reconciler.delete(); err != nil {
+	reconciler := NewReconciler(&machineScope)
+	if err := reconciler.Delete(); err != nil {
 		if _, ok := err.(*machinecontroller.RequeueAfterError); !ok {
 			t.Errorf("reconciler was not expected to return error: %v", err)
 		}
@@ -306,7 +306,7 @@ func TestProcessTargetPools(t *testing.T) {
 		"pool1",
 	}
 	tpEmpty := []string{}
-	machineScope := machineScope{
+	machineScope := MachineScope{
 		machine: &machinev1beta1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      instanceName,
@@ -374,7 +374,7 @@ func TestProcessTargetPools(t *testing.T) {
 		pt := newPoolTracker()
 		machineScope.providerSpec.Region = tc.region
 		machineScope.providerSpec.TargetPools = tc.targetPools
-		rec := newReconciler(&machineScope)
+		rec := NewReconciler(&machineScope)
 		err := rec.processTargetPools(tc.desired, pt.track)
 		if err != nil {
 			t.Errorf("unexpected error from ptp")
@@ -389,7 +389,7 @@ func TestGetUserData(t *testing.T) {
 	userDataSecretName := "test"
 	defaultNamespace := "test"
 	userDataBlob := "test"
-	machineScope := machineScope{
+	machineScope := MachineScope{
 		machine: &machinev1beta1.Machine{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "",
@@ -403,7 +403,7 @@ func TestGetUserData(t *testing.T) {
 		},
 		providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 	}
-	reconciler := newReconciler(&machineScope)
+	reconciler := NewReconciler(&machineScope)
 
 	testCases := []struct {
 		secret *apiv1.Secret

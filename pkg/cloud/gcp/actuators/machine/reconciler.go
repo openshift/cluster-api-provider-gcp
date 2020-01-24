@@ -29,18 +29,18 @@ const (
 
 // Reconciler are list of services required by machine actuator, easy to create a fake
 type Reconciler struct {
-	*machineScope
+	*MachineScope
 }
 
 // NewReconciler populates all the services based on input scope
-func newReconciler(scope *machineScope) *Reconciler {
+func NewReconciler(scope *MachineScope) *Reconciler {
 	return &Reconciler{
 		scope,
 	}
 }
 
 // Create creates machine if and only if machine exists, handled by cluster-api
-func (r *Reconciler) create() error {
+func (r *Reconciler) Create() error {
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
 		return machinecontroller.InvalidMachineConfiguration("failed validating machine provider spec: %v", err)
 	}
@@ -153,7 +153,8 @@ func (r *Reconciler) create() error {
 	return r.reconcileMachineWithCloudState(nil)
 }
 
-func (r *Reconciler) update() error {
+// Update updates existing machine only when it doesn't match desired state
+func (r *Reconciler) Update() error {
 	// Add target pools, if necessary
 	if err := r.processTargetPools(true, r.addInstanceToTargetPool); err != nil {
 		return err
@@ -276,8 +277,8 @@ func validateMachine(machine machinev1.Machine, providerSpec v1beta1.GCPMachineP
 	return nil
 }
 
-// Returns true if machine exists.
-func (r *Reconciler) exists() (bool, error) {
+// Exists Returns true if machine Exists.
+func (r *Reconciler) Exists() (bool, error) {
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
 		return false, fmt.Errorf("failed validating machine provider spec: %v", err)
 	}
@@ -305,13 +306,13 @@ func (r *Reconciler) exists() (bool, error) {
 	return false, fmt.Errorf("error getting running instances: %v", err)
 }
 
-// Returns true if machine exists.
-func (r *Reconciler) delete() error {
+// Delete deletes the machine
+func (r *Reconciler) Delete() error {
 	// Remove instance from target pools, if necessary
 	if err := r.processTargetPools(false, r.deleteInstanceFromTargetPool); err != nil {
 		return err
 	}
-	exists, err := r.exists()
+	exists, err := r.Exists()
 	if err != nil {
 		return err
 	}
