@@ -59,6 +59,7 @@ func main() {
 		CoreClient:        mgr.GetClient(),
 		EventRecorder:     mgr.GetEventRecorderFor("gcpcontroller"),
 		ReconcilerBuilder: machine.NewReconciler,
+		ScopeBuilder:      machine.NewMachineScope,
 	})
 
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {

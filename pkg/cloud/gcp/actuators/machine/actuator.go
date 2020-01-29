@@ -25,10 +25,10 @@ const (
 
 // Actuator is responsible for performing machine reconciliation.
 type Actuator struct {
-	machineClient mapiclient.MachineV1beta1Interface
-	coreClient    controllerclient.Client
-	eventRecorder record.EventRecorder
-
+	machineClient     mapiclient.MachineV1beta1Interface
+	coreClient        controllerclient.Client
+	eventRecorder     record.EventRecorder
+	scopeBuilder      func(params MachineScopeParams) (*MachineScope, error)
 	reconcilerBuilder func(scope *MachineScope) *Reconciler
 }
 
@@ -37,16 +37,17 @@ type ActuatorParams struct {
 	MachineClient     mapiclient.MachineV1beta1Interface
 	CoreClient        controllerclient.Client
 	EventRecorder     record.EventRecorder
+	ScopeBuilder      func(params MachineScopeParams) (*MachineScope, error)
 	ReconcilerBuilder func(scope *MachineScope) *Reconciler
 }
 
 // NewActuator returns an actuator.
 func NewActuator(params ActuatorParams) *Actuator {
 	return &Actuator{
-		machineClient: params.MachineClient,
-		coreClient:    params.CoreClient,
-		eventRecorder: params.EventRecorder,
-
+		machineClient:     params.MachineClient,
+		coreClient:        params.CoreClient,
+		eventRecorder:     params.EventRecorder,
+		scopeBuilder:      params.ScopeBuilder,
 		reconcilerBuilder: params.ReconcilerBuilder,
 	}
 }
@@ -64,7 +65,7 @@ func (a *Actuator) handleMachineError(machine *machinev1.Machine, err error, eve
 // Create creates a machine and is invoked by the machine controller.
 func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Creating machine", machine.Name)
-	scope, err := NewMachineScope(machineScopeParams{
+	scope, err := a.scopeBuilder(MachineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
 		machine:       machine,
@@ -83,7 +84,7 @@ func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error
 
 func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool, error) {
 	klog.Infof("%s: Checking if machine exists", machine.Name)
-	scope, err := NewMachineScope(machineScopeParams{
+	scope, err := a.scopeBuilder(MachineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
 		machine:       machine,
@@ -101,7 +102,7 @@ func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool
 
 func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Updating machine", machine.Name)
-	scope, err := NewMachineScope(machineScopeParams{
+	scope, err := a.scopeBuilder(MachineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
 		machine:       machine,
@@ -121,7 +122,7 @@ func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error
 
 func (a *Actuator) Delete(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Deleting machine", machine.Name)
-	scope, err := NewMachineScope(machineScopeParams{
+	scope, err := a.scopeBuilder(MachineScopeParams{
 		machineClient: a.machineClient,
 		coreClient:    a.coreClient,
 		machine:       machine,

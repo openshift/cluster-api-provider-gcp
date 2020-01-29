@@ -25,14 +25,15 @@ import (
 )
 
 const (
-	credentialsSecretKey = "service_account.json"
+	CredentialsSecretKey = "service_account.json"
 )
 
-// machineScopeParams defines the input parameters used to create a new MachineScope.
-type machineScopeParams struct {
-	machineClient machineclient.MachineV1beta1Interface
-	coreClient    controllerclient.Client
-	machine       *machinev1.Machine
+// MachineScopeParams defines the input parameters used to create a new MachineScope.
+type MachineScopeParams struct {
+	machineClient  machineclient.MachineV1beta1Interface
+	coreClient     controllerclient.Client
+	machine        *machinev1.Machine
+	computeService computeservice.GCPComputeService
 }
 
 // MachineScope defines a scope defined around a machine and its cluster.
@@ -56,7 +57,7 @@ type MachineScope struct {
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
 // This is meant to be called for each machine actuator operation.
-func NewMachineScope(params machineScopeParams) (*MachineScope, error) {
+func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	providerSpec, err := v1beta1.ProviderSpecFromRawExtension(params.machine.Spec.ProviderSpec.Value)
 	if err != nil {
 		return nil, machineapierros.InvalidMachineConfiguration("failed to get machine config: %v", err)
@@ -80,14 +81,17 @@ func NewMachineScope(params machineScopeParams) (*MachineScope, error) {
 		}
 	}
 
-	oauthClient, err := createOauth2Client(serviceAccountJSON, compute.CloudPlatformScope)
-	if err != nil {
-		return nil, machineapierros.InvalidMachineConfiguration("error creating oauth client: %v", err)
-	}
+	computeService := params.computeService
+	if computeService == nil {
+		oauthClient, err := createOauth2Client(serviceAccountJSON, compute.CloudPlatformScope)
+		if err != nil {
+			return nil, machineapierros.InvalidMachineConfiguration("error creating oauth client: %v", err)
+		}
 
-	computeService, err := computeservice.NewComputeService(oauthClient)
-	if err != nil {
-		return nil, machineapierros.InvalidMachineConfiguration("error creating compute service: %v", err)
+		computeService, err = computeservice.NewComputeService(oauthClient)
+		if err != nil {
+			return nil, machineapierros.InvalidMachineConfiguration("error creating compute service: %v", err)
+		}
 	}
 	return &MachineScope{
 		machineClient: params.machineClient.Machines(params.machine.Namespace),
@@ -200,9 +204,9 @@ func getCredentialsSecret(coreClient controllerclient.Client, machine machinev1.
 		}
 		return "", fmt.Errorf("error getting credentials secret %q in namespace %q: %v", spec.CredentialsSecret.Name, machine.GetNamespace(), err)
 	}
-	data, exists := credentialsSecret.Data[credentialsSecretKey]
+	data, exists := credentialsSecret.Data[CredentialsSecretKey]
 	if !exists {
-		return "", machineapierros.InvalidMachineConfiguration("secret %v/%v does not have %q field set. Thus, no credentials applied when creating an instance", machine.GetNamespace(), spec.CredentialsSecret.Name, credentialsSecretKey)
+		return "", machineapierros.InvalidMachineConfiguration("secret %v/%v does not have %q field set. Thus, no credentials applied when creating an instance", machine.GetNamespace(), spec.CredentialsSecret.Name, CredentialsSecretKey)
 	}
 
 	return string(data), nil

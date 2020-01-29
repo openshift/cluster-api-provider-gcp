@@ -21,53 +21,53 @@ type GCPComputeService interface {
 	TargetPoolsRemoveInstance(project string, region string, name string, instance string) (*compute.Operation, error)
 }
 
-type computeService struct {
+type ComputeService struct {
 	service *compute.Service
 }
 
 // NewComputeService return a new computeService
-func NewComputeService(oauthClient *http.Client) (*computeService, error) {
+func NewComputeService(oauthClient *http.Client) (GCPComputeService, error) {
 	service, err := compute.New(oauthClient)
 	if err != nil {
 		return nil, err
 	}
 	service.UserAgent = "gcpprovider.openshift.io/" + version.Version.String()
-	return &computeService{
+	return &ComputeService{
 		service: service,
 	}, nil
 }
 
 // InstancesInsert is a pass through wrapper for compute.Service.Instances.Insert(...)
-func (c *computeService) InstancesInsert(project string, zone string, instance *compute.Instance) (*compute.Operation, error) {
+func (c *ComputeService) InstancesInsert(project string, zone string, instance *compute.Instance) (*compute.Operation, error) {
 	return c.service.Instances.Insert(project, zone, instance).Do()
 }
 
 // ZoneOperationsGet is a pass through wrapper for compute.Service.ZoneOperations.Get(...)
-func (c *computeService) ZoneOperationsGet(project string, zone string, operation string) (*compute.Operation, error) {
+func (c *ComputeService) ZoneOperationsGet(project string, zone string, operation string) (*compute.Operation, error) {
 	return c.service.ZoneOperations.Get(project, zone, operation).Do()
 }
 
-func (c *computeService) InstancesGet(project string, zone string, instance string) (*compute.Instance, error) {
+func (c *ComputeService) InstancesGet(project string, zone string, instance string) (*compute.Instance, error) {
 	return c.service.Instances.Get(project, zone, instance).Do()
 }
 
-func (c *computeService) InstancesDelete(requestId string, project string, zone string, instance string) (*compute.Operation, error) {
+func (c *ComputeService) InstancesDelete(requestId string, project string, zone string, instance string) (*compute.Operation, error) {
 	return c.service.Instances.Delete(project, zone, instance).RequestId(requestId).Do()
 }
 
-func (c *computeService) ZonesGet(project string, zone string) (*compute.Zone, error) {
+func (c *ComputeService) ZonesGet(project string, zone string) (*compute.Zone, error) {
 	return c.service.Zones.Get(project, zone).Do()
 }
 
-func (c *computeService) BasePath() string {
+func (c *ComputeService) BasePath() string {
 	return c.service.BasePath
 }
 
-func (c *computeService) TargetPoolsGet(project string, region string, name string) (*compute.TargetPool, error) {
+func (c *ComputeService) TargetPoolsGet(project string, region string, name string) (*compute.TargetPool, error) {
 	return c.service.TargetPools.Get(project, region, name).Do()
 }
 
-func (c *computeService) TargetPoolsAddInstance(project string, region string, name string, instanceLink string) (*compute.Operation, error) {
+func (c *ComputeService) TargetPoolsAddInstance(project string, region string, name string, instanceLink string) (*compute.Operation, error) {
 	rb := &compute.TargetPoolsAddInstanceRequest{
 		Instances: []*compute.InstanceReference{
 			{
@@ -78,7 +78,7 @@ func (c *computeService) TargetPoolsAddInstance(project string, region string, n
 	return c.service.TargetPools.AddInstance(project, region, name, rb).Do()
 }
 
-func (c *computeService) TargetPoolsRemoveInstance(project string, region string, name string, instanceLink string) (*compute.Operation, error) {
+func (c *ComputeService) TargetPoolsRemoveInstance(project string, region string, name string, instanceLink string) (*compute.Operation, error) {
 	rb := &compute.TargetPoolsRemoveInstanceRequest{
 		Instances: []*compute.InstanceReference{
 			{
