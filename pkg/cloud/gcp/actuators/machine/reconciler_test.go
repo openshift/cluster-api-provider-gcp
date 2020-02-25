@@ -6,9 +6,8 @@ import (
 
 	gcpv1beta1 "github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
-	machinev1beta1 "github.com/openshift/cluster-api/pkg/apis/machine/v1beta1"
-	controllerError "github.com/openshift/cluster-api/pkg/controller/error"
-	machineapierrors "github.com/openshift/cluster-api/pkg/errors"
+	machinev1beta1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
+	machinecontroller "github.com/openshift/machine-api-operator/pkg/controller/machine"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -150,7 +149,7 @@ func TestDelete(t *testing.T) {
 	}
 	reconciler := newReconciler(&machineScope)
 	if err := reconciler.delete(); err != nil {
-		if _, ok := err.(*controllerError.RequeueAfterError); !ok {
+		if _, ok := err.(*machinecontroller.RequeueAfterError); !ok {
 			t.Errorf("reconciler was not expected to return error: %v", err)
 		}
 	}
@@ -312,7 +311,7 @@ func TestGetUserData(t *testing.T) {
 					userDataSecretKey: []byte(userDataBlob),
 				},
 			},
-			error: &machineapierrors.MachineError{},
+			error: &machinecontroller.MachineError{},
 		},
 		{
 			secret: &apiv1.Secret{
@@ -324,7 +323,7 @@ func TestGetUserData(t *testing.T) {
 					"badKey": []byte(userDataBlob),
 				},
 			},
-			error: &machineapierrors.MachineError{},
+			error: &machinecontroller.MachineError{},
 		},
 	}
 
@@ -335,8 +334,8 @@ func TestGetUserData(t *testing.T) {
 			if err == nil {
 				t.Fatal("Expected error")
 			}
-			_, expectMachineError := tc.error.(*machineapierrors.MachineError)
-			_, gotMachineError := err.(*machineapierrors.MachineError)
+			_, expectMachineError := tc.error.(*machinecontroller.MachineError)
+			_, gotMachineError := err.(*machinecontroller.MachineError)
 			if expectMachineError && !gotMachineError || !expectMachineError && gotMachineError {
 				t.Errorf("Expected %T, got: %T", tc.error, err)
 			}
