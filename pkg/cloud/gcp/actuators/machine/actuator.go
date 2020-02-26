@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
-	mapiclient "github.com/openshift/machine-api-operator/pkg/generated/clientset/versioned/typed/machine/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog"
@@ -25,14 +24,12 @@ const (
 
 // Actuator is responsible for performing machine reconciliation.
 type Actuator struct {
-	machineClient mapiclient.MachineV1beta1Interface
 	coreClient    controllerclient.Client
 	eventRecorder record.EventRecorder
 }
 
 // ActuatorParams holds parameter information for Actuator.
 type ActuatorParams struct {
-	MachineClient mapiclient.MachineV1beta1Interface
 	CoreClient    controllerclient.Client
 	EventRecorder record.EventRecorder
 }
@@ -40,7 +37,6 @@ type ActuatorParams struct {
 // NewActuator returns an actuator.
 func NewActuator(params ActuatorParams) *Actuator {
 	return &Actuator{
-		machineClient: params.MachineClient,
 		coreClient:    params.CoreClient,
 		eventRecorder: params.EventRecorder,
 	}
@@ -60,9 +56,8 @@ func (a *Actuator) handleMachineError(machine *machinev1.Machine, err error, eve
 func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Creating machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		machineClient: a.machineClient,
-		coreClient:    a.coreClient,
-		machine:       machine,
+		coreClient: a.coreClient,
+		machine:    machine,
 	})
 	if err != nil {
 		return a.handleMachineError(machine, err, createEventAction)
@@ -79,9 +74,8 @@ func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error
 func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool, error) {
 	klog.Infof("%s: Checking if machine exists", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		machineClient: a.machineClient,
-		coreClient:    a.coreClient,
-		machine:       machine,
+		coreClient: a.coreClient,
+		machine:    machine,
 	})
 	if err != nil {
 		return false, fmt.Errorf(scopeFailFmt, machine.Name, err)
@@ -97,9 +91,8 @@ func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool
 func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Updating machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		machineClient: a.machineClient,
-		coreClient:    a.coreClient,
-		machine:       machine,
+		coreClient: a.coreClient,
+		machine:    machine,
 	})
 	if err != nil {
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
@@ -117,9 +110,8 @@ func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error
 func (a *Actuator) Delete(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Deleting machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		machineClient: a.machineClient,
-		coreClient:    a.coreClient,
-		machine:       machine,
+		coreClient: a.coreClient,
+		machine:    machine,
 	})
 	if err != nil {
 		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
