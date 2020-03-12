@@ -278,8 +278,8 @@ github.com/opencontainers/go-digest v1.0.0-rc1/go.mod h1:cMLVZDEM3+U2I4VmLI6N8jQ
 github.com/openshift/api v0.0.0-20200127192224-ffde1bfabb9f/go.mod h1:fT6U/JfG8uZzemTRwZA2kBDJP5nWz7v05UHnty/D+pk=
 github.com/openshift/client-go v0.0.0-20190617165122-8892c0adc000/go.mod h1:6rzn+JTr7+WYS2E1TExP4gByoABxMznR6y2SnUIkmxk=
 github.com/openshift/cluster-version-operator v3.11.1-0.20190629164025-08cac1c02538+incompatible/go.mod h1:0BbpR1mrN0F2ZRae5N1XHcytmkvVPaeKgSQwRRBWugc=
-github.com/openshift/machine-api-operator v0.2.1-0.20200207152117-d189f5d56a49 h1:yD5yGQsG4tt4FWoZzd2VYHYIw/21iZqIu/peZ4DwJV4=
-github.com/openshift/machine-api-operator v0.2.1-0.20200207152117-d189f5d56a49/go.mod h1:b3huCV+DbroXP1sHtsU5xBwx97zqc6GKB5owyl2zsNM=
+github.com/openshift/machine-api-operator v0.2.1-0.20200306195511-8fff6d5a4cff h1:ycWi2PVhMUE8hJUXLcE6bgv3NOge64hkW8uQsmPA3jo=
+github.com/openshift/machine-api-operator v0.2.1-0.20200306195511-8fff6d5a4cff/go.mod h1:b3huCV+DbroXP1sHtsU5xBwx97zqc6GKB5owyl2zsNM=
 github.com/operator-framework/operator-sdk v0.5.1-0.20190301204940-c2efe6f74e7b/go.mod h1:iVyukRkam5JZa8AnjYf+/G3rk7JI1+M6GsU0sq0B9NA=
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
