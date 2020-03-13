@@ -11,6 +11,7 @@ const (
 
 type GCPComputeServiceMock struct {
 	MockInstancesInsert   func(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
+	MockMachineTypesGet   func(project string, zone string, machineType string) (*compute.MachineType, error)
 	mockZoneOperationsGet func(project string, zone string, operation string) (*compute.Operation, error)
 	mockInstancesGet      func(project string, zone string, instance string) (*compute.Instance, error)
 }
@@ -86,7 +87,10 @@ func (c *GCPComputeServiceMock) TargetPoolsRemoveInstance(project string, region
 }
 
 func (c *GCPComputeServiceMock) MachineTypesGet(project string, zone string, machineType string) (*compute.MachineType, error) {
-	return nil, nil
+	if c.MockMachineTypesGet == nil {
+		return nil, nil
+	}
+	return c.MockMachineTypesGet(project, zone, machineType)
 }
 
 func NewComputeServiceMock() (*compute.Instance, *GCPComputeServiceMock) {

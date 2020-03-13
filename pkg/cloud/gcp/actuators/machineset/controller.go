@@ -51,6 +51,9 @@ type Reconciler struct {
 	recorder record.EventRecorder
 	scheme   *runtime.Scheme
 	cache    *machineTypesCache
+
+	// Allow a mock GCPComputeService to be injected during testing
+	getGCPService func(namespace string, providerConfig providerconfigv1.GCPMachineProviderSpec) (computeservice.GCPComputeService, error)
 }
 
 // SetupWithManager creates a new controller for a manager.
@@ -67,6 +70,10 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options controller.Optio
 	r.cache = newMachineTypesCache()
 	r.recorder = mgr.GetEventRecorderFor("machineset-controller")
 	r.scheme = mgr.GetScheme()
+
+	if r.getGCPService == nil {
+		r.getGCPService = r.getRealGCPService
+	}
 	return nil
 }
 
@@ -155,7 +162,8 @@ func getproviderConfig(machineSet *machinev1.MachineSet) (*providerconfigv1.GCPM
 	return providerconfigv1.ProviderSpecFromRawExtension(machineSet.Spec.Template.Spec.ProviderSpec.Value)
 }
 
-func (r *Reconciler) getGCPService(namespace string, providerConfig providerconfigv1.GCPMachineProviderSpec) (computeservice.GCPComputeService, error) {
+// getRealGCPService constructs a real GCPService for talking to GCP
+func (r *Reconciler) getRealGCPService(namespace string, providerConfig providerconfigv1.GCPMachineProviderSpec) (computeservice.GCPComputeService, error) {
 	serviceAccountJSON, err := util.GetCredentialsSecret(r.Client, namespace, providerConfig)
 	if err != nil {
 		return nil, err
