@@ -85,6 +85,10 @@ func (c *GCPComputeServiceMock) TargetPoolsRemoveInstance(project string, region
 	return nil, nil
 }
 
+func (c *GCPComputeServiceMock) MachineTypesGet(project string, zone string, machineType string) (*compute.MachineType, error) {
+	return nil, nil
+}
+
 func NewComputeServiceMock() (*compute.Instance, *GCPComputeServiceMock) {
 	var receivedInstance compute.Instance
 	computeServiceMock := GCPComputeServiceMock{

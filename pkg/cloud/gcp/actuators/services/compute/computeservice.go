@@ -19,6 +19,7 @@ type GCPComputeService interface {
 	TargetPoolsGet(project string, region string, name string) (*compute.TargetPool, error)
 	TargetPoolsAddInstance(project string, region string, name string, instance string) (*compute.Operation, error)
 	TargetPoolsRemoveInstance(project string, region string, name string, instance string) (*compute.Operation, error)
+	MachineTypesGet(project string, machineType string, zone string) (*compute.MachineType, error)
 }
 
 type computeService struct {
@@ -87,4 +88,8 @@ func (c *computeService) TargetPoolsRemoveInstance(project string, region string
 		},
 	}
 	return c.service.TargetPools.RemoveInstance(project, region, name, rb).Do()
+}
+
+func (c *computeService) MachineTypesGet(project string, zone string, machineType string) (*compute.MachineType, error) {
+	return c.service.MachineTypes.Get(project, zone, machineType).Do()
 }
