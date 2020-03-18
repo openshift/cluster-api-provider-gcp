@@ -52,12 +52,8 @@ test: ## Run tests
 	@echo -e "\033[32mTesting...\033[0m"
 	$(DOCKER_CMD) hack/ci-test.sh
 
-## TODO(JoelSpeed): Make CI depend on `test` target and rename `unit-internal` to `unit` to restore original behaviour
 .PHONY: unit
-unit: test
-
-.PHONY: unit-internal
-unit-internal: # Run unit test
+unit: # Run unit test
 	$(DOCKER_CMD) go test -race -cover ./cmd/... ./pkg/...
 
 .PHONY: sec
