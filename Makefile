@@ -10,7 +10,7 @@ LD_FLAGS    ?= -X $(REPO_PATH)/pkg/version.Raw=$(VERSION) -extldflags -static
 
 GO111MODULE = on
 export GO111MODULE
-GOFLAGS += -mod=vendor
+GOFLAGS ?= -mod=vendor
 export GOFLAGS
 GOPROXY ?=
 export GOPROXY
@@ -47,8 +47,17 @@ goimports: ## Go fmt your code
 vet: ## Apply go vet to all go files
 	hack/go-vet.sh ./...
 
+.PHONY: test
+test: ## Run tests
+	@echo -e "\033[32mTesting...\033[0m"
+	$(DOCKER_CMD) hack/ci-test.sh
+
+## TODO(JoelSpeed): Make CI depend on `test` target and rename `unit-internal` to `unit` to restore original behaviour
 .PHONY: unit
-unit: # Run unit test
+unit: test
+
+.PHONY: unit-internal
+unit-internal: # Run unit test
 	$(DOCKER_CMD) go test -race -cover ./cmd/... ./pkg/...
 
 .PHONY: sec
