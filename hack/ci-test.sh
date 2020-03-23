@@ -24,4 +24,4 @@ cd $REPO_ROOT && \
 	source ./hack/fetch-ext-bins.sh && \
 	fetch_tools && \
 	setup_envs && \
-	make unit-internal
+	make unit
