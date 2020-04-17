@@ -15,6 +15,7 @@ package machineset
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -205,7 +206,7 @@ func deleteMachineSets(c client.Client, namespaceName string) error {
 			return err
 		}
 		if len(machineSets.Items) > 0 {
-			return fmt.Errorf("MachineSets not deleted")
+			return errors.New("MachineSets not deleted")
 		}
 		return nil
 	}, timeout).Should(Succeed())
@@ -226,7 +227,7 @@ func TestReconcile(t *testing.T) {
 			name:        "with no machineType set",
 			machineType: "",
 			mockMachineTypesGet: func(_ string, _ string, _ string) (*compute.MachineType, error) {
-				return nil, fmt.Errorf("machineType should not be empty")
+				return nil, errors.New("machineType should not be empty")
 			},
 			existingAnnotations: make(map[string]string),
 			expectedAnnotations: make(map[string]string),

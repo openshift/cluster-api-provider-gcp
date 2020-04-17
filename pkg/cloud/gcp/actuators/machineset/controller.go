@@ -24,7 +24,6 @@ import (
 	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/util"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	mapierrors "github.com/openshift/machine-api-operator/pkg/controller/machine"
-	"github.com/pkg/errors"
 	"google.golang.org/api/compute/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -64,7 +63,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager, options controller.Optio
 		Build(r)
 
 	if err != nil {
-		return errors.Wrap(err, "failed setting up with a controller manager")
+		return fmt.Errorf("failed setting up with a controller manager: %w", err)
 	}
 
 	r.cache = newMachineTypesCache()
