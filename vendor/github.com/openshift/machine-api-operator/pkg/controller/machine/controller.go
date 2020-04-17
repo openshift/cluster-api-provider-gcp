@@ -18,10 +18,10 @@ package machine
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	commonerrors "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	"github.com/openshift/machine-api-operator/pkg/util"
 	corev1 "k8s.io/api/core/v1"
@@ -59,6 +59,9 @@ const (
 
 	// MachineInstanceTypeLabelName as annotation name for a machine instance type
 	MachineInstanceTypeLabelName = "machine.openshift.io/instance-type"
+
+	// MachineInterruptibleInstanceLabelName as annotaiton name for interruptible instances
+	MachineInterruptibleInstanceLabelName = "machine.openshift.io/interruptible-instance"
 
 	// https://github.com/openshift/enhancements/blob/master/enhancements/machine-instance-lifecycle.md
 	// This is not a transient error, but
@@ -325,7 +328,7 @@ func (r *ReconcileMachine) drainNode(machine *machinev1.Machine) error {
 	if err != nil {
 		return fmt.Errorf("unable to build kube client: %v", err)
 	}
-	node, err := kubeClient.CoreV1().Nodes().Get(machine.Status.NodeRef.Name, metav1.GetOptions{})
+	node, err := kubeClient.CoreV1().Nodes().Get(context.Background(), machine.Status.NodeRef.Name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// If an admin deletes the node directly, we'll end up here.
@@ -354,7 +357,6 @@ func (r *ReconcileMachine) drainNode(machine *machinev1.Machine) error {
 		},
 		Out:    writer{klog.Info},
 		ErrOut: writer{klog.Error},
-		DryRun: false,
 	}
 
 	if nodeIsUnreachable(node) {
@@ -395,19 +397,19 @@ func (r *ReconcileMachine) deleteNode(ctx context.Context, name string) error {
 }
 
 func delayIfRequeueAfterError(err error) (reconcile.Result, error) {
-	switch t := err.(type) {
-	case *RequeueAfterError:
-		klog.Infof("Actuator returned requeue-after error: %v", err)
-		return reconcile.Result{Requeue: true, RequeueAfter: t.RequeueAfter}, nil
+	var requeueAfterError *RequeueAfterError
+	if errors.As(err, &requeueAfterError) {
+		klog.Infof("Actuator returned requeue-after error: %v", requeueAfterError)
+		return reconcile.Result{Requeue: true, RequeueAfter: requeueAfterError.RequeueAfter}, nil
 	}
 	return reconcile.Result{}, err
 }
 
 func isInvalidMachineConfigurationError(err error) bool {
-	switch t := err.(type) {
-	case *MachineError:
-		if t.Reason == commonerrors.InvalidConfigurationMachineError {
-			klog.Infof("Actuator returned invalid configuration error: %v", err)
+	var machineError *MachineError
+	if errors.As(err, &machineError) {
+		if machineError.Reason == machinev1.InvalidConfigurationMachineError {
+			klog.Infof("Actuator returned invalid configuration error: %v", machineError)
 			return true
 		}
 	}
@@ -442,10 +444,7 @@ func machineHasNode(machine *machinev1.Machine) bool {
 }
 
 func machineIsFailed(machine *machinev1.Machine) bool {
-	if stringPointerDeref(machine.Status.Phase) == phaseFailed {
-		return true
-	}
-	return false
+	return stringPointerDeref(machine.Status.Phase) == phaseFailed
 }
 
 func nodeIsUnreachable(node *corev1.Node) bool {
