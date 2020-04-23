@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/machine"
@@ -20,15 +21,41 @@ import (
 )
 
 func main() {
-	var printVersion bool
-	flag.BoolVar(&printVersion, "version", false, "print version and exit")
+	printVersion := flag.Bool(
+		"version",
+		false,
+		"print version and exit",
+	)
+
+	leaderElectResourceNamespace := flag.String(
+		"leader-elect-resource-namespace",
+		"",
+		"The namespace of resource object that is used for locking during leader election. If unspecified and running in cluster, defaults to the service account namespace for the controller. Required for leader-election outside of a cluster.",
+	)
+
+	leaderElect := flag.Bool(
+		"leader-elect",
+		false,
+		"Start a leader election client and gain leadership before executing the main loop. Enable this when running replicated components for high availability.",
+	)
+
+	leaderElectLeaseDuration := flag.Duration(
+		"leader-elect-lease-duration",
+		15*time.Second,
+		"The duration that non-leader candidates will wait after observing a leadership renewal until attempting to acquire leadership of a led but unrenewed leader slot. This is effectively the maximum duration that a leader can be stopped before it is replaced by another candidate. This is only applicable if leader election is enabled.",
+	)
+
+	watchNamespace := flag.String(
+		"namespace",
+		"",
+		"Namespace that the controller watches to reconcile machine-api objects. If unspecified, the controller watches for machine-api objects across all namespaces.",
+	)
 
 	klog.InitFlags(nil)
-	watchNamespace := flag.String("namespace", "", "Namespace that the controller watches to reconcile machine-api objects. If unspecified, the controller watches for machine-api objects across all namespaces.")
 	flag.Set("logtostderr", "true")
 	flag.Parse()
 
-	if printVersion {
+	if *printVersion {
 		fmt.Println(version.String)
 		os.Exit(0)
 	}
@@ -36,9 +63,14 @@ func main() {
 	cfg := config.GetConfigOrDie()
 
 	opts := manager.Options{
+		LeaderElection:          *leaderElect,
+		LeaderElectionNamespace: *leaderElectResourceNamespace,
+		LeaderElectionID:        "cluster-api-provider-gcp-leader",
+		LeaseDuration:           leaderElectLeaseDuration,
 		// Disable metrics serving
 		MetricsBindAddress: "0",
 	}
+
 	if *watchNamespace != "" {
 		opts.Namespace = *watchNamespace
 		klog.Infof("Watching machine-api objects only in namespace %q for reconciliation.", opts.Namespace)
