@@ -143,7 +143,7 @@ var _ = Describe("Reconciler", func() {
 			existingAnnotations: make(map[string]string),
 			expectedAnnotations: map[string]string{
 				cpuKey:    "2",
-				memoryKey: "7680",
+				memoryKey: "7680M",
 			},
 			expectedEvents: []string{},
 		}),
@@ -152,7 +152,7 @@ var _ = Describe("Reconciler", func() {
 			existingAnnotations: make(map[string]string),
 			expectedAnnotations: map[string]string{
 				cpuKey:    "16",
-				memoryKey: "16384",
+				memoryKey: "16384M",
 			},
 			expectedEvents: []string{},
 		}),
@@ -166,7 +166,7 @@ var _ = Describe("Reconciler", func() {
 				"existing": "annotation",
 				"annother": "existingAnnotation",
 				cpuKey:     "2",
-				memoryKey:  "7680",
+				memoryKey:  "7680M",
 			},
 			expectedEvents: []string{},
 		}),
@@ -240,7 +240,7 @@ func TestReconcile(t *testing.T) {
 			existingAnnotations: make(map[string]string),
 			expectedAnnotations: map[string]string{
 				cpuKey:    "2",
-				memoryKey: "7680",
+				memoryKey: "7680M",
 			},
 			expectErr: false,
 		},
@@ -251,7 +251,7 @@ func TestReconcile(t *testing.T) {
 			existingAnnotations: make(map[string]string),
 			expectedAnnotations: map[string]string{
 				cpuKey:    "16",
-				memoryKey: "16384",
+				memoryKey: "16384M",
 			},
 			expectErr: false,
 		},
@@ -267,7 +267,7 @@ func TestReconcile(t *testing.T) {
 				"existing": "annotation",
 				"annother": "existingAnnotation",
 				cpuKey:     "2",
-				memoryKey:  "7680",
+				memoryKey:  "7680M",
 			},
 			expectErr: false,
 		},
