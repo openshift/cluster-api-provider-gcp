@@ -44,7 +44,10 @@ func (r *Reconciler) create() error {
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
 		return machinecontroller.InvalidMachineConfiguration("failed validating machine provider spec: %v", err)
 	}
-
+	hostname := r.providerSpec.Hostname
+	if len(hostname) == 0 {
+		hostname = r.machine.GetName()
+	}
 	zone := r.providerSpec.Zone
 	instance := &compute.Instance{
 		CanIpForward:       r.providerSpec.CanIPForward,
@@ -55,6 +58,7 @@ func (r *Reconciler) create() error {
 		Tags: &compute.Tags{
 			Items: r.providerSpec.Tags,
 		},
+		Hostname: hostname,
 	}
 
 	if instance.Labels == nil {
@@ -196,6 +200,15 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 		nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
 			Type:    corev1.NodeInternalDNS,
 			Address: fmt.Sprintf("%s.c.%s.internal", r.machine.Name, r.projectID),
+		})
+		// Add the custom hostname as a known NodeInternalDNS
+		hostname := r.providerSpec.Hostname
+		if len(hostname) == 0 {
+			hostname = r.machine.GetName()
+		}
+		nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
+			Type:    corev1.NodeInternalDNS,
+			Address: hostname,
 		})
 
 		r.machine.Spec.ProviderID = &r.providerID

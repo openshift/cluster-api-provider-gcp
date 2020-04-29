@@ -35,6 +35,13 @@ type GCPMachineProviderSpec struct {
 	Region             string                 `json:"region"`
 	Zone               string                 `json:"zone"`
 	ProjectID          string                 `json:"projectID,omitempty"`
+
+	// hostname is used to specify the custom hostname for the machine.
+	// Must be a fully qualified DNS name and RFC-1035-valid. Valid format is a series of labels 1-63 characters long
+	// matching the regular expression [a-z]([-a-z0-9]*[a-z0-9]), concatenated with periods.
+	// The entire hostname must not exceed 253 characters
+	// +optional
+	Hostname string `json:"hostname,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
