@@ -197,6 +197,13 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 			Type:    corev1.NodeInternalDNS,
 			Address: fmt.Sprintf("%s.c.%s.internal", r.machine.Name, r.projectID),
 		})
+		// Add the machine's name as a known NodeInternalDNS because GCP platform
+		// provides search paths to resolve those.
+		// https://cloud.google.com/compute/docs/internal-dns#resolv.conf
+		nodeAddresses = append(nodeAddresses, corev1.NodeAddress{
+			Type:    corev1.NodeInternalDNS,
+			Address: r.machine.GetName(),
+		})
 
 		r.machine.Spec.ProviderID = &r.providerID
 		r.machine.Status.Addresses = nodeAddresses
