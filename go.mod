@@ -7,14 +7,14 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.8.1
-	github.com/openshift/machine-api-operator v0.2.1-0.20200513150041-09efe6c914b4
+	github.com/openshift/machine-api-operator v0.2.1-0.20200527204437-14e5e0c7d862
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.4.0
 
 	// kube 1.18
-	k8s.io/api v0.18.0
-	k8s.io/apimachinery v0.18.0
-	k8s.io/client-go v0.18.0
+	k8s.io/api v0.18.2
+	k8s.io/apimachinery v0.18.2
+	k8s.io/client-go v0.18.2
 	k8s.io/klog v1.0.0
 	k8s.io/utils v0.0.0-20200327001022-6496210b90e8 // indirect
 	sigs.k8s.io/controller-runtime v0.5.1-0.20200330174416-a11a908d91e0
