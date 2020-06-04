@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	machinecontroller "github.com/openshift/machine-api-operator/pkg/controller/machine"
+	"github.com/openshift/machine-api-operator/pkg/metrics"
 	"google.golang.org/api/compute/v1"
 	googleapi "google.golang.org/api/googleapi"
 	apicorev1 "k8s.io/api/core/v1"
@@ -135,6 +136,11 @@ func (r *Reconciler) create() error {
 
 	_, err = r.computeService.InstancesInsert(r.projectID, zone, instance)
 	if err != nil {
+		metrics.RegisterFailedInstanceCreate(&metrics.MachineLabels{
+			Name:      r.machine.Name,
+			Namespace: r.machine.Namespace,
+			Reason:    err.Error(),
+		})
 		if reconcileWithCloudError := r.reconcileMachineWithCloudState(&v1beta1.GCPMachineProviderCondition{
 			Type:    v1beta1.MachineCreated,
 			Reason:  machineCreationFailedReason,
@@ -334,6 +340,11 @@ func (r *Reconciler) delete() error {
 		return nil
 	}
 	if _, err = r.computeService.InstancesDelete(string(r.machine.UID), r.projectID, r.providerSpec.Zone, r.machine.Name); err != nil {
+		metrics.RegisterFailedInstanceDelete(&metrics.MachineLabels{
+			Name:      r.machine.Name,
+			Namespace: r.machine.Namespace,
+			Reason:    err.Error(),
+		})
 		return fmt.Errorf("failed to delete instance via compute service: %v", err)
 	}
 	klog.Infof("%s: machine status is exists, requeuing...", r.machine.Name)
@@ -399,6 +410,11 @@ func (r *Reconciler) addInstanceToTargetPool(instanceLink string, pool string) e
 	// Even if the instance doesn't exist, it will return without error and the non-existent
 	// instance will be associated.
 	if err != nil {
+		metrics.RegisterFailedInstanceUpdate(&metrics.MachineLabels{
+			Name:      r.machine.Name,
+			Namespace: r.machine.Namespace,
+			Reason:    err.Error(),
+		})
 		return fmt.Errorf("failed to add instance %v to target pool %v: %v", r.machine.Name, pool, err)
 	}
 	return nil
@@ -407,6 +423,11 @@ func (r *Reconciler) addInstanceToTargetPool(instanceLink string, pool string) e
 func (r *Reconciler) deleteInstanceFromTargetPool(instanceLink string, pool string) error {
 	_, err := r.computeService.TargetPoolsRemoveInstance(r.projectID, r.providerSpec.Region, pool, instanceLink)
 	if err != nil {
+		metrics.RegisterFailedInstanceDelete(&metrics.MachineLabels{
+			Name:      r.machine.Name,
+			Namespace: r.machine.Namespace,
+			Reason:    err.Error(),
+		})
 		return fmt.Errorf("failed to remove instance %v from target pool %v: %v", r.machine.Name, pool, err)
 	}
 	return nil

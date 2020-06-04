@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
 	"github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	capimachine "github.com/openshift/machine-api-operator/pkg/controller/machine"
+	"github.com/openshift/machine-api-operator/pkg/metrics"
 	"k8s.io/klog"
 	"k8s.io/klog/klogr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -59,6 +60,12 @@ func main() {
 		"The address for health checking.",
 	)
 
+	metricsAddress := flag.String(
+		"metrics-bind-address",
+		metrics.DefaultMachineMetricsAddress,
+		"Address for hosting metrics",
+	)
+
 	klog.InitFlags(nil)
 	flag.Set("logtostderr", "true")
 	flag.Parse()
@@ -75,9 +82,8 @@ func main() {
 		LeaderElectionNamespace: *leaderElectResourceNamespace,
 		LeaderElectionID:        "cluster-api-provider-gcp-leader",
 		LeaseDuration:           leaderElectLeaseDuration,
-		// Disable metrics serving
-		MetricsBindAddress:     "0",
-		HealthProbeBindAddress: *healthAddr,
+		HealthProbeBindAddress:  *healthAddr,
+		MetricsBindAddress:      *metricsAddress,
 	}
 
 	if *watchNamespace != "" {
