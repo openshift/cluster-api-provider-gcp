@@ -55,6 +55,9 @@ func (r *Reconciler) create() error {
 		Tags: &compute.Tags{
 			Items: r.providerSpec.Tags,
 		},
+		Scheduling: &compute.Scheduling{
+			Preemptible: r.providerSpec.Preemptible,
+		},
 	}
 
 	if instance.Labels == nil {
