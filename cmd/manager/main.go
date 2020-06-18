@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/machine"
 	machinesetcontroller "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/machineset"
@@ -72,6 +73,10 @@ func main() {
 	}
 
 	if err := v1beta1.AddToScheme(mgr.GetScheme()); err != nil {
+		klog.Fatal(err)
+	}
+
+	if err := configv1.AddToScheme(mgr.GetScheme()); err != nil {
 		klog.Fatal(err)
 	}
 
