@@ -246,6 +246,10 @@ func (r *Reconciler) setMachineCloudProviderSpecifics(instance *compute.Instance
 	r.machine.Labels[machinecontroller.MachineInstanceTypeLabelName] = r.providerSpec.MachineType
 	r.machine.Labels[machinecontroller.MachineRegionLabelName] = r.providerSpec.Region
 	r.machine.Labels[machinecontroller.MachineAZLabelName] = r.providerSpec.Zone
+
+	if r.providerSpec.Preemptible {
+		r.machine.Labels[machinecontroller.MachineInterruptibleInstanceLabelName] = ""
+	}
 }
 
 func (r *Reconciler) getCustomUserData() (string, error) {

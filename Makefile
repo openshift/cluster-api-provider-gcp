@@ -64,6 +64,8 @@ sec: # Run security static analysis
 build: ## build binaries
 	$(DOCKER_CMD) go build $(GOGCFLAGS) -o "bin/machine-controller-manager" \
                -ldflags "$(LD_FLAGS)" "$(REPO_PATH)/cmd/manager"
+	$(DOCKER_CMD) go build $(GOGCFLAGS) -o "bin/termination-handler" \
+               -ldflags "$(LD_FLAGS)" "$(REPO_PATH)/cmd/termination-handler"
 
 .PHONY: test-e2e
 test-e2e: ## Run e2e tests
