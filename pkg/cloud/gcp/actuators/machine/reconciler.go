@@ -248,7 +248,10 @@ func (r *Reconciler) setMachineCloudProviderSpecifics(instance *compute.Instance
 	r.machine.Labels[machinecontroller.MachineAZLabelName] = r.providerSpec.Zone
 
 	if r.providerSpec.Preemptible {
-		r.machine.Labels[machinecontroller.MachineInterruptibleInstanceLabelName] = ""
+		if r.machine.Spec.Labels == nil {
+			r.machine.Spec.Labels = make(map[string]string)
+		}
+		r.machine.Spec.Labels[machinecontroller.MachineInterruptibleInstanceLabelName] = ""
 	}
 }
 
