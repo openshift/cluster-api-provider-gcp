@@ -466,3 +466,57 @@ func TestGetUserData(t *testing.T) {
 		}
 	}
 }
+
+func TestSetMachineCloudProviderSpecifics(t *testing.T) {
+	testType := "testType"
+	testRegion := "testRegion"
+	testZone := "testZone"
+	testStatus := "testStatus"
+
+	r := Reconciler{
+		machineScope: &machineScope{
+			machine: &machinev1beta1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "",
+					Namespace: "",
+				},
+			},
+			providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
+				MachineType: testType,
+				Region:      testRegion,
+				Zone:        testZone,
+				Preemptible: true,
+			},
+		},
+	}
+
+	instance := &compute.Instance{
+		Status: testStatus,
+	}
+
+	r.setMachineCloudProviderSpecifics(instance)
+
+	actualInstanceStateAnnotation := r.machine.Annotations[machinecontroller.MachineInstanceStateAnnotationName]
+	if actualInstanceStateAnnotation != instance.Status {
+		t.Errorf("Expected instance state annotation: %v, got: %v", actualInstanceStateAnnotation, instance.Status)
+	}
+
+	actualMachineTypeLabel := r.machine.Labels[machinecontroller.MachineInstanceTypeLabelName]
+	if actualMachineTypeLabel != r.providerSpec.MachineType {
+		t.Errorf("Expected machine type label: %v, got: %v", actualMachineTypeLabel, r.providerSpec.MachineType)
+	}
+
+	actualMachineRegionLabel := r.machine.Labels[machinecontroller.MachineRegionLabelName]
+	if actualMachineRegionLabel != r.providerSpec.Region {
+		t.Errorf("Expected machine region label: %v, got: %v", actualMachineRegionLabel, r.providerSpec.Region)
+	}
+
+	actualMachineAZLabel := r.machine.Labels[machinecontroller.MachineAZLabelName]
+	if actualMachineAZLabel != r.providerSpec.Zone {
+		t.Errorf("Expected machine zone label: %v, got: %v", actualMachineAZLabel, r.providerSpec.Zone)
+	}
+
+	if _, ok := r.machine.Spec.Labels[machinecontroller.MachineInterruptibleInstanceLabelName]; !ok {
+		t.Error("Missing spot instance label in machine spec")
+	}
+}
