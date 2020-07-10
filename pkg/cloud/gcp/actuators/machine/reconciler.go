@@ -69,6 +69,11 @@ func (r *Reconciler) create() error {
 	// disks
 	var disks = []*compute.AttachedDisk{}
 	for _, disk := range r.providerSpec.Disks {
+		srcImage := disk.Image
+		if strings.Index(disk.Image, "/") == -1 {
+			// only image name provided therfore defaulting to the current project
+			srcImage = googleapi.ResolveRelative(r.computeService.BasePath(), fmt.Sprintf("%s/global/images/%s", r.projectID, disk.Image))
+		}
 		disks = append(disks, &compute.AttachedDisk{
 			AutoDelete: disk.AutoDelete,
 			Boot:       disk.Boot,
@@ -76,7 +81,7 @@ func (r *Reconciler) create() error {
 				DiskSizeGb:  disk.SizeGb,
 				DiskType:    fmt.Sprintf("zones/%s/diskTypes/%s", zone, disk.Type),
 				Labels:      disk.Labels,
-				SourceImage: googleapi.ResolveRelative(r.computeService.BasePath(), fmt.Sprintf("%s/global/images/%s", r.projectID, disk.Image)),
+				SourceImage: srcImage,
 			},
 		})
 	}
