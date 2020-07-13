@@ -10,6 +10,7 @@ require (
 	github.com/openshift/api v0.0.0-20200424083944-0422dc17083e
 	github.com/openshift/machine-api-operator v0.2.1-0.20200701225707-950912b03628
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
+	golang.org/x/text v0.3.3 // indirect
 	google.golang.org/api v0.4.0
 
 	// kube 1.18
@@ -17,6 +18,7 @@ require (
 	k8s.io/apimachinery v0.18.2
 	k8s.io/client-go v0.18.2
 	k8s.io/klog v1.0.0
+	k8s.io/kubectl v0.18.0-rc.1
 	sigs.k8s.io/controller-runtime v0.6.0
 	sigs.k8s.io/controller-tools v0.3.0
 	sigs.k8s.io/yaml v1.2.0
