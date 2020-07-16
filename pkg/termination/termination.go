@@ -12,8 +12,8 @@ import (
 	"github.com/go-logr/logr"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"k8s.io/kubectl/pkg/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -30,7 +30,7 @@ type Handler interface {
 // NewHandler constructs a new Handler
 func NewHandler(logger logr.Logger, cfg *rest.Config, pollInterval time.Duration, namespace, nodeName string) (Handler, error) {
 	machinev1.AddToScheme(scheme.Scheme)
-	c, err := client.New(cfg, client.Options{})
+	c, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	if err != nil {
 		return nil, fmt.Errorf("error creating client: %v", err)
 	}
