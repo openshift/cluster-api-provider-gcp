@@ -25,7 +25,6 @@ import (
 	"golang.org/x/oauth2/google"
 	apicorev1 "k8s.io/api/core/v1"
 	apimachineryerrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -50,7 +49,7 @@ func GetCredentialsSecret(coreClient controllerclient.Client, namespace string, 
 	}
 	var credentialsSecret apicorev1.Secret
 
-	if err := coreClient.Get(context.Background(), client.ObjectKey{Namespace: namespace, Name: spec.CredentialsSecret.Name}, &credentialsSecret); err != nil {
+	if err := coreClient.Get(context.Background(), controllerclient.ObjectKey{Namespace: namespace, Name: spec.CredentialsSecret.Name}, &credentialsSecret); err != nil {
 		if apimachineryerrors.IsNotFound(err) {
 			machineapierros.InvalidMachineConfiguration("credentials secret %q in namespace %q not found: %v", spec.CredentialsSecret.Name, namespace, err.Error())
 		}

@@ -24,7 +24,6 @@ import (
 	. "github.com/onsi/gomega"
 	gtypes "github.com/onsi/gomega/types"
 	machineproviderv1 "github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
-	providerconfigv1 "github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	"google.golang.org/api/compute/v1"
@@ -73,7 +72,7 @@ var _ = Describe("Reconciler", func() {
 			Client: mgr.GetClient(),
 			Log:    log.Log,
 
-			getGCPService: func(_ string, _ providerconfigv1.GCPMachineProviderSpec) (computeservice.GCPComputeService, error) {
+			getGCPService: func(_ string, _ machineproviderv1.GCPMachineProviderSpec) (computeservice.GCPComputeService, error) {
 				return service, nil
 			},
 		}
@@ -298,7 +297,7 @@ func TestReconcile(t *testing.T) {
 
 			r := &Reconciler{
 				cache: newMachineTypesCache(),
-				getGCPService: func(_ string, _ providerconfigv1.GCPMachineProviderSpec) (computeservice.GCPComputeService, error) {
+				getGCPService: func(_ string, _ machineproviderv1.GCPMachineProviderSpec) (computeservice.GCPComputeService, error) {
 					return service, nil
 				},
 			}

@@ -11,7 +11,6 @@ import (
 	machinecontroller "github.com/openshift/machine-api-operator/pkg/controller/machine"
 	compute "google.golang.org/api/compute/v1"
 	googleapi "google.golang.org/api/googleapi"
-	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -24,7 +23,7 @@ func TestCreate(t *testing.T) {
 		labels              map[string]string
 		providerSpec        *gcpv1beta1.GCPMachineProviderSpec
 		expectedCondition   *gcpv1beta1.GCPMachineProviderCondition
-		secret              *apiv1.Secret
+		secret              *corev1.Secret
 		mockInstancesInsert func(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
 		expectedError       error
 	}{
@@ -59,7 +58,7 @@ func TestCreate(t *testing.T) {
 					Name: "notvalid",
 				},
 			},
-			secret: &apiv1.Secret{
+			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "notvalid",
 				},
@@ -406,11 +405,11 @@ func TestGetUserData(t *testing.T) {
 	reconciler := newReconciler(&machineScope)
 
 	testCases := []struct {
-		secret *apiv1.Secret
+		secret *corev1.Secret
 		error  error
 	}{
 		{
-			secret: &apiv1.Secret{
+			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      userDataSecretName,
 					Namespace: defaultNamespace,
@@ -422,7 +421,7 @@ func TestGetUserData(t *testing.T) {
 			error: nil,
 		},
 		{
-			secret: &apiv1.Secret{
+			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "notFound",
 					Namespace: defaultNamespace,
@@ -434,7 +433,7 @@ func TestGetUserData(t *testing.T) {
 			error: &machinecontroller.MachineError{},
 		},
 		{
-			secret: &apiv1.Secret{
+			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      userDataSecretName,
 					Namespace: defaultNamespace,

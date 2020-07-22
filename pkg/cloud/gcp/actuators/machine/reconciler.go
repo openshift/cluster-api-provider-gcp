@@ -14,9 +14,7 @@ import (
 	"github.com/openshift/machine-api-operator/pkg/metrics"
 	"google.golang.org/api/compute/v1"
 	googleapi "google.golang.org/api/googleapi"
-	apicorev1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	apimachineryerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -194,9 +192,9 @@ func (r *Reconciler) reconcileMachineWithCloudState(failedCondition *v1beta1.GCP
 		}
 		networkInterface := freshInstance.NetworkInterfaces[0]
 
-		nodeAddresses := []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: networkInterface.NetworkIP}}
+		nodeAddresses := []corev1.NodeAddress{{Type: corev1.NodeInternalIP, Address: networkInterface.NetworkIP}}
 		for _, config := range networkInterface.AccessConfigs {
-			nodeAddresses = append(nodeAddresses, v1.NodeAddress{Type: v1.NodeExternalIP, Address: config.NatIP})
+			nodeAddresses = append(nodeAddresses, corev1.NodeAddress{Type: corev1.NodeExternalIP, Address: config.NatIP})
 		}
 		// Since we don't know when the project was created, we must account for
 		// both types of internal-dns:
@@ -270,7 +268,7 @@ func (r *Reconciler) getCustomUserData() (string, error) {
 	if r.providerSpec.UserDataSecret == nil {
 		return "", nil
 	}
-	var userDataSecret apicorev1.Secret
+	var userDataSecret corev1.Secret
 
 	if err := r.coreClient.Get(context.Background(), client.ObjectKey{Namespace: r.machine.GetNamespace(), Name: r.providerSpec.UserDataSecret.Name}, &userDataSecret); err != nil {
 		if apimachineryerrors.IsNotFound(err) {
