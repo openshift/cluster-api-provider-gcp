@@ -56,6 +56,7 @@ func (a *Actuator) handleMachineError(machine *machinev1.Machine, err error, eve
 func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Creating machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
+		Context:    ctx,
 		coreClient: a.coreClient,
 		machine:    machine,
 	})
@@ -74,6 +75,7 @@ func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error
 func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool, error) {
 	klog.Infof("%s: Checking if machine exists", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
+		Context:    ctx,
 		coreClient: a.coreClient,
 		machine:    machine,
 	})
@@ -91,6 +93,7 @@ func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool
 func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Updating machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
+		Context:    ctx,
 		coreClient: a.coreClient,
 		machine:    machine,
 	})
@@ -110,6 +113,7 @@ func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error
 func (a *Actuator) Delete(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Deleting machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
+		Context:    ctx,
 		coreClient: a.coreClient,
 		machine:    machine,
 	})
