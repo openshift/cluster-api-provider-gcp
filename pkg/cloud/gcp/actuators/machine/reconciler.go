@@ -168,6 +168,10 @@ func (r *Reconciler) create() error {
 }
 
 func (r *Reconciler) update() error {
+	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
+		return machinecontroller.InvalidMachineConfiguration("failed validating machine provider spec: %v", err)
+	}
+
 	// Add target pools, if necessary
 	if err := r.processTargetPools(true, r.addInstanceToTargetPool); err != nil {
 		return err
