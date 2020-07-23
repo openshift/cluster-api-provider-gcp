@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/util"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	machineapierros "github.com/openshift/machine-api-operator/pkg/controller/machine"
-	"google.golang.org/api/compute/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -20,8 +19,9 @@ import (
 type machineScopeParams struct {
 	context.Context
 
-	coreClient controllerclient.Client
-	machine    *machinev1.Machine
+	coreClient           controllerclient.Client
+	machine              *machinev1.Machine
+	computeClientBuilder computeservice.BuilderFuncType
 }
 
 // machineScope defines a scope defined around a machine and its cluster.
@@ -76,12 +76,7 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		}
 	}
 
-	oauthClient, err := util.CreateOauth2Client(serviceAccountJSON, compute.CloudPlatformScope)
-	if err != nil {
-		return nil, machineapierros.InvalidMachineConfiguration("error creating oauth client: %v", err)
-	}
-
-	computeService, err := computeservice.NewComputeService(oauthClient)
+	computeService, err := params.computeClientBuilder(serviceAccountJSON)
 	if err != nil {
 		return nil, machineapierros.InvalidMachineConfiguration("error creating compute service: %v", err)
 	}

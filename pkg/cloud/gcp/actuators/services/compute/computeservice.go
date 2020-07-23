@@ -1,8 +1,7 @@
 package computeservice
 
 import (
-	"net/http"
-
+	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/util"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
 	"google.golang.org/api/compute/v1"
 )
@@ -26,13 +25,22 @@ type computeService struct {
 	service *compute.Service
 }
 
+// BuilderFuncType is function type for building gcp client
+type BuilderFuncType func(serviceAccountJSON string) (GCPComputeService, error)
+
 // NewComputeService return a new computeService
-func NewComputeService(oauthClient *http.Client) (*computeService, error) {
+func NewComputeService(serviceAccountJSON string) (GCPComputeService, error) {
+	oauthClient, err := util.CreateOauth2Client(serviceAccountJSON, compute.CloudPlatformScope)
+	if err != nil {
+		return nil, err
+	}
+
 	service, err := compute.New(oauthClient)
 	if err != nil {
 		return nil, err
 	}
 	service.UserAgent = "gcpprovider.openshift.io/" + version.Version.String()
+
 	return &computeService{
 		service: service,
 	}, nil

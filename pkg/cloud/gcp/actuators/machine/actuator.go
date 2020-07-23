@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
@@ -25,21 +26,24 @@ const (
 
 // Actuator is responsible for performing machine reconciliation.
 type Actuator struct {
-	coreClient    controllerclient.Client
-	eventRecorder record.EventRecorder
+	coreClient           controllerclient.Client
+	eventRecorder        record.EventRecorder
+	computeClientBuilder computeservice.BuilderFuncType
 }
 
 // ActuatorParams holds parameter information for Actuator.
 type ActuatorParams struct {
-	CoreClient    controllerclient.Client
-	EventRecorder record.EventRecorder
+	CoreClient           controllerclient.Client
+	EventRecorder        record.EventRecorder
+	ComputeClientBuilder computeservice.BuilderFuncType
 }
 
 // NewActuator returns an actuator.
 func NewActuator(params ActuatorParams) *Actuator {
 	return &Actuator{
-		coreClient:    params.CoreClient,
-		eventRecorder: params.EventRecorder,
+		coreClient:           params.CoreClient,
+		eventRecorder:        params.EventRecorder,
+		computeClientBuilder: params.ComputeClientBuilder,
 	}
 }
 
@@ -57,9 +61,10 @@ func (a *Actuator) handleMachineError(machine *machinev1.Machine, err error, eve
 func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Creating machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		Context:    ctx,
-		coreClient: a.coreClient,
-		machine:    machine,
+		Context:              ctx,
+		coreClient:           a.coreClient,
+		machine:              machine,
+		computeClientBuilder: a.computeClientBuilder,
 	})
 	if err != nil {
 		fmtErr := fmt.Errorf(scopeFailFmt, machine.GetName(), err)
@@ -78,9 +83,10 @@ func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error
 func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool, error) {
 	klog.Infof("%s: Checking if machine exists", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		Context:    ctx,
-		coreClient: a.coreClient,
-		machine:    machine,
+		Context:              ctx,
+		coreClient:           a.coreClient,
+		machine:              machine,
+		computeClientBuilder: a.computeClientBuilder,
 	})
 	if err != nil {
 		return false, fmt.Errorf(scopeFailFmt, machine.Name, err)
@@ -96,9 +102,10 @@ func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool
 func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Updating machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		Context:    ctx,
-		coreClient: a.coreClient,
-		machine:    machine,
+		Context:              ctx,
+		coreClient:           a.coreClient,
+		machine:              machine,
+		computeClientBuilder: a.computeClientBuilder,
 	})
 	if err != nil {
 		fmtErr := fmt.Errorf(scopeFailFmt, machine.GetName(), err)
@@ -117,9 +124,10 @@ func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error
 func (a *Actuator) Delete(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Deleting machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		Context:    ctx,
-		coreClient: a.coreClient,
-		machine:    machine,
+		Context:              ctx,
+		coreClient:           a.coreClient,
+		machine:              machine,
+		computeClientBuilder: a.computeClientBuilder,
 	})
 	if err != nil {
 		fmtErr := fmt.Errorf(scopeFailFmt, machine.GetName(), err)
