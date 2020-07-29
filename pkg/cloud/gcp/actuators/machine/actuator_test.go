@@ -19,8 +19,16 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	controllerfake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+)
+
+var (
+	userDataSecretName    = "user-data-test"
+	credentialsSecretName = "credentials-test"
+	defaultNamespaceName  = "test"
+	credentialsSecretKey  = "service_account.json"
 )
 
 func init() {
@@ -60,11 +68,6 @@ func TestActuatorEvents(t *testing.T) {
 
 	k8sClient := mgr.GetClient()
 	eventRecorder := mgr.GetEventRecorderFor("vspherecontroller")
-
-	userDataSecretName := "user-data-test"
-	credentialsSecretName := "credentials-test"
-	defaultNamespaceName := "test"
-	credentialsSecretKey := "service_account.json"
 
 	defaultNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -272,4 +275,96 @@ func TestActuatorEvents(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestActuatorExists(t *testing.T) {
+	userDataSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      userDataSecretName,
+			Namespace: defaultNamespaceName,
+		},
+		Data: map[string][]byte{
+			userDataSecretKey: []byte("userDataBlob"),
+		},
+	}
+
+	credentialsSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      credentialsSecretName,
+			Namespace: defaultNamespaceName,
+		},
+		Data: map[string][]byte{
+			credentialsSecretKey: []byte("{\"project_id\": \"test\"}"),
+		},
+	}
+
+	providerSpec, err := v1beta1.RawExtensionFromProviderSpec(&v1beta1.GCPMachineProviderSpec{
+		CredentialsSecret: &corev1.LocalObjectReference{
+			Name: credentialsSecretName,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name        string
+		expectError bool
+	}{
+		{
+			name: "succefuly call reconciler exists",
+		},
+		{
+			name:        "fail to call reconciler exists",
+			expectError: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			machine := &machinev1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test",
+					Namespace: defaultNamespaceName,
+					Labels: map[string]string{
+						machinev1.MachineClusterIDLabel: "CLUSTERID",
+					},
+				},
+				Spec: machinev1.MachineSpec{
+					ProviderSpec: machinev1.ProviderSpec{
+						Value: providerSpec,
+					},
+				}}
+
+			if tc.expectError {
+				machine.Spec = machinev1.MachineSpec{
+					ProviderSpec: machinev1.ProviderSpec{
+						Value: &runtime.RawExtension{
+							Raw: []byte{'1'},
+						},
+					},
+				}
+			}
+
+			params := ActuatorParams{
+				CoreClient:           controllerfake.NewFakeClient(userDataSecret, credentialsSecret),
+				ComputeClientBuilder: computeservice.MockBuilderFuncType,
+			}
+
+			actuator := NewActuator(params)
+
+			_, err := actuator.Exists(nil, machine)
+
+			if tc.expectError {
+				if err == nil {
+					t.Fatal("actuator exists expected to return an error")
+				}
+			} else {
+				if err != nil {
+					t.Fatal("actuator exists is not expected to return an error")
+				}
+			}
+		})
+	}
+
 }
