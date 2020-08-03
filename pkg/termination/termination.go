@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"sync"
@@ -90,6 +91,28 @@ func (h *handler) Run(stop <-chan struct{}) error {
 }
 
 func (h *handler) run(ctx context.Context) error {
+	httpClient := http.Client{
+		// Copied from the http.DefaultTransport
+		// https://github.com/golang/go/blob/f92337422ef2ca27464c198bb3426d2dc4661653/src/net/http/transport.go#L42-L54
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+
+			// By disabling keep alives, this allows us to intercept metadata traffic during E2E testing
+			// and allows us to simulate a termination event.
+			DisableKeepAlives: true,
+		},
+	}
+
 	machine, err := h.getMachineForNode(ctx)
 	if err != nil {
 		return fmt.Errorf("error fetching machine for node (%q): %w", h.nodeName, err)
@@ -106,7 +129,7 @@ func (h *handler) run(ctx context.Context) error {
 
 		req.Header.Add("Metadata-Flavor", "Google")
 
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpClient.Do(req)
 		if err != nil {
 			return false, fmt.Errorf("could not get URL %q: %w", h.pollURL.String(), err)
 		}
