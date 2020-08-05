@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/util"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	machineapierros "github.com/openshift/machine-api-operator/pkg/controller/machine"
-	"google.golang.org/api/compute/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -18,12 +17,17 @@ import (
 
 // machineScopeParams defines the input parameters used to create a new MachineScope.
 type machineScopeParams struct {
-	coreClient controllerclient.Client
-	machine    *machinev1.Machine
+	context.Context
+
+	coreClient           controllerclient.Client
+	machine              *machinev1.Machine
+	computeClientBuilder computeservice.BuilderFuncType
 }
 
 // machineScope defines a scope defined around a machine and its cluster.
 type machineScope struct {
+	context.Context
+
 	coreClient     controllerclient.Client
 	projectID      string
 	providerID     string
@@ -45,6 +49,10 @@ type machineScope struct {
 // newMachineScope creates a new MachineScope from the supplied parameters.
 // This is meant to be called for each machine actuator operation.
 func newMachineScope(params machineScopeParams) (*machineScope, error) {
+	if params.Context == nil {
+		params.Context = context.Background()
+	}
+
 	providerSpec, err := v1beta1.ProviderSpecFromRawExtension(params.machine.Spec.ProviderSpec.Value)
 	if err != nil {
 		return nil, machineapierros.InvalidMachineConfiguration("failed to get machine config: %v", err)
@@ -68,16 +76,12 @@ func newMachineScope(params machineScopeParams) (*machineScope, error) {
 		}
 	}
 
-	oauthClient, err := util.CreateOauth2Client(serviceAccountJSON, compute.CloudPlatformScope)
-	if err != nil {
-		return nil, machineapierros.InvalidMachineConfiguration("error creating oauth client: %v", err)
-	}
-
-	computeService, err := computeservice.NewComputeService(oauthClient)
+	computeService, err := params.computeClientBuilder(serviceAccountJSON)
 	if err != nil {
 		return nil, machineapierros.InvalidMachineConfiguration("error creating compute service: %v", err)
 	}
 	return &machineScope{
+		Context:    params.Context,
 		coreClient: params.coreClient,
 		projectID:  projectID,
 		// https://github.com/kubernetes/kubernetes/blob/8765fa2e48974e005ad16e65cb5c3acf5acff17b/staging/src/k8s.io/legacy-cloud-providers/gce/gce_util.go#L204
@@ -163,7 +167,7 @@ func (s *machineScope) PatchMachine() error {
 	statusCopy := *s.machine.Status.DeepCopy()
 
 	// patch machine
-	if err := s.coreClient.Patch(context.Background(), s.machine, s.machineToBePatched); err != nil {
+	if err := s.coreClient.Patch(s.Context, s.machine, s.machineToBePatched); err != nil {
 		klog.Errorf("Failed to patch machine %q: %v", s.machine.GetName(), err)
 		return err
 	}
@@ -171,7 +175,7 @@ func (s *machineScope) PatchMachine() error {
 	s.machine.Status = statusCopy
 
 	// patch status
-	if err := s.coreClient.Status().Patch(context.Background(), s.machine, s.machineToBePatched); err != nil {
+	if err := s.coreClient.Status().Patch(s.Context, s.machine, s.machineToBePatched); err != nil {
 		klog.Errorf("Failed to patch machine status %q: %v", s.machine.GetName(), err)
 		return err
 	}

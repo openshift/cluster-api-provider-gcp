@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
@@ -15,7 +16,8 @@ import (
 )
 
 const (
-	scopeFailFmt      = "%s: failed to create scope for machine: %v"
+	scopeFailFmt      = "%s: failed to create scope for machine: %w"
+	reconcilerFailFmt = "%s: reconciler failed to %s machine: %w"
 	createEventAction = "Create"
 	updateEventAction = "Update"
 	deleteEventAction = "Delete"
@@ -24,31 +26,34 @@ const (
 
 // Actuator is responsible for performing machine reconciliation.
 type Actuator struct {
-	coreClient    controllerclient.Client
-	eventRecorder record.EventRecorder
+	coreClient           controllerclient.Client
+	eventRecorder        record.EventRecorder
+	computeClientBuilder computeservice.BuilderFuncType
 }
 
 // ActuatorParams holds parameter information for Actuator.
 type ActuatorParams struct {
-	CoreClient    controllerclient.Client
-	EventRecorder record.EventRecorder
+	CoreClient           controllerclient.Client
+	EventRecorder        record.EventRecorder
+	ComputeClientBuilder computeservice.BuilderFuncType
 }
 
 // NewActuator returns an actuator.
 func NewActuator(params ActuatorParams) *Actuator {
 	return &Actuator{
-		coreClient:    params.CoreClient,
-		eventRecorder: params.EventRecorder,
+		coreClient:           params.CoreClient,
+		eventRecorder:        params.EventRecorder,
+		computeClientBuilder: params.ComputeClientBuilder,
 	}
 }
 
 // Set corresponding event based on error. It also returns the original error
 // for convenience, so callers can do "return handleMachineError(...)".
 func (a *Actuator) handleMachineError(machine *machinev1.Machine, err error, eventAction string) error {
+	klog.Errorf("%v error: %v", machine.GetName(), err)
 	if eventAction != noEventAction {
 		a.eventRecorder.Eventf(machine, corev1.EventTypeWarning, "Failed"+eventAction, "%v", err)
 	}
-
 	return err
 }
 
@@ -56,16 +61,20 @@ func (a *Actuator) handleMachineError(machine *machinev1.Machine, err error, eve
 func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Creating machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		coreClient: a.coreClient,
-		machine:    machine,
+		Context:              ctx,
+		coreClient:           a.coreClient,
+		machine:              machine,
+		computeClientBuilder: a.computeClientBuilder,
 	})
 	if err != nil {
-		return a.handleMachineError(machine, err, createEventAction)
+		fmtErr := fmt.Errorf(scopeFailFmt, machine.GetName(), err)
+		return a.handleMachineError(machine, fmtErr, createEventAction)
 	}
 	if err := newReconciler(scope).create(); err != nil {
 		// Update machine and machine status in case it was modified
 		scope.Close()
-		return a.handleMachineError(machine, err, createEventAction)
+		fmtErr := fmt.Errorf(reconcilerFailFmt, machine.GetName(), createEventAction, err)
+		return a.handleMachineError(machine, fmtErr, createEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, createEventAction, "Created Machine %v", machine.Name)
 	return scope.Close()
@@ -74,8 +83,10 @@ func (a *Actuator) Create(ctx context.Context, machine *machinev1.Machine) error
 func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool, error) {
 	klog.Infof("%s: Checking if machine exists", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		coreClient: a.coreClient,
-		machine:    machine,
+		Context:              ctx,
+		coreClient:           a.coreClient,
+		machine:              machine,
+		computeClientBuilder: a.computeClientBuilder,
 	})
 	if err != nil {
 		return false, fmt.Errorf(scopeFailFmt, machine.Name, err)
@@ -91,17 +102,20 @@ func (a *Actuator) Exists(ctx context.Context, machine *machinev1.Machine) (bool
 func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Updating machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		coreClient: a.coreClient,
-		machine:    machine,
+		Context:              ctx,
+		coreClient:           a.coreClient,
+		machine:              machine,
+		computeClientBuilder: a.computeClientBuilder,
 	})
 	if err != nil {
-		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
-		return a.handleMachineError(machine, fmt.Errorf(fmtErr), updateEventAction)
+		fmtErr := fmt.Errorf(scopeFailFmt, machine.GetName(), err)
+		return a.handleMachineError(machine, fmtErr, updateEventAction)
 	}
 	if err := newReconciler(scope).update(); err != nil {
 		// Update machine and machine status in case it was modified
 		scope.Close()
-		return a.handleMachineError(machine, err, updateEventAction)
+		fmtErr := fmt.Errorf(reconcilerFailFmt, machine.GetName(), updateEventAction, err)
+		return a.handleMachineError(machine, fmtErr, updateEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, updateEventAction, "Updated Machine %v", machine.Name)
 	return scope.Close()
@@ -110,15 +124,18 @@ func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error
 func (a *Actuator) Delete(ctx context.Context, machine *machinev1.Machine) error {
 	klog.Infof("%s: Deleting machine", machine.Name)
 	scope, err := newMachineScope(machineScopeParams{
-		coreClient: a.coreClient,
-		machine:    machine,
+		Context:              ctx,
+		coreClient:           a.coreClient,
+		machine:              machine,
+		computeClientBuilder: a.computeClientBuilder,
 	})
 	if err != nil {
-		fmtErr := fmt.Sprintf(scopeFailFmt, machine.Name, err)
-		return a.handleMachineError(machine, fmt.Errorf(fmtErr), deleteEventAction)
+		fmtErr := fmt.Errorf(scopeFailFmt, machine.GetName(), err)
+		return a.handleMachineError(machine, fmtErr, deleteEventAction)
 	}
 	if err := newReconciler(scope).delete(); err != nil {
-		return a.handleMachineError(machine, err, deleteEventAction)
+		fmtErr := fmt.Errorf(reconcilerFailFmt, machine.GetName(), deleteEventAction, err)
+		return a.handleMachineError(machine, fmtErr, deleteEventAction)
 	}
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, deleteEventAction, "Deleted machine %v", machine.Name)
 	return nil

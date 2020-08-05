@@ -2,6 +2,7 @@ package computeservice
 
 import (
 	compute "google.golang.org/api/compute/v1"
+	"google.golang.org/api/googleapi"
 )
 
 const (
@@ -37,23 +38,26 @@ func (c *GCPComputeServiceMock) ZoneOperationsGet(project string, zone string, o
 }
 
 func (c *GCPComputeServiceMock) InstancesGet(project string, zone string, instance string) (*compute.Instance, error) {
-	return &compute.Instance{
-		Name:         instance,
-		Zone:         zone,
-		MachineType:  "n1-standard-1",
-		CanIpForward: true,
-		NetworkInterfaces: []*compute.NetworkInterface{
-			{
-				NetworkIP: "10.0.0.15",
-				AccessConfigs: []*compute.AccessConfig{
-					{
-						NatIP: "35.243.147.143",
+	if c.mockInstancesGet == nil {
+		return &compute.Instance{
+			Name:         instance,
+			Zone:         zone,
+			MachineType:  "n1-standard-1",
+			CanIpForward: true,
+			NetworkInterfaces: []*compute.NetworkInterface{
+				{
+					NetworkIP: "10.0.0.15",
+					AccessConfigs: []*compute.AccessConfig{
+						{
+							NatIP: "35.243.147.143",
+						},
 					},
 				},
 			},
-		},
-		Status: "RUNNING",
-	}, nil
+			Status: "RUNNING",
+		}, nil
+	}
+	return c.mockInstancesGet(project, zone, instance)
 }
 
 func (c *GCPComputeServiceMock) ZonesGet(project string, zone string) (*compute.Zone, error) {
@@ -109,4 +113,19 @@ func NewComputeServiceMock() (*compute.Instance, *GCPComputeServiceMock) {
 		},
 	}
 	return &receivedInstance, &computeServiceMock
+}
+
+func MockBuilderFuncType(serviceAccountJSON string) (GCPComputeService, error) {
+	_, computeSvc := NewComputeServiceMock()
+	return computeSvc, nil
+}
+
+func MockBuilderFuncTypeNotFound(serviceAccountJSON string) (GCPComputeService, error) {
+	_, computeSvc := NewComputeServiceMock()
+	computeSvc.mockInstancesGet = func(project string, zone string, instance string) (*compute.Instance, error) {
+		return nil, &googleapi.Error{
+			Code: 404,
+		}
+	}
+	return computeSvc, nil
 }

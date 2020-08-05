@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/machine"
 	machinesetcontroller "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/machineset"
+	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
 	"github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	capimachine "github.com/openshift/machine-api-operator/pkg/controller/machine"
@@ -99,8 +100,9 @@ func main() {
 
 	// Initialize machine actuator.
 	machineActuator := machine.NewActuator(machine.ActuatorParams{
-		CoreClient:    mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor("gcpcontroller"),
+		CoreClient:           mgr.GetClient(),
+		EventRecorder:        mgr.GetEventRecorderFor("gcpcontroller"),
+		ComputeClientBuilder: computeservice.NewComputeService,
 	})
 
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
