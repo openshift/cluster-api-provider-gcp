@@ -97,7 +97,11 @@ func (r *Reconciler) create() error {
 			AccessConfigs: accessConfigs,
 		}
 		if len(nic.Network) != 0 {
-			computeNIC.Network = fmt.Sprintf("projects/%s/global/networks/%s", r.projectID, nic.Network)
+			projectID := nic.ProjectID
+			if projectID == "" {
+				projectID = r.projectID
+			}
+			computeNIC.Network = fmt.Sprintf("projects/%s/global/networks/%s", projectID, nic.Network)
 		}
 		if len(nic.Subnetwork) != 0 {
 			computeNIC.Subnetwork = fmt.Sprintf("regions/%s/subnetworks/%s", r.providerSpec.Region, nic.Subnetwork)
