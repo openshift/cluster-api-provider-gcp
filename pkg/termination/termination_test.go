@@ -17,9 +17,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"sync/atomic"
-	"time"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -34,6 +32,10 @@ import (
 
 var notPreempted = func(rw http.ResponseWriter, req *http.Request) {
 	rw.Write([]byte("FALSE"))
+}
+
+var preempted = func(rw http.ResponseWriter, req *http.Request) {
+	rw.Write([]byte("TRUE"))
 }
 
 var _ = Describe("Handler Suite", func() {
@@ -55,24 +57,17 @@ var _ = Describe("Handler Suite", func() {
 
 		// use NewHandler() instead of manual construction in order to test NewHandler() logic
 		// like checking that machine api is added to scheme
-		handlerInterface, err := NewHandler(klogr.New(), cfg, 100*time.Millisecond, "", nodeName)
+		handlerInterface, err := NewHandler(klogr.New(), cfg, "", nodeName)
 		Expect(err).ToNot(HaveOccurred())
 
 		h = handlerInterface.(*handler)
-
-		// set pollURL so we can override initial value later
-		h.pollURL = nil
+		h.ctx = ctx
 	})
 
 	JustBeforeEach(func() {
 		Expect(httpHandler).ToNot(BeNil())
 		terminationServer = httptest.NewServer(httpHandler)
-
-		if h.pollURL == nil {
-			pollURL, err := url.Parse(terminationServer.URL)
-			Expect(err).ToNot(HaveOccurred())
-			h.pollURL = pollURL
-		}
+		os.Setenv("GCE_METADATA_HOST", terminationServer.Listener.Addr().String())
 	})
 
 	AfterEach(func() {
@@ -80,6 +75,7 @@ var _ = Describe("Handler Suite", func() {
 			close(stop)
 		}
 		terminationServer.Close()
+		os.Unsetenv("GCE_METADATA_HOST")
 
 		Expect(deleteAllMachines(k8sClient)).To(Succeed())
 	})
@@ -106,29 +102,15 @@ var _ = Describe("Handler Suite", func() {
 		})
 
 		Context("when a machine exists for the node", func() {
-			var counter int32
 			var testMachine *machinev1.Machine
 
 			BeforeEach(func() {
+				h.machine = nil
 				testMachine = newTestMachine("test-machine", testNamespace, nodeName)
 				createMachine(testMachine)
+				h.machine = testMachine
 
-				// Ensure the polling logic is excercised in tests
-				httpHandler = newMockHTTPHandler(func(rw http.ResponseWriter, req *http.Request) {
-					if atomic.LoadInt32(&counter) == 4 {
-						rw.Write([]byte("TRUE"))
-					} else {
-						atomic.AddInt32(&counter, 1)
-						rw.Write([]byte("FALSE"))
-					}
-				})
-			})
-
-			JustBeforeEach(func() {
-				// Ensure the polling logic is excercised in tests
-				for atomic.LoadInt32(&counter) < 4 {
-					continue
-				}
+				httpHandler = newMockHTTPHandler(preempted)
 			})
 
 			Context("and the handler is stopped", func() {
@@ -179,23 +161,6 @@ var _ = Describe("Handler Suite", func() {
 				})
 			})
 
-			Context("and the poll URL cannot be reached", func() {
-				BeforeEach(func() {
-					h.pollURL = &url.URL{Opaque: "abc#1://localhost"}
-				})
-
-				It("should return an error", func() {
-					Eventually(errs).Should(Receive(MatchError("error polling termination endpoint: could not get URL \"abc#1://localhost\": Get abc#1://localhost: unsupported protocol scheme \"\"")))
-				})
-
-				It("should not delete the machine", func() {
-					key := client.ObjectKey{Namespace: testMachine.Namespace, Name: testMachine.Name}
-					Consistently(func() error {
-						m := &machinev1.Machine{}
-						return k8sClient.Get(ctx, key, m)
-					}).Should(Succeed())
-				})
-			})
 		})
 	})
 
@@ -204,7 +169,7 @@ var _ = Describe("Handler Suite", func() {
 		var err error
 
 		JustBeforeEach(func() {
-			machine, err = h.getMachineForNode(ctx)
+			machine, err = h.getMachineForNode()
 		})
 
 		Context("with a broken client", func() {
