@@ -3,22 +3,18 @@ package termination
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"sync"
-	"time"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/go-logr/logr"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	gcpTerminationEndpointURL = "http://169.254.169.254/computeMetadata/v1/instance/preempted"
+	gcpTerminationEndpointSuffix = "instance/preempted"
 )
 
 // Handler represents a handler that will run to check the termination
@@ -28,45 +24,39 @@ type Handler interface {
 }
 
 // NewHandler constructs a new Handler
-func NewHandler(logger logr.Logger, cfg *rest.Config, pollInterval time.Duration, namespace, nodeName string) (Handler, error) {
+func NewHandler(logger logr.Logger, cfg *rest.Config, namespace, nodeName string) (Handler, error) {
 	machinev1.AddToScheme(scheme.Scheme)
 	c, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	if err != nil {
 		return nil, fmt.Errorf("error creating client: %v", err)
 	}
 
-	pollURL, err := url.Parse(gcpTerminationEndpointURL)
-	if err != nil {
-		// This should never happen
-		panic(err)
-	}
-
 	logger = logger.WithValues("node", nodeName, "namespace", namespace)
 
-	return &handler{
-		client:       c,
-		pollURL:      pollURL,
-		pollInterval: pollInterval,
-		nodeName:     nodeName,
-		namespace:    namespace,
-		log:          logger,
-	}, nil
+	h := &handler{
+		client:    c,
+		nodeName:  nodeName,
+		namespace: namespace,
+		log:       logger,
+	}
+	return h, nil
 }
 
 // handler implements the logic to check the termination endpoint and delete the
 // machine associated with the node
 type handler struct {
-	client       client.Client
-	pollURL      *url.URL
-	pollInterval time.Duration
-	nodeName     string
-	namespace    string
-	log          logr.Logger
+	ctx       context.Context
+	client    client.Client
+	nodeName  string
+	namespace string
+	log       logr.Logger
+	machine   *machinev1.Machine
 }
 
 // Run starts the handler and runs the termination logic
 func (h *handler) Run(stop <-chan struct{}) error {
 	ctx, cancel := context.WithCancel(context.Background())
+	h.ctx = ctx
 
 	errs := make(chan error, 1)
 	wg := &sync.WaitGroup{}
@@ -74,7 +64,7 @@ func (h *handler) Run(stop <-chan struct{}) error {
 
 	go func() {
 		defer wg.Done()
-		errs <- h.run(ctx)
+		errs <- h.run()
 	}()
 
 	select {
@@ -89,60 +79,44 @@ func (h *handler) Run(stop <-chan struct{}) error {
 	}
 }
 
-func (h *handler) run(ctx context.Context) error {
-	machine, err := h.getMachineForNode(ctx)
+func (h *handler) run() error {
+	machine, err := h.getMachineForNode()
 	if err != nil {
 		return fmt.Errorf("error fetching machine for node (%q): %w", h.nodeName, err)
 	}
+	h.machine = machine
 
-	logger := h.log.WithValues("machine", machine.Name)
-	logger.V(1).Info("Monitoring node for machine")
+	h.log = h.log.WithValues("machine", machine.Name)
+	h.log.V(1).Info("Monitoring node for machine")
 
-	if err := wait.PollImmediateUntil(h.pollInterval, func() (bool, error) {
-		req, err := http.NewRequest("GET", h.pollURL.String(), nil)
-		if err != nil {
-			return false, fmt.Errorf("could not create request %q: %w", h.pollURL.String(), err)
-		}
-
-		req.Header.Add("Metadata-Flavor", "Google")
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return false, fmt.Errorf("could not get URL %q: %w", h.pollURL.String(), err)
-		}
-
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return false, fmt.Errorf("failed to read responce body: %w", err)
-		}
-
-		respBody := string(bodyBytes)
-
-		if respBody == "TRUE" {
-			// Instance marked for termination
-			return true, nil
-		}
-
-		// Instance not terminated yet
-		logger.V(2).Info("Instance not marked for termination")
-		return false, nil
-	}, ctx.Done()); err != nil {
-		return fmt.Errorf("error polling termination endpoint: %w", err)
-	}
-
-	// Will only get here if the termination endpoint returned FALSE
-	logger.V(1).Info("Instance marked for termination, deleting Machine")
-	if err := h.client.Delete(ctx, machine); err != nil {
-		return fmt.Errorf("error deleting machine: %w", err)
+	// Use server-side wait.
+	err = metadata.Subscribe(gcpTerminationEndpointSuffix, h.markForDeletion)
+	if err != nil {
+		return fmt.Errorf("Error waiting for instance termination (%q): %w", h.nodeName, err)
 	}
 
 	return nil
 }
 
+// According to Subscribe documentation:
+// "Subscribe calls fn with the latest metadata value indicated by the provided
+// suffix. If the metadata value is deleted, fn is called with the empty string
+// and ok false."
+func (h *handler) markForDeletion(markedForDeletion string, instanceMetaFound bool) error {
+	if instanceMetaFound && markedForDeletion != "TRUE" {
+		return nil
+	}
+	h.log.V(1).Info("Instance marked for termination, deleting Machine")
+	if err := h.client.Delete(h.ctx, h.machine); err != nil {
+		return fmt.Errorf("error deleting machine: %w", err)
+	}
+	return nil
+}
+
 // getMachineForNodeName finds the Machine associated with the Node name given
-func (h *handler) getMachineForNode(ctx context.Context) (*machinev1.Machine, error) {
+func (h *handler) getMachineForNode() (*machinev1.Machine, error) {
 	machineList := &machinev1.MachineList{}
-	err := h.client.List(ctx, machineList, client.InNamespace(h.namespace))
+	err := h.client.List(h.ctx, machineList, client.InNamespace(h.namespace))
 	if err != nil {
 		return nil, fmt.Errorf("error listing machines: %w", err)
 	}

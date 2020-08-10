@@ -20,7 +20,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/termination"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
@@ -37,7 +36,7 @@ func main() {
 	klog.InitFlags(nil)
 	logger := klogr.New()
 
-	pollIntervalSeconds := flag.Int64("poll-interval-seconds", 5, "interval in seconds at which termination notice endpoint should be checked (Default: 5)")
+	_ = flag.Int64("poll-interval-seconds", 5, "interval in seconds at which termination notice endpoint should be checked (Default: 5)")
 	nodeName := flag.String("node-name", "", "name of the node that the termination handler is running on")
 	namespace := flag.String("namespace", "", "namespace that the machine for the node should live in. If unspecified, look for machines across all namespaces.")
 	flag.Set("logtostderr", "true")
@@ -55,11 +54,8 @@ func main() {
 		return
 	}
 
-	// Get the poll interval as a duration from the `poll-interval-seconds` flag
-	pollInterval := time.Duration(*pollIntervalSeconds) * time.Second
-
 	// Construct a termination handler
-	handler, err := termination.NewHandler(logger, cfg, pollInterval, *namespace, *nodeName)
+	handler, err := termination.NewHandler(logger, cfg, *namespace, *nodeName)
 	if err != nil {
 		logger.Error(err, "Error constructing termination handler")
 		return
