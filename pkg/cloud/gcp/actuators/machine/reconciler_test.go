@@ -99,10 +99,12 @@ func TestCreate(t *testing.T) {
 			name: "Use projectID from NetworkInterface if set",
 			providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
 				ProjectID: "project",
+				Region:    "test-region",
 				NetworkInterfaces: []*gcpv1beta1.GCPNetworkInterface{
 					{
-						ProjectID: "network-project",
-						Network:   "test-network",
+						ProjectID:  "network-project",
+						Network:    "test-network",
+						Subnetwork: "test-subnetwork",
 					},
 				},
 			},
@@ -114,15 +116,21 @@ func TestCreate(t *testing.T) {
 				if instance.NetworkInterfaces[0].Network != expectedNetwork {
 					t.Errorf("Expected Network: %q, Got Network: %q", expectedNetwork, instance.NetworkInterfaces[0].Network)
 				}
+				expectedSubnetwork := fmt.Sprintf("projects/%s/regions/%s/networks/%s", "network-project", "test-region", "test-network")
+				if instance.NetworkInterfaces[0].Network != expectedNetwork {
+					t.Errorf("Expected Network: %q, Got Network: %q", expectedSubnetwork, instance.NetworkInterfaces[0].Subnetwork)
+				}
 			},
 		},
 		{
 			name: "Use projectID from ProviderSpec if not set in the NetworkInterface",
 			providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
 				ProjectID: "project",
+				Region:    "test-region",
 				NetworkInterfaces: []*gcpv1beta1.GCPNetworkInterface{
 					{
-						Network: "test-network",
+						Network:    "test-network",
+						Subnetwork: "test-subnetwork",
 					},
 				},
 			},
@@ -133,6 +141,10 @@ func TestCreate(t *testing.T) {
 				expectedNetwork := fmt.Sprintf("projects/%s/global/networks/%s", "project", "test-network")
 				if instance.NetworkInterfaces[0].Network != expectedNetwork {
 					t.Errorf("Expected Network: %q, Got Network: %q", expectedNetwork, instance.NetworkInterfaces[0].Network)
+				}
+				expectedSubnetwork := fmt.Sprintf("projects/%s/regions/%s/networks/%s", "project", "test-region", "test-network")
+				if instance.NetworkInterfaces[0].Network != expectedNetwork {
+					t.Errorf("Expected Network: %q, Got Network: %q", expectedSubnetwork, instance.NetworkInterfaces[0].Subnetwork)
 				}
 			},
 		},
