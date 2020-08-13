@@ -96,11 +96,15 @@ func (r *Reconciler) create() error {
 		computeNIC := &compute.NetworkInterface{
 			AccessConfigs: accessConfigs,
 		}
+		projectID := nic.ProjectID
+		if projectID == "" {
+			projectID = r.projectID
+		}
 		if len(nic.Network) != 0 {
-			computeNIC.Network = fmt.Sprintf("projects/%s/global/networks/%s", r.projectID, nic.Network)
+			computeNIC.Network = fmt.Sprintf("projects/%s/global/networks/%s", projectID, nic.Network)
 		}
 		if len(nic.Subnetwork) != 0 {
-			computeNIC.Subnetwork = fmt.Sprintf("regions/%s/subnetworks/%s", r.providerSpec.Region, nic.Subnetwork)
+			computeNIC.Subnetwork = fmt.Sprintf("projects/%s/regions/%s/subnetworks/%s", projectID, r.providerSpec.Region, nic.Subnetwork)
 		}
 		networkInterfaces = append(networkInterfaces, computeNIC)
 	}

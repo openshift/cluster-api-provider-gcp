@@ -25,6 +25,7 @@ func TestCreate(t *testing.T) {
 		expectedCondition   *gcpv1beta1.GCPMachineProviderCondition
 		secret              *corev1.Secret
 		mockInstancesInsert func(project string, zone string, instance *compute.Instance) (*compute.Operation, error)
+		validateInstance    func(t *testing.T, instance *compute.Instance)
 		expectedError       error
 	}{
 		{
@@ -94,11 +95,64 @@ func TestCreate(t *testing.T) {
 				return nil, &googleapi.Error{Message: "error", Code: 400}
 			},
 		},
+		{
+			name: "Use projectID from NetworkInterface if set",
+			providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
+				ProjectID: "project",
+				Region:    "test-region",
+				NetworkInterfaces: []*gcpv1beta1.GCPNetworkInterface{
+					{
+						ProjectID:  "network-project",
+						Network:    "test-network",
+						Subnetwork: "test-subnetwork",
+					},
+				},
+			},
+			validateInstance: func(t *testing.T, instance *compute.Instance) {
+				if len(instance.NetworkInterfaces) != 1 {
+					t.Errorf("expected one network interface, got %d", len(instance.NetworkInterfaces))
+				}
+				expectedNetwork := fmt.Sprintf("projects/%s/global/networks/%s", "network-project", "test-network")
+				if instance.NetworkInterfaces[0].Network != expectedNetwork {
+					t.Errorf("Expected Network: %q, Got Network: %q", expectedNetwork, instance.NetworkInterfaces[0].Network)
+				}
+				expectedSubnetwork := fmt.Sprintf("projects/%s/regions/%s/networks/%s", "network-project", "test-region", "test-network")
+				if instance.NetworkInterfaces[0].Network != expectedNetwork {
+					t.Errorf("Expected Network: %q, Got Network: %q", expectedSubnetwork, instance.NetworkInterfaces[0].Subnetwork)
+				}
+			},
+		},
+		{
+			name: "Use projectID from ProviderSpec if not set in the NetworkInterface",
+			providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
+				ProjectID: "project",
+				Region:    "test-region",
+				NetworkInterfaces: []*gcpv1beta1.GCPNetworkInterface{
+					{
+						Network:    "test-network",
+						Subnetwork: "test-subnetwork",
+					},
+				},
+			},
+			validateInstance: func(t *testing.T, instance *compute.Instance) {
+				if len(instance.NetworkInterfaces) != 1 {
+					t.Errorf("expected one network interface, got %d", len(instance.NetworkInterfaces))
+				}
+				expectedNetwork := fmt.Sprintf("projects/%s/global/networks/%s", "project", "test-network")
+				if instance.NetworkInterfaces[0].Network != expectedNetwork {
+					t.Errorf("Expected Network: %q, Got Network: %q", expectedNetwork, instance.NetworkInterfaces[0].Network)
+				}
+				expectedSubnetwork := fmt.Sprintf("projects/%s/regions/%s/networks/%s", "project", "test-region", "test-network")
+				if instance.NetworkInterfaces[0].Network != expectedNetwork {
+					t.Errorf("Expected Network: %q, Got Network: %q", expectedSubnetwork, instance.NetworkInterfaces[0].Subnetwork)
+				}
+			},
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, mockComputeService := computeservice.NewComputeServiceMock()
+			receivedInstance, mockComputeService := computeservice.NewComputeServiceMock()
 			providerSpec := &gcpv1beta1.GCPMachineProviderSpec{}
 			labels := map[string]string{
 				machinev1beta1.MachineClusterIDLabel: "CLUSTERID",
@@ -124,6 +178,7 @@ func TestCreate(t *testing.T) {
 				providerSpec:   providerSpec,
 				providerStatus: &gcpv1beta1.GCPMachineProviderStatus{},
 				computeService: mockComputeService,
+				projectID:      providerSpec.ProjectID,
 			}
 
 			reconciler := newReconciler(&machineScope)
@@ -164,6 +219,10 @@ func TestCreate(t *testing.T) {
 				if err != nil {
 					t.Errorf("reconciler was not expected to return error: %v", err)
 				}
+			}
+
+			if tc.validateInstance != nil {
+				tc.validateInstance(t, receivedInstance)
 			}
 		})
 	}
