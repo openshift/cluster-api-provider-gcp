@@ -24,6 +24,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
+// The default durations for the leader electrion operations.
+var (
+	leaseDuration = 120 * time.Second
+	renewDealine  = 110 * time.Second
+	retryPeriod   = 20 * time.Second
+)
+
 func main() {
 	printVersion := flag.Bool(
 		"version",
@@ -45,7 +52,7 @@ func main() {
 
 	leaderElectLeaseDuration := flag.Duration(
 		"leader-elect-lease-duration",
-		90*time.Second,
+		leaseDuration,
 		"The duration that non-leader candidates will wait after observing a leadership renewal until attempting to acquire leadership of a led but unrenewed leader slot. This is effectively the maximum duration that a leader can be stopped before it is replaced by another candidate. This is only applicable if leader election is enabled.",
 	)
 
@@ -85,6 +92,9 @@ func main() {
 		LeaseDuration:           leaderElectLeaseDuration,
 		HealthProbeBindAddress:  *healthAddr,
 		MetricsBindAddress:      *metricsAddress,
+		// Slow the default retry and renew election rate to reduce etcd writes at idle: BZ 1858400
+		RetryPeriod:   &retryPeriod,
+		RenewDeadline: &renewDealine,
 	}
 
 	if *watchNamespace != "" {
