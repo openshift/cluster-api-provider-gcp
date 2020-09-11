@@ -6,7 +6,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 
 	// kube-1.16.0
-	github.com/openshift/machine-api-operator v0.2.1-0.20200207152117-d189f5d56a49
+	github.com/openshift/machine-api-operator v0.2.1-0.20200324201140-3327b0f6293e
 	github.com/pkg/errors v0.8.1
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	google.golang.org/api v0.4.0

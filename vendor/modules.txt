@@ -58,7 +58,7 @@ github.com/matttproud/golang_protobuf_extensions/pbutil
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/openshift/machine-api-operator v0.2.1-0.20200207152117-d189f5d56a49
+# github.com/openshift/machine-api-operator v0.2.1-0.20200324201140-3327b0f6293e
 github.com/openshift/machine-api-operator/cmd/machineset
 github.com/openshift/machine-api-operator/pkg/apis/machine
 github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1
