@@ -11,7 +11,7 @@ import (
 	machineapierros "github.com/openshift/machine-api-operator/pkg/controller/machine"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	controllerclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 

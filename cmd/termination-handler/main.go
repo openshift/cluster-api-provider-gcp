@@ -24,8 +24,8 @@ import (
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/termination"
 	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
-	"k8s.io/klog"
-	"k8s.io/klog/klogr"
+	"k8s.io/klog/v2"
+	"k8s.io/klog/v2/klogr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
