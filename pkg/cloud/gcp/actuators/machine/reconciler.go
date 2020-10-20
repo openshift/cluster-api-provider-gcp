@@ -24,6 +24,7 @@ const (
 	userDataSecretKey   = "userData"
 	requeueAfterSeconds = 20
 	instanceLinkFmt     = "https://www.googleapis.com/compute/v1/projects/%s/zones/%s/instances/%s"
+	kmsKeyNameFmt       = "projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s"
 )
 
 // Reconciler are list of services required by machine actuator, easy to create a fake
@@ -72,6 +73,7 @@ func (r *Reconciler) create() error {
 			// only image name provided therfore defaulting to the current project
 			srcImage = googleapi.ResolveRelative(r.computeService.BasePath(), fmt.Sprintf("%s/global/images/%s", r.projectID, disk.Image))
 		}
+
 		disks = append(disks, &compute.AttachedDisk{
 			AutoDelete: disk.AutoDelete,
 			Boot:       disk.Boot,
@@ -81,6 +83,7 @@ func (r *Reconciler) create() error {
 				Labels:      disk.Labels,
 				SourceImage: srcImage,
 			},
+			DiskEncryptionKey: generateDiskEncryptionKey(disk.EncryptionKey, r.projectID),
 		})
 	}
 	instance.Disks = disks
@@ -445,4 +448,18 @@ func (r *Reconciler) deleteInstanceFromTargetPool(instanceLink string, pool stri
 		return fmt.Errorf("failed to remove instance %v from target pool %v: %v", r.machine.Name, pool, err)
 	}
 	return nil
+}
+
+func generateDiskEncryptionKey(keyRef *v1beta1.GCPEncryptionKeyReference, projectID string) *compute.CustomerEncryptionKey {
+	if keyRef == nil || keyRef.KMSKey == nil {
+		return nil
+	}
+
+	if keyRef.KMSKey.ProjectID != "" {
+		projectID = keyRef.KMSKey.ProjectID
+	}
+
+	return &compute.CustomerEncryptionKey{
+		KmsKeyName: fmt.Sprintf(kmsKeyNameFmt, projectID, keyRef.KMSKey.Location, keyRef.KMSKey.KeyRing, keyRef.KMSKey.Name),
+	}
 }
