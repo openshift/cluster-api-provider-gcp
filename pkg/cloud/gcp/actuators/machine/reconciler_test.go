@@ -162,6 +162,7 @@ func TestCreate(t *testing.T) {
 								ProjectID: "kms-project",
 								Location:  "global",
 							},
+							KMSKeyServiceAccount: "kms-key-service-account",
 						},
 					},
 				},
@@ -177,6 +178,10 @@ func TestCreate(t *testing.T) {
 				expectedKmsKeyName := "projects/kms-project/locations/global/keyRings/kms-key-ring/cryptoKeys/kms-key-name"
 				if diskEncryption.KmsKeyName != expectedKmsKeyName {
 					t.Errorf("Expected KmsKeyName: %q, Got KmsKeyName: %q", expectedKmsKeyName, diskEncryption.KmsKeyName)
+				}
+				expectedKmsKeyServiceAccount := "kms-key-service-account"
+				if diskEncryption.KmsKeyServiceAccount != expectedKmsKeyServiceAccount {
+					t.Errorf("Expected KmsKeyServiceAccount: %q, Got KmsKeyServiceAccount: %q", expectedKmsKeyServiceAccount, diskEncryption.KmsKeyServiceAccount)
 				}
 			},
 		},
@@ -208,6 +213,10 @@ func TestCreate(t *testing.T) {
 				expectedKmsKeyName := "projects/project/locations/centralus-1/keyRings/kms-ring/cryptoKeys/kms-key"
 				if diskEncryption.KmsKeyName != expectedKmsKeyName {
 					t.Errorf("Expected KmsKeyName: %q, Got KmsKeyName: %q", expectedKmsKeyName, diskEncryption.KmsKeyName)
+				}
+				expectedKmsKeyServiceAccount := ""
+				if diskEncryption.KmsKeyServiceAccount != expectedKmsKeyServiceAccount {
+					t.Errorf("Expected KmsKeyServiceAccount: %q, Got KmsKeyServiceAccount: %q", expectedKmsKeyServiceAccount, diskEncryption.KmsKeyServiceAccount)
 				}
 			},
 		},

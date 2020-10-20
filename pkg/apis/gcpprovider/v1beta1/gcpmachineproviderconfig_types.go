@@ -80,6 +80,13 @@ type GCPServiceAccount struct {
 // GCPEncryptionKeyReference describes the encryptionKey to use for a disk's encryption.
 type GCPEncryptionKeyReference struct {
 	KMSKey *GCPKMSKeyReference `json:"kmsKey,omitempty"`
+
+	// KMSKeyServiceAccount is the service account being used for the
+	// encryption request for the given KMS key. If absent, the Compute
+	// Engine default service account is used.
+	// See https://cloud.google.com/compute/docs/access/service-accounts#compute_engine_service_account
+	// for details on the default service account.
+	KMSKeyServiceAccount string `json:"kmsKeyServiceAccount,omitempty"`
 }
 
 // GCPKMSKeyReference gathers required fields for looking up a GCP KMS Key

@@ -460,6 +460,7 @@ func generateDiskEncryptionKey(keyRef *v1beta1.GCPEncryptionKeyReference, projec
 	}
 
 	return &compute.CustomerEncryptionKey{
-		KmsKeyName: fmt.Sprintf(kmsKeyNameFmt, projectID, keyRef.KMSKey.Location, keyRef.KMSKey.KeyRing, keyRef.KMSKey.Name),
+		KmsKeyName:           fmt.Sprintf(kmsKeyNameFmt, projectID, keyRef.KMSKey.Location, keyRef.KMSKey.KeyRing, keyRef.KMSKey.Name),
+		KmsKeyServiceAccount: keyRef.KMSKeyServiceAccount,
 	}
 }
