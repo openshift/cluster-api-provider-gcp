@@ -148,6 +148,78 @@ func TestCreate(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "Set disk encryption correctly when EncryptionKey is provided (with projectID)",
+			providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
+				ProjectID: "project",
+				Region:    "test-region",
+				Disks: []*gcpv1beta1.GCPDisk{
+					{
+						EncryptionKey: &gcpv1beta1.GCPEncryptionKeyReference{
+							KMSKey: &gcpv1beta1.GCPKMSKeyReference{
+								Name:      "kms-key-name",
+								KeyRing:   "kms-key-ring",
+								ProjectID: "kms-project",
+								Location:  "global",
+							},
+							KMSKeyServiceAccount: "kms-key-service-account",
+						},
+					},
+				},
+			},
+			validateInstance: func(t *testing.T, instance *compute.Instance) {
+				if len(instance.Disks) != 1 {
+					t.Errorf("expected one disk, got %d", len(instance.Disks))
+				}
+				diskEncryption := instance.Disks[0].DiskEncryptionKey
+				if diskEncryption == nil {
+					t.Errorf("Expected DiskEncrpytionKey but got nil")
+				}
+				expectedKmsKeyName := "projects/kms-project/locations/global/keyRings/kms-key-ring/cryptoKeys/kms-key-name"
+				if diskEncryption.KmsKeyName != expectedKmsKeyName {
+					t.Errorf("Expected KmsKeyName: %q, Got KmsKeyName: %q", expectedKmsKeyName, diskEncryption.KmsKeyName)
+				}
+				expectedKmsKeyServiceAccount := "kms-key-service-account"
+				if diskEncryption.KmsKeyServiceAccount != expectedKmsKeyServiceAccount {
+					t.Errorf("Expected KmsKeyServiceAccount: %q, Got KmsKeyServiceAccount: %q", expectedKmsKeyServiceAccount, diskEncryption.KmsKeyServiceAccount)
+				}
+			},
+		},
+		{
+			name: "Set disk encryption correctly when EncryptionKey is provided (without projectID)",
+			providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
+				ProjectID: "project",
+				Region:    "test-region",
+				Disks: []*gcpv1beta1.GCPDisk{
+					{
+						EncryptionKey: &gcpv1beta1.GCPEncryptionKeyReference{
+							KMSKey: &gcpv1beta1.GCPKMSKeyReference{
+								Name:     "kms-key",
+								KeyRing:  "kms-ring",
+								Location: "centralus-1",
+							},
+						},
+					},
+				},
+			},
+			validateInstance: func(t *testing.T, instance *compute.Instance) {
+				if len(instance.Disks) != 1 {
+					t.Errorf("expected one disk, got %d", len(instance.Disks))
+				}
+				diskEncryption := instance.Disks[0].DiskEncryptionKey
+				if diskEncryption == nil {
+					t.Errorf("Expected DiskEncrpytionKey but got nil")
+				}
+				expectedKmsKeyName := "projects/project/locations/centralus-1/keyRings/kms-ring/cryptoKeys/kms-key"
+				if diskEncryption.KmsKeyName != expectedKmsKeyName {
+					t.Errorf("Expected KmsKeyName: %q, Got KmsKeyName: %q", expectedKmsKeyName, diskEncryption.KmsKeyName)
+				}
+				expectedKmsKeyServiceAccount := ""
+				if diskEncryption.KmsKeyServiceAccount != expectedKmsKeyServiceAccount {
+					t.Errorf("Expected KmsKeyServiceAccount: %q, Got KmsKeyServiceAccount: %q", expectedKmsKeyServiceAccount, diskEncryption.KmsKeyServiceAccount)
+				}
+			},
+		},
 	}
 
 	for _, tc := range cases {
