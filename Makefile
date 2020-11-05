@@ -32,7 +32,10 @@ vendor:
 	go mod verify
 
 .PHONY: generate
-generate:
+generate: gogen goimports
+	./hack/verify-diff.sh
+
+gogen:
 	go generate ./pkg/... ./cmd/...
 
 .PHONY: fmt
