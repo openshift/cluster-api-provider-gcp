@@ -10,6 +10,6 @@ else
     --env IS_CONTAINER=TRUE \
     --volume "${PWD}:/go/src/github.com/openshift/cluster-api-provider-gcp:z" \
     --workdir /go/src/github.com/openshift/cluster-api-provider-gcp \
-    openshift/origin-release:golang-1.13 \
+    openshift/origin-release:golang-1.15 \
     ./hack/gosec.sh "${@}"
 fi;
