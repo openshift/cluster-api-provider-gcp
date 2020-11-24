@@ -21,7 +21,7 @@ ifeq ($(NO_DOCKER), 1)
   IMAGE_BUILD_CMD = imagebuilder
   CGO_ENABLED = 1
 else
-  DOCKER_CMD := docker run --rm -e CGO_ENABLED=1 -v "$(PWD)":/go/src/github.com/openshift/cluster-api-provider-gcp:Z -w /go/src/openshift/cluster-api-provider-gcp openshift/origin-release:golang-1.13
+  DOCKER_CMD := docker run --rm -e CGO_ENABLED=1 -v "$(PWD)":/go/src/github.com/openshift/cluster-api-provider-gcp:Z -w /go/src/openshift/cluster-api-provider-gcp openshift/origin-release:golang-1.15
   IMAGE_BUILD_CMD = docker build
 endif
 
