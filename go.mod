@@ -3,31 +3,19 @@ module github.com/openshift/cluster-api-provider-gcp
 go 1.15
 
 require (
-	cloud.google.com/go/storage v1.10.0 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-logr/logr v0.2.1
-	github.com/golang/mock v1.4.4 // indirect
-	github.com/google/go-cmp v0.5.2 // indirect
-	github.com/google/martian/v3 v3.0.0 // indirect
-	github.com/google/pprof v0.0.0-20200708004538-1a94d8640e99 // indirect
-	github.com/moby/term v0.0.0-20200915141129-7f0af18e79f2 // indirect
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.1
-	github.com/openshift/api v0.0.0-20200901182017-7ac89ba6b971
-	github.com/openshift/machine-api-operator v0.2.1-0.20201002104344-6abfb5440597
-	go.opencensus.io v0.22.4 // indirect
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20201018230417-eeed37f84f13 // indirect
-	golang.org/x/tools v0.0.0-20201020123448-f5c826d1900e // indirect
-	google.golang.org/api v0.29.0
-	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d // indirect
-	google.golang.org/grpc v1.31.1 // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
+	github.com/openshift/api v0.0.0-20201019163320-c6a5ec25f267
+	github.com/openshift/machine-api-operator v0.2.1-0.20201203125141-79567cb3368e
+	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
+	google.golang.org/api v0.33.0
 
 	// kube 1.18
-	k8s.io/api v0.19.0
-	k8s.io/apimachinery v0.19.0
-	k8s.io/client-go v0.19.0
+	k8s.io/api v0.19.2
+	k8s.io/apimachinery v0.19.2
+	k8s.io/client-go v0.19.2
 	k8s.io/klog/v2 v2.3.0
 	sigs.k8s.io/controller-runtime v0.6.2
 	sigs.k8s.io/controller-tools v0.3.0
@@ -35,6 +23,6 @@ require (
 )
 
 replace (
-	sigs.k8s.io/cluster-api-provider-aws => github.com/openshift/cluster-api-provider-aws v0.2.1-0.20200929152424-eab2e087f366
-	sigs.k8s.io/cluster-api-provider-azure => github.com/openshift/cluster-api-provider-azure v0.1.0-alpha.3.0.20200929220456-04e680e51d03
+	sigs.k8s.io/cluster-api-provider-aws => github.com/openshift/cluster-api-provider-aws v0.2.1-0.20201125052318-b85a18cbf338
+	sigs.k8s.io/cluster-api-provider-azure => github.com/openshift/cluster-api-provider-azure v0.1.0-alpha.3.0.20201130182513-88b90230f2a4
 )
