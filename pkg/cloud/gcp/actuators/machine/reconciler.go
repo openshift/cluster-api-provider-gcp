@@ -268,6 +268,9 @@ func (r *Reconciler) setMachineCloudProviderSpecifics(instance *compute.Instance
 	r.machine.Labels[machinecontroller.MachineAZLabelName] = r.providerSpec.Zone
 
 	if r.providerSpec.Preemptible {
+		// Label on the Machine so that an MHC can select Preemptible instances
+		r.machine.Labels[machinecontroller.MachineInterruptibleInstanceLabelName] = ""
+
 		if r.machine.Spec.Labels == nil {
 			r.machine.Spec.Labels = make(map[string]string)
 		}
