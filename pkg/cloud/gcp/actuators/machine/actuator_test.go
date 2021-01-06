@@ -59,11 +59,11 @@ func TestActuatorEvents(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	doneMgr := make(chan struct{})
-	defer close(doneMgr)
+	mgrCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	go func() {
-		g.Expect(mgr.Start(doneMgr)).To(Succeed())
+		g.Expect(mgr.Start(mgrCtx)).To(Succeed())
 	}()
 
 	k8sClient := mgr.GetClient()
