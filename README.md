@@ -6,6 +6,8 @@ OpenShift [machine-api](https://github.com/openshift/cluster-api).
 This provider runs as a machine-controller deployed by the
 [machine-api-operator](https://github.com/openshift/machine-api-operator)
 
+For troubleshooting Makefile permission issues see [hacking-guide](https://github.com/openshift/machine-api-operator/blob/master/docs/dev/hacking-guide.md#troubleshooting-make-targets).
+
 ## TargetPools
 Target pools exist in a *region*
 
