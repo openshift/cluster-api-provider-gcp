@@ -129,7 +129,18 @@ func (h *handler) run(ctx context.Context) error {
 
 	// Will only get here if the termination endpoint returned FALSE
 	logger.V(1).Info("Instance marked for termination, marking Node for deletion")
-	if err := h.markNodeForDeletion(ctx); err != nil {
+
+	// Try every second to mark the node for termination up to a 30 second timeout.
+	// This should help to prevent intermittent errors and ensure we don't end up in crash loop backoff.
+	markCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	if err := wait.PollImmediateUntil(time.Second, func() (bool, error) {
+		if err := h.markNodeForDeletion(ctx); err != nil {
+			h.log.Error(err, "Instance not marked for termination")
+			return false, nil
+		}
+		return true, nil
+	}, markCtx.Done()); err != nil {
 		return fmt.Errorf("error marking node: %v", err)
 	}
 
