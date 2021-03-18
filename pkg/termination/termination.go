@@ -104,6 +104,9 @@ func (h *handler) run(ctx context.Context) error {
 		req.Header.Add("Metadata-Flavor", "Google")
 
 		resp, err := http.DefaultClient.Do(req)
+		if resp != nil {
+			defer resp.Body.Close()
+		}
 		if err != nil {
 			return false, fmt.Errorf("could not get URL %q: %w", h.pollURL.String(), err)
 		}
