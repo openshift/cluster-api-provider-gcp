@@ -28,6 +28,7 @@ import (
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
 	"google.golang.org/api/compute/v1"
+	"google.golang.org/api/googleapi"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -221,6 +222,7 @@ func TestReconcile(t *testing.T) {
 		mockMachineTypesGet func(project string, zone string, machineType string) (*compute.MachineType, error)
 		existingAnnotations map[string]string
 		expectedAnnotations map[string]string
+		expectedEvents      []string
 		expectErr           bool
 	}{
 		{
@@ -232,6 +234,17 @@ func TestReconcile(t *testing.T) {
 			existingAnnotations: make(map[string]string),
 			expectedAnnotations: make(map[string]string),
 			expectErr:           true,
+		},
+		{
+			name:        "with machineType not found by GCP",
+			machineType: "",
+			mockMachineTypesGet: func(_ string, _ string, _ string) (*compute.MachineType, error) {
+				return nil, &googleapi.Error{Code: 404, Message: "Machine type is not found"}
+			},
+			existingAnnotations: make(map[string]string),
+			expectedAnnotations: make(map[string]string),
+			// Controller should stop reconciling on unknown instance type reported by the cloud
+			expectErr: false,
 		},
 		{
 			name:                "with a n1-standard-2",
@@ -297,7 +310,8 @@ func TestReconcile(t *testing.T) {
 			}
 
 			r := &Reconciler{
-				cache: newMachineTypesCache(),
+				recorder: record.NewFakeRecorder(1),
+				cache:    newMachineTypesCache(),
 				getGCPService: func(_ string, _ machineproviderv1.GCPMachineProviderSpec) (computeservice.GCPComputeService, error) {
 					return service, nil
 				},

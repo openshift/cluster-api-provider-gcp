@@ -142,6 +142,10 @@ func (r *Reconciler) reconcile(machineSet *machinev1.MachineSet) (ctrl.Result, e
 	machineType, err := r.cache.getMachineTypeFromCache(gceService, providerConfig.ProjectID, providerConfig.Zone, providerConfig.MachineType)
 	if err != nil {
 		return ctrl.Result{}, mapierrors.InvalidMachineConfiguration("error fetching machine type %q: %v", providerConfig.MachineType, err)
+	} else if machineType == nil {
+		// Returning no error to prevent further reconciliation, as user intervention is now required but emit an informational event
+		r.recorder.Eventf(machineSet, corev1.EventTypeWarning, "FailedUpdate", "Failed to set autoscaling from zero annotations, machine type unknown")
+		return ctrl.Result{}, nil
 	}
 
 	if machineSet.Annotations == nil {

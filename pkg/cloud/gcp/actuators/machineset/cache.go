@@ -19,6 +19,8 @@ import (
 
 	computeservice "github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/services/compute"
 	gce "google.golang.org/api/compute/v1"
+	"google.golang.org/api/googleapi"
+	"k8s.io/klog/v2"
 )
 
 // machineTypeKey is used to identify MachineType.
@@ -52,9 +54,23 @@ func (mc *machineTypesCache) getMachineTypeFromCache(gcpService computeservice.G
 
 	mt, err := gcpService.MachineTypesGet(projectID, zone, machineType)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching machine type %q in zone %q: %v", machineType, zone, err)
+		if !isNotFoundError(err) {
+			return nil, fmt.Errorf("error fetching machine type %q in zone %q: %v", machineType, zone, err)
+		}
+		klog.Error("Unable to set scale from zero annotations: unknown instance type: %s", machineType)
+		klog.Error("Autoscaling from zero will not work. To fix this, manually populate machine annotations for your instance type: %v", []string{cpuKey, memoryKey})
+		// Returning no instance type and no error to prevent further reconciliation
+		return nil, nil
 	}
 
 	mc.machineTypesCache[machineTypeKey{zone, machineType}] = mt
 	return mt, nil
+}
+
+func isNotFoundError(err error) bool {
+	switch t := err.(type) {
+	case *googleapi.Error:
+		return t.Code == 404
+	}
+	return false
 }
