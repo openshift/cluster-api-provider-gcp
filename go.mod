@@ -4,20 +4,20 @@ go 1.15
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/go-logr/logr v0.3.0
-	github.com/onsi/ginkgo v1.14.1
-	github.com/onsi/gomega v1.10.2
-	github.com/openshift/api v0.0.0-20201216151826-78a19e96f9eb
-	github.com/openshift/machine-api-operator v0.2.1-0.20210322142500-9101e75223bf
+	github.com/go-logr/logr v0.4.0
+	github.com/onsi/ginkgo v1.15.0
+	github.com/onsi/gomega v1.10.5
+	github.com/openshift/api v0.0.0-20210412212256-79bd8cfbbd59
+	github.com/openshift/machine-api-operator v0.2.1-0.20210420092411-384733bfd62e
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	google.golang.org/api v0.33.0
 
 	// kube 1.18
-	k8s.io/api v0.20.0
-	k8s.io/apimachinery v0.20.0
-	k8s.io/client-go v0.20.0
-	k8s.io/klog/v2 v2.4.0
-	sigs.k8s.io/controller-runtime v0.7.0
+	k8s.io/api v0.21.0
+	k8s.io/apimachinery v0.21.0
+	k8s.io/client-go v0.21.0
+	k8s.io/klog/v2 v2.8.0
+	sigs.k8s.io/controller-runtime v0.9.0-alpha.1.0.20210413130450-7ef2da0bc161
 	sigs.k8s.io/controller-tools v0.3.0
 	sigs.k8s.io/yaml v1.2.0
 )
