@@ -13,3 +13,7 @@
 
 bin/
 .gobincache/
+
+# IDE configs
+.idea/
+.vscode/
