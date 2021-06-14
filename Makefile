@@ -23,13 +23,27 @@ CGO_ENABLED = 0
 unit : CGO_ENABLED = 1
 
 NO_DOCKER ?= 0
+
+ifeq ($(shell command -v podman > /dev/null 2>&1 ; echo $$? ), 0)
+	ENGINE=podman
+else ifeq ($(shell command -v docker > /dev/null 2>&1 ; echo $$? ), 0)
+	ENGINE=docker
+else
+	NO_DOCKER=1
+endif
+
+USE_DOCKER ?= 0
+ifeq ($(USE_DOCKER), 1)
+	ENGINE=docker
+endif
+
 ifeq ($(NO_DOCKER), 1)
   DOCKER_CMD =
   IMAGE_BUILD_CMD = imagebuilder
   export CGO_ENABLED
 else
-  DOCKER_CMD = docker run --rm -e CGO_ENABLED=0 -e GOARCH=$(GOARCH) -e GOOS=$(GOOS) -v "$(PWD)":/go/src/github.com/openshift/cluster-api-provider-gcp:Z -w /go/src/openshift/cluster-api-provider-gcp openshift/origin-release:golang-1.15
-  IMAGE_BUILD_CMD = docker build
+  DOCKER_CMD :=  $(ENGINE) run --rm -e CGO_ENABLED=0 -e GOARCH=$(GOARCH) -e GOOS=$(GOOS) -v "$(PWD)":/go/src/github.com/openshift/cluster-api-provider-gcp:Z -w /go/src/github.com/openshift/cluster-api-provider-gcp openshift/origin-release:golang-1.15
+  IMAGE_BUILD_CMD =  $(ENGINE) build
 endif
 
 .PHONY: vendor
@@ -43,19 +57,19 @@ generate: gogen goimports
 	./hack/verify-diff.sh
 
 gogen:
-	go generate ./pkg/... ./cmd/...
+	$(DOCKER_CMD) go generate ./pkg/... ./cmd/...
 
 .PHONY: fmt
 fmt: ## Go fmt your code
-	hack/go-fmt.sh .
+	$(DOCKER_CMD) hack/go-fmt.sh .
 
 .PHONY: goimports
 goimports: ## Go fmt your code
-	hack/goimports.sh .
+	$(DOCKER_CMD) hack/goimports.sh .
 
 .PHONY: vet
 vet: ## Apply go vet to all go files
-	hack/go-vet.sh ./...
+	$(DOCKER_CMD) hack/go-vet.sh ./...
 
 .PHONY: test
 test: ## Run tests
@@ -68,7 +82,7 @@ unit: # Run unit test
 
 .PHONY: sec
 sec: # Run security static analysis
-	hack/gosec.sh ./...
+	$(DOCKER_CMD) hack/gosec.sh ./...
 
 .PHONY: build
 build: ## build binaries
