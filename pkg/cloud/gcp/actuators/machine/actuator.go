@@ -117,8 +117,10 @@ func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error
 		fmtErr := fmt.Errorf(reconcilerFailFmt, machine.GetName(), updateEventAction, err)
 		return a.handleMachineError(machine, fmtErr, updateEventAction)
 	}
+
+	err = scope.Close()
 	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, updateEventAction, "Updated Machine %v", machine.Name)
-	return scope.Close()
+	return err
 }
 
 func (a *Actuator) Delete(ctx context.Context, machine *machinev1.Machine) error {
