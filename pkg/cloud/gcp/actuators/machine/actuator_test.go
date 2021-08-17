@@ -233,8 +233,16 @@ func TestActuatorEvents(t *testing.T) {
 
 			// Create the machine
 			gs.Expect(k8sClient.Create(context.Background(), machine)).To(Succeed())
+
+			// Make sure the machine and its event are deleted when the test ends
 			defer func() {
 				gs.Expect(k8sClient.Delete(context.Background(), machine)).To(Succeed())
+
+				eventList := &v1.EventList{}
+				gs.Expect(k8sClient.List(context.Background(), eventList, client.InNamespace(machine.Namespace))).To(Succeed())
+				for i := range eventList.Items {
+					gs.Expect(k8sClient.Delete(context.Background(), &eventList.Items[i])).To(Succeed())
+				}
 			}()
 
 			// Ensure the machine has synced to the cache
@@ -269,10 +277,7 @@ func TestActuatorEvents(t *testing.T) {
 			gs.Eventually(waitForEvent, timeout).Should(Succeed())
 
 			gs.Expect(eventList.Items[0].Message).To(Equal(tc.event))
-
-			for i := range eventList.Items {
-				gs.Expect(k8sClient.Delete(context.Background(), &eventList.Items[i])).To(Succeed())
-			}
+			gs.Expect(eventList.Items[0].Count).To(Equal(int32(1)))
 		})
 	}
 }

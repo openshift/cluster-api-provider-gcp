@@ -117,8 +117,21 @@ func (a *Actuator) Update(ctx context.Context, machine *machinev1.Machine) error
 		fmtErr := fmt.Errorf(reconcilerFailFmt, machine.GetName(), updateEventAction, err)
 		return a.handleMachineError(machine, fmtErr, updateEventAction)
 	}
-	a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, updateEventAction, "Updated Machine %v", machine.Name)
-	return scope.Close()
+
+	previousResourceVersion := scope.machine.ResourceVersion
+
+	if err := scope.Close(); err != nil {
+		return err
+	}
+
+	currentResourceVersion := scope.machine.ResourceVersion
+
+	// Create event only if machine object was modified
+	if previousResourceVersion != currentResourceVersion {
+		a.eventRecorder.Eventf(machine, corev1.EventTypeNormal, updateEventAction, "Updated Machine %v", machine.Name)
+	}
+
+	return nil
 }
 
 func (a *Actuator) Delete(ctx context.Context, machine *machinev1.Machine) error {
