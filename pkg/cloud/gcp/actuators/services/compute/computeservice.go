@@ -1,9 +1,12 @@
 package computeservice
 
 import (
-	"github.com/openshift/cluster-api-provider-gcp/pkg/cloud/gcp/actuators/util"
+	"context"
+
 	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
+	"google.golang.org/api/option"
 )
 
 // GCPComputeService is a pass through wrapper for google.golang.org/api/compute/v1/compute
@@ -30,12 +33,14 @@ type BuilderFuncType func(serviceAccountJSON string) (GCPComputeService, error)
 
 // NewComputeService return a new computeService
 func NewComputeService(serviceAccountJSON string) (GCPComputeService, error) {
-	oauthClient, err := util.CreateOauth2Client(serviceAccountJSON, compute.CloudPlatformScope)
+	ctx := context.TODO()
+
+	creds, err := google.CredentialsFromJSON(ctx, []byte(serviceAccountJSON), compute.CloudPlatformScope)
 	if err != nil {
 		return nil, err
 	}
 
-	service, err := compute.New(oauthClient)
+	service, err := compute.NewService(ctx, option.WithCredentials(creds))
 	if err != nil {
 		return nil, err
 	}

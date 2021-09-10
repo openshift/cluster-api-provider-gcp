@@ -9,7 +9,7 @@ require (
 	github.com/onsi/gomega v1.14.0
 	github.com/openshift/api v0.0.0-20210816181336-8ff39b776da3
 	github.com/openshift/machine-api-operator v0.2.1-0.20210820103535-d50698c302f5
-	golang.org/x/oauth2 v0.0.0-20210402161424-2e8d93401602
+	golang.org/x/oauth2 v0.0.0-20210622215436-a8dc77f794b6
 	google.golang.org/api v0.44.0
 	k8s.io/api v0.22.0
 	k8s.io/apimachinery v0.22.0
