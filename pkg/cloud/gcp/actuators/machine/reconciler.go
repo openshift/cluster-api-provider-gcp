@@ -3,10 +3,9 @@ package machine
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/apis/gcpprovider/v1beta1"
 	machinev1 "github.com/openshift/machine-api-operator/pkg/apis/machine/v1beta1"
@@ -25,6 +24,8 @@ const (
 	requeueAfterSeconds = 20
 	instanceLinkFmt     = "https://www.googleapis.com/compute/v1/projects/%s/zones/%s/instances/%s"
 	kmsKeyNameFmt       = "projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s"
+	machineTypeFmt      = "zones/%s/machineTypes/%s"
+	acceleratorTypeFmt  = "zones/%s/acceleratorTypes/%s"
 )
 
 // Reconciler are list of services required by machine actuator, easy to create a fake
@@ -39,6 +40,98 @@ func newReconciler(scope *machineScope) *Reconciler {
 	}
 }
 
+var (
+	supportedGpuTypes = map[string]string{
+		"nvidia-tesla-k80":  "NVIDIA_K80_GPUS",
+		"nvidia-tesla-p100": "NVIDIA_P100_GPUS",
+		"nvidia-tesla-v100": "NVIDIA_V100_GPUS",
+		"nvidia-tesla-a100": "NVIDIA_A100_GPUS",
+		"nvidia-tesla-p4":   "NVIDIA_P4_GPUS",
+		"nvidia-tesla-t4":   "NVIDIA_T4_GPUS",
+	}
+)
+
+func containsString(sli []string, str string) bool {
+	for _, elem := range sli {
+		if elem == str {
+			return true
+		}
+	}
+	return false
+}
+
+// machineTypeAcceleratorCount represents nvidia-tesla-A100 GPUs which are only compatible with A2 machine family
+func (r *Reconciler) checkQuota(machineTypeAcceleratorCount int64) error {
+	region, err := r.computeService.RegionGet(r.projectID, r.providerSpec.Region)
+	if err != nil {
+		return machinecontroller.InvalidMachineConfiguration(fmt.Sprintf("Failed to get region %s via compute service: %v", r.providerSpec.Region, err))
+	}
+	quotas := region.Quotas
+	var guestAccelerators = []*v1beta1.GCPAcceleratorConfig{}
+	// When the machine type has associated accelerator instances (A2 machine family), accelerators will be nvidia-tesla-A100s.
+	// Additional guest accelerators are not allowed so ignore the providerSpec GuestAccelerators.
+	if machineTypeAcceleratorCount != 0 {
+		guestAccelerators = append(guestAccelerators, &v1beta1.GCPAcceleratorConfig{AcceleratorType: "nvidia-tesla-a100", AcceleratorCount: machineTypeAcceleratorCount})
+	} else {
+		guestAccelerators = r.providerSpec.GuestAccelerators
+	}
+	// validate zone and then quota
+	// guestAccelerators slice can not store more than 1 element.
+	// More than one accelerator included in request results in error -> googleapi: Error 413: Value for field 'resource.guestAccelerators' is too large: maximum size 1 element(s); actual size 2., fieldSizeTooLarge
+	accelerator := guestAccelerators[0]
+	_, err = r.computeService.AcceleratorTypeGet(r.projectID, r.providerSpec.Zone, accelerator.AcceleratorType)
+	if err != nil {
+		return machinecontroller.InvalidMachineConfiguration(fmt.Sprintf("AcceleratorType %s not available in the zone %s : %v", accelerator.AcceleratorType, r.providerSpec.Zone, err))
+	}
+	metric := supportedGpuTypes[accelerator.AcceleratorType]
+	if metric == "" {
+		return machinecontroller.InvalidMachineConfiguration(fmt.Sprintf("Unsupported accelerator type %s", accelerator.AcceleratorType))
+	}
+	// preemptible instances have separate quota
+	if r.providerSpec.Preemptible {
+		metric = "PREEMPTIBLE_" + metric
+	}
+	// check quota for GA
+	for i, q := range quotas {
+		if q.Metric == metric {
+			if int64(q.Usage)+accelerator.AcceleratorCount > int64(q.Limit) {
+				return machinecontroller.InvalidMachineConfiguration(fmt.Sprintf("Quota exceeded. Metric: %s. Usage: %v. Limit: %v.", metric, q.Usage, q.Limit))
+			}
+			break
+		}
+		if i == len(quotas)-1 {
+			return machinecontroller.InvalidMachineConfiguration(fmt.Sprintf("No quota found. Metric: %s.", metric))
+		}
+	}
+	return nil
+}
+
+func (r *Reconciler) validateGuestAccelerators() error {
+	if len(r.providerSpec.GuestAccelerators) == 0 && !strings.HasPrefix(r.providerSpec.MachineType, "a2-") {
+		// no accelerators to validate so return nil
+		return nil
+	}
+	if len(r.providerSpec.GuestAccelerators) > 0 && strings.HasPrefix(r.providerSpec.MachineType, "a2-") {
+		return machinecontroller.InvalidMachineConfiguration("A2 Machine types have pre-attached guest accelerators. Adding additional guest accelerators is not supported")
+	}
+	if !strings.HasPrefix(r.providerSpec.MachineType, "n1-") && !strings.HasPrefix(r.providerSpec.MachineType, "a2-") {
+		return machinecontroller.InvalidMachineConfiguration(fmt.Sprintf("MachineType %s does not support accelerators. Only A2 and N1 machine type families support guest acceleartors.", r.providerSpec.MachineType))
+	}
+	a2MachineFamily, n1MachineFamily := r.computeService.GPUCompatibleMachineTypesList(r.providerSpec.ProjectID, r.providerSpec.Zone, r.Context)
+	machineType := r.providerSpec.MachineType
+	switch {
+	case a2MachineFamily[machineType] != 0:
+		// a2 family machine - has fixed type and count of GPUs
+		return r.checkQuota(a2MachineFamily[machineType])
+	case containsString(n1MachineFamily, machineType):
+		// n1 family machine
+		return r.checkQuota(0)
+	default:
+		// any other machine type
+		return machinecontroller.InvalidMachineConfiguration(fmt.Sprintf("MachineType %s is not available in the zone %s.", r.providerSpec.MachineType, r.providerSpec.Zone))
+	}
+}
+
 // Create creates machine if and only if machine exists, handled by cluster-api
 func (r *Reconciler) create() error {
 	if err := validateMachine(*r.machine, *r.providerSpec); err != nil {
@@ -50,14 +143,33 @@ func (r *Reconciler) create() error {
 		CanIpForward:       r.providerSpec.CanIPForward,
 		DeletionProtection: r.providerSpec.DeletionProtection,
 		Labels:             r.providerSpec.Labels,
-		MachineType:        fmt.Sprintf("zones/%s/machineTypes/%s", zone, r.providerSpec.MachineType),
+		MachineType:        fmt.Sprintf(machineTypeFmt, zone, r.providerSpec.MachineType),
 		Name:               r.machine.Name,
 		Tags: &compute.Tags{
 			Items: r.providerSpec.Tags,
 		},
 		Scheduling: &compute.Scheduling{
-			Preemptible: r.providerSpec.Preemptible,
+			Preemptible:       r.providerSpec.Preemptible,
+			AutomaticRestart:  r.providerSpec.AutomaticRestart,
+			OnHostMaintenance: r.providerSpec.OnHostMaintenance,
 		},
+	}
+
+	var guestAccelerators = []*compute.AcceleratorConfig{}
+
+	if l := len(r.providerSpec.GuestAccelerators); l == 1 {
+		guestAccelerators = append(guestAccelerators, &compute.AcceleratorConfig{
+			AcceleratorType:  fmt.Sprintf(acceleratorTypeFmt, zone, r.providerSpec.GuestAccelerators[0].AcceleratorType),
+			AcceleratorCount: r.providerSpec.GuestAccelerators[0].AcceleratorCount,
+		})
+	} else if l > 1 {
+		return machinecontroller.InvalidMachineConfiguration("More than one type of accelerator provided. Instances support only one accelerator type at a time.")
+	}
+
+	instance.GuestAccelerators = guestAccelerators
+
+	if err := r.validateGuestAccelerators(); err != nil {
+		return err
 	}
 
 	if instance.Labels == nil {
@@ -70,7 +182,7 @@ func (r *Reconciler) create() error {
 	for _, disk := range r.providerSpec.Disks {
 		srcImage := disk.Image
 		if !strings.Contains(disk.Image, "/") {
-			// only image name provided therfore defaulting to the current project
+			// only image name provided therefore defaulting to the current project
 			srcImage = googleapi.ResolveRelative(r.computeService.BasePath(), fmt.Sprintf("%s/global/images/%s", r.projectID, disk.Image))
 		}
 

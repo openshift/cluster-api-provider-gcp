@@ -2,11 +2,14 @@ package computeservice
 
 import (
 	"context"
+	"log"
+	"strings"
+
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
 
 	"github.com/openshift/cluster-api-provider-gcp/pkg/version"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
-	"google.golang.org/api/option"
 )
 
 // GCPComputeService is a pass through wrapper for google.golang.org/api/compute/v1/compute
@@ -22,6 +25,9 @@ type GCPComputeService interface {
 	TargetPoolsAddInstance(project string, region string, name string, instance string) (*compute.Operation, error)
 	TargetPoolsRemoveInstance(project string, region string, name string, instance string) (*compute.Operation, error)
 	MachineTypesGet(project string, machineType string, zone string) (*compute.MachineType, error)
+	RegionGet(project string, region string) (*compute.Region, error)
+	GPUCompatibleMachineTypesList(project string, zone string, ctx context.Context) (map[string]int64, []string)
+	AcceleratorTypeGet(project string, zone string, acceleratorType string) (*compute.AcceleratorType, error)
 }
 
 type computeService struct {
@@ -105,4 +111,34 @@ func (c *computeService) TargetPoolsRemoveInstance(project string, region string
 
 func (c *computeService) MachineTypesGet(project string, zone string, machineType string) (*compute.MachineType, error) {
 	return c.service.MachineTypes.Get(project, zone, machineType).Do()
+}
+
+// GPUCompatibleMachineTypesList function lists machineTypes available in the zone and return map of A2 family and slice of N1 family machineTypes
+func (c *computeService) GPUCompatibleMachineTypesList(project string, zone string, ctx context.Context) (map[string]int64, []string) {
+	req := c.service.MachineTypes.List(project, zone)
+	var (
+		a2MachineFamily = map[string]int64{}
+		n1MachineFamily []string
+	)
+	if err := req.Pages(ctx, func(page *compute.MachineTypeList) error {
+		for _, machineType := range page.Items {
+			if strings.HasPrefix(machineType.Name, "a2") {
+				a2MachineFamily[machineType.Name] = machineType.Accelerators[0].GuestAcceleratorCount
+			} else if strings.HasPrefix(machineType.Name, "n1") {
+				n1MachineFamily = append(n1MachineFamily, machineType.Name)
+			}
+		}
+		return nil
+	}); err != nil {
+		log.Fatal(err)
+	}
+	return a2MachineFamily, n1MachineFamily
+}
+
+func (c *computeService) AcceleratorTypeGet(project string, zone string, acceleratorType string) (*compute.AcceleratorType, error) {
+	return c.service.AcceleratorTypes.Get(project, zone, acceleratorType).Do()
+}
+
+func (c *computeService) RegionGet(project string, region string) (*compute.Region, error) {
+	return c.service.Regions.Get(project, region).Do()
 }

@@ -1,6 +1,8 @@
 package computeservice
 
 import (
+	"context"
+
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
 )
@@ -128,4 +130,15 @@ func MockBuilderFuncTypeNotFound(serviceAccountJSON string) (GCPComputeService, 
 		}
 	}
 	return computeSvc, nil
+}
+
+func (c *GCPComputeServiceMock) RegionGet(project string, region string) (*compute.Region, error) {
+	return nil, nil
+}
+
+func (c *GCPComputeServiceMock) GPUCompatibleMachineTypesList(project string, zone string, ctx context.Context) (map[string]int64, []string) {
+	return nil, nil
+}
+func (c *GCPComputeServiceMock) AcceleratorTypeGet(project string, zone string, acceleratorType string) (*compute.AcceleratorType, error) {
+	return nil, nil
 }

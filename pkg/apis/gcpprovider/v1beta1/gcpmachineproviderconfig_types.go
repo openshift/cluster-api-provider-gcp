@@ -22,22 +22,26 @@ type GCPMachineProviderSpec struct {
 	// CredentialsSecret is a reference to the secret with GCP credentials.
 	CredentialsSecret *corev1.LocalObjectReference `json:"credentialsSecret,omitempty"`
 
-	CanIPForward       bool                   `json:"canIPForward"`
-	DeletionProtection bool                   `json:"deletionProtection"`
-	Disks              []*GCPDisk             `json:"disks,omitempty"`
-	Labels             map[string]string      `json:"labels,omitempty"`
-	Metadata           []*GCPMetadata         `json:"gcpMetadata,omitempty"`
-	NetworkInterfaces  []*GCPNetworkInterface `json:"networkInterfaces,omitempty"`
-	ServiceAccounts    []GCPServiceAccount    `json:"serviceAccounts"`
-	Tags               []string               `json:"tags,omitempty"`
-	TargetPools        []string               `json:"targetPools,omitempty"`
-	MachineType        string                 `json:"machineType"`
-	Region             string                 `json:"region"`
-	Zone               string                 `json:"zone"`
-	ProjectID          string                 `json:"projectID,omitempty"`
+	CanIPForward       bool                    `json:"canIPForward"`
+	DeletionProtection bool                    `json:"deletionProtection"`
+	Disks              []*GCPDisk              `json:"disks,omitempty"`
+	Labels             map[string]string       `json:"labels,omitempty"`
+	Metadata           []*GCPMetadata          `json:"gcpMetadata,omitempty"`
+	NetworkInterfaces  []*GCPNetworkInterface  `json:"networkInterfaces,omitempty"`
+	ServiceAccounts    []GCPServiceAccount     `json:"serviceAccounts"`
+	Tags               []string                `json:"tags,omitempty"`
+	TargetPools        []string                `json:"targetPools,omitempty"`
+	MachineType        string                  `json:"machineType"`
+	Region             string                  `json:"region"`
+	Zone               string                  `json:"zone"`
+	ProjectID          string                  `json:"projectID,omitempty"`
+	GuestAccelerators  []*GCPAcceleratorConfig `json:"guestAccelerators,omitempty"`
 
 	// Preemptible indicates if created instance is preemptible
 	Preemptible bool `json:"preemptible,omitempty"`
+
+	OnHostMaintenance string `json:"onHostMaintenance,omitempty"`
+	AutomaticRestart  *bool  `json:"automaticRestart,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -103,4 +107,13 @@ type GCPKMSKeyReference struct {
 
 	// Location is the GCP location in which the Key Ring exists.
 	Location string `json:"location"`
+}
+
+// GCPAcceleratorConfig describes type and count of accelerator cards attached to the instance on GCP.
+type GCPAcceleratorConfig struct {
+	// AcceleratorCount is number of AcceleratorType accelerators (GPUs) to be attached to an instance
+	AcceleratorCount int64 `json:"acceleratorCount,omitempty"`
+	// AcceleratorType is the type of accelerator (GPU) to be attached to an instance.
+	// Supported accelerator types are: nvidia-tesla-k80, nvidia-tesla-p100, nvidia-tesla-v100, nvidia-tesla-a100, nvidia-tesla-p4, nvidia-tesla-t4
+	AcceleratorType string `json:"acceleratorType,omitempty"`
 }
