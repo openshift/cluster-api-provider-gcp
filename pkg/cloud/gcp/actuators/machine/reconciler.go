@@ -71,7 +71,7 @@ func (r *Reconciler) create() error {
 		srcImage := disk.Image
 		if !strings.Contains(disk.Image, "/") {
 			// only image name provided therfore defaulting to the current project
-			srcImage = googleapi.ResolveRelative(r.computeService.BasePath(), fmt.Sprintf("%s/global/images/%s", r.projectID, disk.Image))
+			srcImage = googleapi.ResolveRelative(r.computeService.BasePath(), fmt.Sprintf("projects/%s/global/images/%s", r.projectID, disk.Image))
 		}
 
 		disks = append(disks, &compute.AttachedDisk{
