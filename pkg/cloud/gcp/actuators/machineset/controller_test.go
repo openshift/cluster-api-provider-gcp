@@ -52,6 +52,16 @@ var mockMachineTypesFunc = func(_ string, _ string, machineType string) (*comput
 			GuestCpus: 16,
 			MemoryMb:  16384,
 		}, nil
+	case "a2-highgpu-2g":
+		return &compute.MachineType{
+			GuestCpus: 24,
+			MemoryMb:  174080,
+			Accelerators: []*compute.MachineTypeAccelerators{
+				{
+					GuestAcceleratorCount: 2,
+				},
+			},
+		}, nil
 	default:
 		return nil, fmt.Errorf("unknown machineType: %s", machineType)
 	}
@@ -145,6 +155,7 @@ var _ = Describe("Reconciler", func() {
 			expectedAnnotations: map[string]string{
 				cpuKey:    "2",
 				memoryKey: "7680",
+				gpuKey:    "0",
 			},
 			expectedEvents: []string{},
 		}),
@@ -154,6 +165,17 @@ var _ = Describe("Reconciler", func() {
 			expectedAnnotations: map[string]string{
 				cpuKey:    "16",
 				memoryKey: "16384",
+				gpuKey:    "0",
+			},
+			expectedEvents: []string{},
+		}),
+		Entry("with a a2-highgpu-2g", reconcileTestCase{
+			machineType:         "a2-highgpu-2g",
+			existingAnnotations: make(map[string]string),
+			expectedAnnotations: map[string]string{
+				cpuKey:    "24",
+				memoryKey: "174080",
+				gpuKey:    "2",
 			},
 			expectedEvents: []string{},
 		}),
@@ -168,6 +190,7 @@ var _ = Describe("Reconciler", func() {
 				"annother": "existingAnnotation",
 				cpuKey:     "2",
 				memoryKey:  "7680",
+				gpuKey:     "0",
 			},
 			expectedEvents: []string{},
 		}),
@@ -254,6 +277,7 @@ func TestReconcile(t *testing.T) {
 			expectedAnnotations: map[string]string{
 				cpuKey:    "2",
 				memoryKey: "7680",
+				gpuKey:    "0",
 			},
 			expectErr: false,
 		},
@@ -265,6 +289,19 @@ func TestReconcile(t *testing.T) {
 			expectedAnnotations: map[string]string{
 				cpuKey:    "16",
 				memoryKey: "16384",
+				gpuKey:    "0",
+			},
+			expectErr: false,
+		},
+		{
+			name:                "with a a2-highgpu-2g",
+			machineType:         "a2-highgpu-2g",
+			mockMachineTypesGet: mockMachineTypesFunc,
+			existingAnnotations: make(map[string]string),
+			expectedAnnotations: map[string]string{
+				cpuKey:    "24",
+				memoryKey: "174080",
+				gpuKey:    "2",
 			},
 			expectErr: false,
 		},
@@ -281,6 +318,7 @@ func TestReconcile(t *testing.T) {
 				"annother": "existingAnnotation",
 				cpuKey:     "2",
 				memoryKey:  "7680",
+				gpuKey:     "0",
 			},
 			expectErr: false,
 		},
