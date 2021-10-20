@@ -133,11 +133,12 @@ func MockBuilderFuncTypeNotFound(serviceAccountJSON string) (GCPComputeService, 
 }
 
 func (c *GCPComputeServiceMock) RegionGet(project string, region string) (*compute.Region, error) {
-	return nil, nil
+	return &compute.Region{Quotas: nil}, nil
 }
 
 func (c *GCPComputeServiceMock) GPUCompatibleMachineTypesList(project string, zone string, ctx context.Context) (map[string]int64, []string) {
-	return nil, nil
+	var compatibleMachineType = []string{"n1-test-machineType"}
+	return nil, compatibleMachineType
 }
 func (c *GCPComputeServiceMock) AcceleratorTypeGet(project string, zone string, acceleratorType string) (*compute.AcceleratorType, error) {
 	return nil, nil

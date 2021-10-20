@@ -123,6 +123,33 @@ func TestCreate(t *testing.T) {
 			},
 		},
 		{
+			name: "guestAccelerators are correctly passed to the api",
+			providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
+				Region:      "test-region",
+				Zone:        "test-zone",
+				MachineType: "n1-test-machineType",
+				GuestAccelerators: []*gcpv1beta1.GCPAcceleratorConfig{
+					{
+						AcceleratorType:  "nvidia-tesla-v100",
+						AcceleratorCount: 2,
+					},
+				},
+			},
+			validateInstance: func(t *testing.T, instance *compute.Instance) {
+				if len(instance.GuestAccelerators) != 1 {
+					return // to avoid index out of range error
+				}
+				expectedAcceleratorType := fmt.Sprintf("zones/%s/acceleratorTypes/%s", "test-zone", "nvidia-tesla-v100")
+				if instance.GuestAccelerators[0].AcceleratorType != expectedAcceleratorType {
+					t.Errorf("Expected AcceleratorType: %q, Got: %q", expectedAcceleratorType, instance.GuestAccelerators[0].AcceleratorType)
+				}
+				var expectedAcceleratorCount int64 = 2
+				if instance.GuestAccelerators[0].AcceleratorCount != expectedAcceleratorCount {
+					t.Errorf("Expected AcceleratorCount: %d, Got: %d", expectedAcceleratorCount, instance.GuestAccelerators[0].AcceleratorCount)
+				}
+			},
+		},
+		{
 			name: "Use projectID from ProviderSpec if not set in the NetworkInterface",
 			providerSpec: &gcpv1beta1.GCPMachineProviderSpec{
 				ProjectID: "project",
