@@ -107,13 +107,14 @@ var _ = Describe("Reconciler", func() {
 
 	type reconcileTestCase = struct {
 		machineType         string
+		guestAccelerators   []*machineproviderv1.GCPAcceleratorConfig
 		existingAnnotations map[string]string
 		expectedAnnotations map[string]string
 		expectedEvents      []string
 	}
 
 	DescribeTable("when reconciling MachineSets", func(rtc reconcileTestCase) {
-		machineSet, err := newTestMachineSet(namespace.Name, rtc.machineType, rtc.existingAnnotations)
+		machineSet, err := newTestMachineSet(namespace.Name, rtc.machineType, rtc.guestAccelerators, rtc.existingAnnotations)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(c.Create(ctx, machineSet)).To(Succeed())
@@ -156,6 +157,17 @@ var _ = Describe("Reconciler", func() {
 				cpuKey:    "2",
 				memoryKey: "7680",
 				gpuKey:    "0",
+			},
+			expectedEvents: []string{},
+		}),
+		Entry("with a n1-standard-2 and with guestAccelerators", reconcileTestCase{
+			machineType:         "n1-standard-2",
+			guestAccelerators:   []*machineproviderv1.GCPAcceleratorConfig{{AcceleratorType: "nvidia-tesla-p100", AcceleratorCount: 2}},
+			existingAnnotations: make(map[string]string),
+			expectedAnnotations: map[string]string{
+				cpuKey:    "2",
+				memoryKey: "7680",
+				gpuKey:    "2",
 			},
 			expectedEvents: []string{},
 		}),
@@ -242,6 +254,7 @@ func TestReconcile(t *testing.T) {
 	testCases := []struct {
 		name                string
 		machineType         string
+		guestAccelerators   []*machineproviderv1.GCPAcceleratorConfig
 		mockMachineTypesGet func(project string, zone string, machineType string) (*compute.MachineType, error)
 		existingAnnotations map[string]string
 		expectedAnnotations map[string]string
@@ -278,6 +291,19 @@ func TestReconcile(t *testing.T) {
 				cpuKey:    "2",
 				memoryKey: "7680",
 				gpuKey:    "0",
+			},
+			expectErr: false,
+		},
+		{
+			name:                "with a n1-standard-2and guestAccelerators",
+			machineType:         "n1-standard-2",
+			guestAccelerators:   []*machineproviderv1.GCPAcceleratorConfig{{AcceleratorType: "nvidia-tesla-p100", AcceleratorCount: 2}},
+			mockMachineTypesGet: mockMachineTypesFunc,
+			existingAnnotations: make(map[string]string),
+			expectedAnnotations: map[string]string{
+				cpuKey:    "2",
+				memoryKey: "7680",
+				gpuKey:    "2",
 			},
 			expectErr: false,
 		},
@@ -355,7 +381,7 @@ func TestReconcile(t *testing.T) {
 				},
 			}
 
-			machineSet, err := newTestMachineSet("default", tc.machineType, tc.existingAnnotations)
+			machineSet, err := newTestMachineSet("default", tc.machineType, tc.guestAccelerators, tc.existingAnnotations)
 			g.Expect(err).ToNot(HaveOccurred())
 
 			_, err = r.reconcile(machineSet)
@@ -365,7 +391,7 @@ func TestReconcile(t *testing.T) {
 	}
 }
 
-func newTestMachineSet(namespace string, machineType string, existingAnnotations map[string]string) (*machinev1.MachineSet, error) {
+func newTestMachineSet(namespace string, machineType string, guestAccelerators []*machineproviderv1.GCPAcceleratorConfig, existingAnnotations map[string]string) (*machinev1.MachineSet, error) {
 	// Copy anntotations map so we don't modify the input
 	annotations := make(map[string]string)
 	for k, v := range existingAnnotations {
@@ -373,7 +399,8 @@ func newTestMachineSet(namespace string, machineType string, existingAnnotations
 	}
 
 	machineProviderSpec := &machineproviderv1.GCPMachineProviderSpec{
-		MachineType: machineType,
+		MachineType:       machineType,
+		GuestAccelerators: guestAccelerators,
 	}
 	providerSpec, err := providerSpecFromMachine(machineProviderSpec)
 	if err != nil {

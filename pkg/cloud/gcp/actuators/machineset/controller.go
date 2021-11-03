@@ -157,17 +157,15 @@ func (r *Reconciler) reconcile(machineSet *machinev1.MachineSet) (ctrl.Result, e
 	machineSet.Annotations[cpuKey] = strconv.FormatInt(machineType.GuestCpus, 10)
 	machineSet.Annotations[memoryKey] = strconv.FormatInt(machineType.MemoryMb, 10)
 
-	if (len(providerConfig.GuestAccelerators)) == 0 {
-		if len(machineType.Accelerators) == 0 {
-			machineSet.Annotations[gpuKey] = strconv.FormatInt(0, 10)
-		} else {
-			// Accelerators will always be max size of 1
-			machineSet.Annotations[gpuKey] = strconv.FormatInt(machineType.Accelerators[0].GuestAcceleratorCount, 10)
-		}
-
-	} else {
+	switch {
+	case len(providerConfig.GuestAccelerators) > 0:
 		// Guest accelerators will always be max size of 1
 		machineSet.Annotations[gpuKey] = strconv.FormatInt(providerConfig.GuestAccelerators[0].AcceleratorCount, 10)
+	case len(machineType.Accelerators) > 0:
+		// Accelerators will always be max size of 1
+		machineSet.Annotations[gpuKey] = strconv.FormatInt(machineType.Accelerators[0].GuestAcceleratorCount, 10)
+	default:
+		machineSet.Annotations[gpuKey] = strconv.FormatInt(0, 10)
 	}
 
 	return ctrl.Result{}, nil
