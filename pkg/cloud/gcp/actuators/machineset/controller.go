@@ -39,6 +39,7 @@ const (
 	// https://github.com/openshift/enhancements/pull/186
 	cpuKey    = "machine.openshift.io/vCPU"
 	memoryKey = "machine.openshift.io/memoryMb"
+	gpuKey    = "machine.openshift.io/GPU"
 )
 
 // Reconciler reconciles machineSets.
@@ -155,6 +156,17 @@ func (r *Reconciler) reconcile(machineSet *machinev1.MachineSet) (ctrl.Result, e
 	// TODO: get annotations keys from machine API
 	machineSet.Annotations[cpuKey] = strconv.FormatInt(machineType.GuestCpus, 10)
 	machineSet.Annotations[memoryKey] = strconv.FormatInt(machineType.MemoryMb, 10)
+
+	switch {
+	case len(providerConfig.GuestAccelerators) > 0:
+		// Guest accelerators will always be max size of 1
+		machineSet.Annotations[gpuKey] = strconv.FormatInt(providerConfig.GuestAccelerators[0].AcceleratorCount, 10)
+	case len(machineType.Accelerators) > 0:
+		// Accelerators will always be max size of 1
+		machineSet.Annotations[gpuKey] = strconv.FormatInt(machineType.Accelerators[0].GuestAcceleratorCount, 10)
+	default:
+		machineSet.Annotations[gpuKey] = strconv.FormatInt(0, 10)
+	}
 
 	return ctrl.Result{}, nil
 }
