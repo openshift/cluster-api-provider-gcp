@@ -7,6 +7,7 @@ endif
 VERSION     ?= $(shell git describe --always --abbrev=7)
 REPO_PATH   ?= github.com/openshift/cluster-api-provider-gcp
 LD_FLAGS    ?= -X $(REPO_PATH)/pkg/version.Raw=$(VERSION) -extldflags -static
+BUILD_IMAGE ?= registry.ci.openshift.org/openshift/release:golang-1.17
 
 GO111MODULE = on
 export GO111MODULE
@@ -38,11 +39,11 @@ ifeq ($(USE_DOCKER), 1)
 endif
 
 ifeq ($(NO_DOCKER), 1)
-  DOCKER_CMD =
+  DOCKER_CMD = CGO_ENABLED=$(CGO_ENABLED) GOARCH=$(GOARCH) GOOS=$(GOOS)
   IMAGE_BUILD_CMD = imagebuilder
   export CGO_ENABLED
 else
-  DOCKER_CMD :=  $(ENGINE) run --rm -e CGO_ENABLED=0 -e GOARCH=$(GOARCH) -e GOOS=$(GOOS) -v "$(PWD)":/go/src/github.com/openshift/cluster-api-provider-gcp:Z -w /go/src/github.com/openshift/cluster-api-provider-gcp openshift/origin-release:golang-1.16
+  DOCKER_CMD :=  $(ENGINE) run --rm -e CGO_ENABLED=0 -e GOARCH=$(GOARCH) -e GOOS=$(GOOS) -v "$(PWD)":/go/src/github.com/openshift/cluster-api-provider-gcp:Z -w /go/src/github.com/openshift/cluster-api-provider-gcp $(BUILD_IMAGE)
   IMAGE_BUILD_CMD =  $(ENGINE) build
 endif
 
