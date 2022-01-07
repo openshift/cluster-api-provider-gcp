@@ -1,9 +1,14 @@
-component: "Cloud Compute"
-subcomponent: "Other Providers"
+# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
+
 approvers:
-  - enxebre
-  - michaelgugino
-  - alexander-demichev
-  - JoelSpeed
-  - Danil-Grigorev
-  - elmiko
+  - sig-cluster-lifecycle-leads
+  - sig-gcp-leads
+  - cluster-api-admins
+  - cluster-api-maintainers
+  - cluster-api-gcp-maintainers
+emeritus_approvers:
+  - roberthbailey
+
+reviewers:
+  - cluster-api-maintainers
+  - cluster-api-gcp-maintainers
