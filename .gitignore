@@ -4,16 +4,53 @@
 *.dll
 *.so
 *.dylib
+bin
 
 # Test binary, build with `go test -c`
 *.test
+_artifacts/
+test/e2e/config/gcp-ci-envsubst.yaml
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-bin/
-.gobincache/
+# Ansible
+*.retry
 
-# IDE configs
-.idea/
-.vscode/
+# vim
+*~
+*.swp
+
+# envfiles
+.env
+envfile
+
+# kubeconfigs
+kind.kubeconfig
+minikube.kubeconfig
+kubeconfig
+
+# Example and binary output directory
+/out
+
+# vscode
+.vscode
+
+# goland
+.idea
+
+# Ignore output manifests
+config/samples
+manager_image_patch.yaml-e
+manager_pull_policy.yaml-e
+
+# junit files
+junit.*.xml
+
+.DS_Store
+
+# Tilt files.
+.tiltbuild
+/tilt.d
+tilt-settings.json
+tilt_config.json
