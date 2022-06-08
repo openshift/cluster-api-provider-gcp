@@ -1,4 +1,4 @@
-<p align="center"><img alt="capi" src="https://github.com/kubernetes-sigs/cluster-api/raw/main/docs/book/src/images/introduction.png" width="160x" /><img alt="capi" src="https://cloud.google.com/_static/cloud/images/favicons/onecloud/super_cloud.png" width="192x" /></p>
+<p align="center"><img alt="capi" src="https://github.com/kubernetes-sigs/cluster-api/raw/main/docs/book/src/images/introduction.svg" width="160x" /><img alt="capi" src="https://cloud.google.com/_static/cloud/images/favicons/onecloud/super_cloud.png" width="192x" /></p>
 <p align="center"><a href="https://prow.k8s.io/?job=ci-cluster-api-provider-gcp-build">
 <!-- prow build badge, godoc, and go report card-->
 <img alt="Build Status" src="https://prow.k8s.io/badge.svg?jobs=ci-cluster-api-provider-gcp">
@@ -25,26 +25,26 @@ on Google Cloud Platform using Cluster API.
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-|  | Cluster API `v1alpha2` (`v0.2.x`) | Cluster API `v1alpha3` (`v0.3.x`) | Cluster API `v1alpha4` (`v0.4.x`) |
+|  | Cluster API `v1alpha3` (`v0.3.x`) | Cluster API `v1alpha4` (`v0.4.x`) | Cluster API `v1beta1` (`v1.0.x`) |
 |---|---|---|---|
-|Google Cloud Provider `v0.2.x` | ✓ |  |  |
-|Google Cloud Provider `v0.3.x` |  | ✓ |  |
-|Google Cloud Provider `v0.4.x` |  |  | ✓ |
+|Google Cloud Provider `v0.3.x` | ✓ |  |  |
+|Google Cloud Provider `v0.4.x` |  | ✓ |  |
+|Google Cloud Provider `v1.0.x` |  |  | ✓ |
 
 This provider's versions are able to install and manage the following versions of Kubernetes:
 
-|  | Google Cloud Provider `v0.2.x` | Google Cloud Provider `v0.3.x` | Google Cloud Provider `v0.4.x` |
+|  | Google Cloud Provider `v0.3.x` | Google Cloud Provider `v0.4.x` | Google Cloud Provider `v1.0.x` |
 |---|:---:|:---:|:---:|
-| Kubernetes 1.15 | ✓ |  |  |
-| Kubernetes 1.16 | ✓ | ✓ |  |
-| Kubernetes 1.17 |  | ✓ |  |
-| Kubernetes 1.18 |  | ✓ | ✓ |
-| Kubernetes 1.19 |  | ✓ | ✓ |
-| Kubernetes 1.20 |  | ✓ | ✓ |
+| Kubernetes 1.15 |  |  |  |
+| Kubernetes 1.16 | ✓ |  |  |
+| Kubernetes 1.17 | ✓ | ✓ |  |
+| Kubernetes 1.18 | ✓ | ✓ | ✓ |
+| Kubernetes 1.19 | ✓ | ✓ | ✓ |
+| Kubernetes 1.20 | ✓ | ✓ | ✓ |
 | Kubernetes 1.21 |  | ✓ | ✓ |
 | Kubernetes 1.22 |  |  | ✓ |
  
-Each version of Cluster API for Google Cloud will attempt to support atleast two version of Kubernetes versions e.g., Cluster API for GCP `v0.1` may support Kubernetes 1.13 and Kubernetes 1.14.
+Each version of Cluster API for Google Cloud will attempt to support at least two versions of Kubernetes e.g., Cluster API for GCP `v0.1` may support Kubernetes 1.13 and Kubernetes 1.14.
 
 **NOTE:** As the versioning for this project is tied to the versioning of Cluster API, future modifications to this policy may be made to more closely align with other providers in the Cluster API ecosystem. 
 
@@ -52,21 +52,21 @@ Each version of Cluster API for Google Cloud will attempt to support atleast two
 
 ## Documentation
 
-Presently our docs can be found [here](https://github.com/kubernetes-sigs/cluster-api-provider-gcp/tree/main/docs).
+Presently, our docs can be found [here](https://github.com/kubernetes-sigs/cluster-api-provider-gcp/tree/main/docs).
 
 ## Getting Involved and Contributing
 
 Are you interested in contributing to cluster-api-provider-gcp? We, the maintainers 
-and the community, would love your suggestions, support and contributions! The maintainers
+and the community would love your suggestions, support and contributions! The maintainers
 of the project can be contacted anytime to learn about how to get involved.
 
 Before starting with the contribution, please go through [prerequisites] of the project.
 
-To set up the development environement checkout the [development guide].
+To set up the development environment, checkout the [development guide].
 
-In the interest of getting new people involved we have issues marked as [`good first issue`][good_first_issue]. Although
-this issues have a smaller scope but are very helpful in getting acquainted with the codebase.
-For more see the [issue tracker]. If you're unsure where to start, feel free to reach out to discuss.
+In the interest of getting new people involved, we have issues marked as [`good first issue`][good_first_issue]. Although
+these issues have a smaller scope but are very helpful in getting acquainted with the codebase.
+For more, see the [issue tracker]. If you're unsure where to start, feel free to reach out to discuss.
 
 See also: Our own [contributor guide] and the Kubernetes [community page].
 
@@ -91,23 +91,23 @@ Please check in with us in the [#cluster-api-gcp] on Slack.
 
 ### Bugs
 
-If you think you have found a bug please follow the instruction below.
+If you think you have found a bug, please follow the instruction below.
 
 - Please give a small amount of time giving due diligence to the issue tracker. Your issue might be a duplicate.
 - Get the logs from the custom controllers and please paste them in the issue.
 - Open a [bug report].
-- Remember users might be searching the issue in future, so please make sure to give it a meaningful title to help others.
+- Remember users might be searching for the issue in the future, so please make sure to give it a meaningful title to help others.
 - Feel free to reach out to the community on slack.
 
 ### Tracking new feature
 
-We also have a issue tracker to track features. If you think you have a feature idea, that could make Cluster API provider GCP become even more awesome, then follow these steps.
+We also have an issue tracker to track features. If you think you have a feature idea, that could make Cluster API provider GCP become even more awesome, then follow these steps.
 
 - Open a [feature request].
-- Remember users might be searching for the issue in future, so please make sure to give it a meaningful title to help others.
+- Remember users might be searching for the issue in the future, so please make sure to give it a meaningful title to help others.
 - Clearly define the use case with concrete examples. Example: type `this` and cluster-api-provider-gcp does `that`.
-- Some of our larger features will require some design. If you would like to include a techincal design to your feature, please go ahead.
-- After the new feature is well understood, and the design is agreed upon we can start coding the feature. We would love for you to code it. So please open up a **WIP** *(work in progress)* PR and happy coding!
+- Some of our larger features will require some design. If you would like to include a technical design in your feature, please go ahead.
+- After the new feature is well understood and the design is agreed upon, we can start coding the feature. We would love for you to code it. So please open up a **WIP** *(work in progress)* PR and happy coding!
 
 ### Code of conduct
 
@@ -126,4 +126,4 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [#cluster-api-gcp]: https://sigs.k8s.io/cluster-api-provider-gcp
 [bug report]: https://github.com/kubernetes-sigs/cluster-api-provider-gcp/issues/new?assignees=&labels=&template=bug_report.md
 [feature request]: https://github.com/kubernetes-sigs/cluster-api-provider-gcp/issues/new?assignees=&labels=&template=feature_request.md
-[kubernetes discuss]: https://discuss.kubernetes.io/c/contributors/cluster-api
+[kubernetes discuss]: https://groups.google.com/forum/#!forum/kubernetes-sig-cluster-lifecycle
