@@ -32,10 +32,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/yaml"
+
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/ginkgoextensions"
 	"sigs.k8s.io/cluster-api/test/infrastructure/container"
-	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -176,6 +177,7 @@ func Run(ctx context.Context, input RunInput) error {
 	if err != nil {
 		return errors.Wrap(err, "Unable to run conformance tests")
 	}
+	ctx = container.RuntimeInto(ctx, containerRuntime)
 
 	err = containerRuntime.RunContainer(ctx, &container.RunContainerInput{
 		Image:           input.ConformanceImage,
@@ -201,7 +203,7 @@ func (c kubetestConfig) toFlags() []string {
 
 func parseKubetestConfig(kubetestConfigFile string) (kubetestConfig, error) {
 	conf := make(kubetestConfig)
-	data, err := os.ReadFile(kubetestConfigFile)
+	data, err := os.ReadFile(kubetestConfigFile) //nolint:gosec
 	if err != nil {
 		return nil, fmt.Errorf("unable to read kubetest config file %s: %w", kubetestConfigFile, err)
 	}

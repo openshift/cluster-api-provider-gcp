@@ -19,21 +19,24 @@
 #  This program runs the e2e tests.
 ################################################################################
 
+set -o errexit
 set -o nounset
 set -o pipefail
 
+# install kubectl
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-cd "${REPO_ROOT}" || exit 1
+KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
+cd "${REPO_ROOT}" && make "${KUBECTL##*/}"
 
-# shellcheck source=../hack/ensure-go.sh
+# shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
-# shellcheck source=../hack/ensure-kind.sh
+# shellcheck source=hack/ensure-kind.sh
 source "${REPO_ROOT}/hack/ensure-kind.sh"
-# shellcheck source=../hack/ensure-kubectl.sh
-source "${REPO_ROOT}/hack/ensure-kubectl.sh"
-# shellcheck source=../hack/ensure-kustomize.sh
+# shellcheck source=hack/ensure-kustomize.sh
 source "${REPO_ROOT}/hack/ensure-kustomize.sh"
 
+# Configure e2e tests
+export GINKGO_NODES=3
 ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 mkdir -p "${ARTIFACTS}/logs/"
 
@@ -43,10 +46,11 @@ mkdir -p "${ARTIFACTS}/logs/"
 export GCP_REGION=${GCP_REGION:-"us-east4"}
 export TEST_NAME=${CLUSTER_NAME:-"capg-${RANDOM}"}
 export GCP_NETWORK_NAME=${GCP_NETWORK_NAME:-"${TEST_NAME}-mynetwork"}
-export GCP_B64ENCODED_CREDENTIALS=$(base64 -w0 "$GOOGLE_APPLICATION_CREDENTIALS")
+GCP_B64ENCODED_CREDENTIALS=$(base64 "$GOOGLE_APPLICATION_CREDENTIALS" | tr -d '\n')
+export GCP_B64ENCODED_CREDENTIALS
 export KUBERNETES_MAJOR_VERSION="1"
-export KUBERNETES_MINOR_VERSION="20"
-export KUBERNETES_PATCH_VERSION="9"
+export KUBERNETES_MINOR_VERSION="23"
+export KUBERNETES_PATCH_VERSION="6"
 export KUBERNETES_VERSION="v${KUBERNETES_MAJOR_VERSION}.${KUBERNETES_MINOR_VERSION}.${KUBERNETES_PATCH_VERSION}"
 # using prebuilt image from image-builder project the image is built everyday and the job is available here https://prow.k8s.io/?job=periodic-image-builder-gcp-all-nightly
 export IMAGE_ID="projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-1804-${KUBERNETES_VERSION//[.+]/-}-nightly"
@@ -222,6 +226,7 @@ main() {
     # run the heart beat process to tell boskos that we are still
     # using the checked out account periodically
     python -u hack/heartbeat_account.py >> "$ARTIFACTS/logs/boskos.log" 2>&1 &
+    # shellcheck disable=SC2116
     HEART_BEAT_PID=$(echo $!)
   fi
 
@@ -275,7 +280,7 @@ EOF
   echo "${test_status}"
 
   # If Boskos is being used then release the GCP project back to Boskos.
-  [ -z "${BOSKOS_HOST:-}" ] || hack/checkin_account.py >> $ARTIFACTS/logs/boskos.log 2>&1
+  [ -z "${BOSKOS_HOST:-}" ] || hack/checkin_account.py >> "$ARTIFACTS/logs/boskos.log" 2>&1
 }
 
 main "$@"

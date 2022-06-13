@@ -52,6 +52,13 @@ func (tp *SimpleProcessor) GetTemplateName(_, flavor string) string {
 	return name
 }
 
+// GetClusterClassTemplateName returns the name of the cluster class template
+// that the simple processor uses. It follows the cluster class template naming convention
+// of "clusterclass<-name>.yaml".
+func (tp *SimpleProcessor) GetClusterClassTemplateName(_, name string) string {
+	return fmt.Sprintf("clusterclass-%s.yaml", name)
+}
+
 // GetVariables returns a list of the variables specified in the yaml.
 func (tp *SimpleProcessor) GetVariables(rawArtifact []byte) ([]string, error) {
 	variables, err := tp.GetVariableMap(rawArtifact)
@@ -102,7 +109,7 @@ func (tp *SimpleProcessor) Process(rawArtifact []byte, variablesClient func(stri
 		_, err := variablesClient(name)
 		// add to missingVariables list if the variable does not exist in the
 		// variablesClient AND it does not have a default value
-		if err != nil && len(defaultValue) == 0 {
+		if err != nil && defaultValue == "" {
 			missingVariables = append(missingVariables, name)
 			continue
 		}

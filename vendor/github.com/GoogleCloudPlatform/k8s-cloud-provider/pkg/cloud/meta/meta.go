@@ -127,6 +127,8 @@ var AllServices = []*ServiceInfo{
 			"Patch",
 			"Update",
 			"SetSecurityPolicy",
+			"AddSignedUrlKey",
+			"DeleteSignedUrlKey",
 		},
 		options: AggregatedList,
 	},
@@ -140,6 +142,8 @@ var AllServices = []*ServiceInfo{
 		additionalMethods: []string{
 			"Update",
 			"SetSecurityPolicy",
+			"AddSignedUrlKey",
+			"DeleteSignedUrlKey",
 		},
 		options: AggregatedList,
 	},
@@ -153,6 +157,8 @@ var AllServices = []*ServiceInfo{
 		additionalMethods: []string{
 			"Update",
 			"SetSecurityPolicy",
+			"AddSignedUrlKey",
+			"DeleteSignedUrlKey",
 		},
 		options: AggregatedList,
 	},
@@ -682,6 +688,17 @@ var AllServices = []*ServiceInfo{
 			"Patch",
 			"PatchRule",
 			"RemoveRule",
+		},
+	},
+	{
+		Object:      "ServiceAttachment",
+		Service:     "ServiceAttachments",
+		Resource:    "serviceAttachments",
+		version:     VersionGA,
+		keyType:     Regional,
+		serviceType: reflect.TypeOf(&ga.ServiceAttachmentsService{}),
+		additionalMethods: []string{
+			"Patch",
 		},
 	},
 	{

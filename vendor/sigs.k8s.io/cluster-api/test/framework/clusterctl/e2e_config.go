@@ -23,20 +23,21 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	. "github.com/onsi/gomega"
-
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/yaml"
+
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	clusterctlconfig "sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/yaml"
 )
 
 // Provides access to the configuration for an e2e test.
@@ -274,8 +275,10 @@ func (c *E2EConfig) Defaults() {
 			}
 		}
 	}
+	imageReplacer := strings.NewReplacer("{OS}", runtime.GOOS, "{ARCH}", runtime.GOARCH)
 	for i := range c.Images {
 		containerImage := &c.Images[i]
+		containerImage.Name = imageReplacer.Replace(containerImage.Name)
 		if containerImage.LoadBehavior == "" {
 			containerImage.LoadBehavior = MustLoadImage
 		}

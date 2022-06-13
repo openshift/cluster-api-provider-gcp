@@ -19,11 +19,8 @@ set -o nounset
 set -o pipefail
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-# shellcheck source=../hack/ensure-go.sh
+# shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
 
 cd "${REPO_ROOT}" && \
-	source ./scripts/fetch_ext_bins.sh && \
-	fetch_tools && \
-	setup_envs && \
-	make generate test
+	make test-junit

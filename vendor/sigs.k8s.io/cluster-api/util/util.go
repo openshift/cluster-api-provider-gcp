@@ -32,17 +32,21 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	k8sversion "k8s.io/apimachinery/pkg/version"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/annotations"
 )
 
 const (
@@ -217,6 +221,34 @@ func ClusterToInfrastructureMapFunc(gvk schema.GroupVersionKind) handler.MapFunc
 				},
 			},
 		}
+	}
+}
+
+// ClusterToInfrastructureMapFuncWithExternallyManagedCheck is like ClusterToInfrastructureMapFunc but will exclude externally managed infrastructures from the mapping.
+// We will update  ClusterToInfrastructureMapFunc to include this check in an upcoming release but defer that for now as adjusting the signature is a breaking change.
+func ClusterToInfrastructureMapFuncWithExternallyManagedCheck(ctx context.Context, gvk schema.GroupVersionKind, c client.Client, providerCluster client.Object) handler.MapFunc {
+	baseMapper := ClusterToInfrastructureMapFunc(gvk)
+	log := ctrl.LoggerFrom(ctx)
+	return func(o client.Object) []reconcile.Request {
+		var result []reconcile.Request
+		for _, request := range baseMapper(o) {
+			providerCluster := providerCluster.DeepCopyObject().(client.Object)
+			key := types.NamespacedName{Namespace: request.Namespace, Name: request.Name}
+
+			if err := c.Get(ctx, key, providerCluster); err != nil {
+				log.V(4).Error(err, fmt.Sprintf("Failed to get %T", providerCluster))
+				continue
+			}
+
+			if annotations.IsExternallyManaged(providerCluster) {
+				log.V(4).Info(fmt.Sprintf("%T is externally managed, skipping mapping", providerCluster))
+				continue
+			}
+
+			result = append(result, request)
+		}
+
+		return result
 	}
 }
 
@@ -431,7 +463,7 @@ func GetGVKMetadata(ctx context.Context, c client.Client, gvk schema.GroupVersio
 // GetCRDWithContract retrieves a list of CustomResourceDefinitions from using controller-runtime Client,
 // filtering with the `contract` label passed in.
 // Returns the first CRD in the list that matches the GroupVersionKind, otherwise returns an error.
-func GetCRDWithContract(ctx context.Context, c client.Client, gvk schema.GroupVersionKind, contract string) (*apiextensionsv1.CustomResourceDefinition, error) {
+func GetCRDWithContract(ctx context.Context, c client.Reader, gvk schema.GroupVersionKind, contract string) (*apiextensionsv1.CustomResourceDefinition, error) {
 	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
 	for {
 		if err := c.List(ctx, crdList, client.Continue(crdList.Continue), client.HasLabels{contract}); err != nil {
@@ -489,15 +521,30 @@ func ClusterToObjectsMapper(c client.Client, ro client.ObjectList, scheme *runti
 		return nil, err
 	}
 
+	isNamespaced, err := isAPINamespaced(gvk, c.RESTMapper())
+	if err != nil {
+		return nil, err
+	}
+
 	return func(o client.Object) []ctrl.Request {
 		cluster, ok := o.(*clusterv1.Cluster)
 		if !ok {
 			return nil
 		}
 
+		listOpts := []client.ListOption{
+			client.MatchingLabels{
+				clusterv1.ClusterLabelName: cluster.Name,
+			},
+		}
+
+		if isNamespaced {
+			listOpts = append(listOpts, client.InNamespace(cluster.Namespace))
+		}
+
 		list := &unstructured.UnstructuredList{}
 		list.SetGroupVersionKind(gvk)
-		if err := c.List(context.TODO(), list, client.MatchingLabels{clusterv1.ClusterLabelName: cluster.Name}); err != nil {
+		if err := c.List(context.TODO(), list, listOpts...); err != nil {
 			return nil
 		}
 
@@ -509,6 +556,23 @@ func ClusterToObjectsMapper(c client.Client, ro client.ObjectList, scheme *runti
 		}
 		return results
 	}, nil
+}
+
+// isAPINamespaced detects if a GroupVersionKind is namespaced.
+func isAPINamespaced(gk schema.GroupVersionKind, restmapper meta.RESTMapper) (bool, error) {
+	restMapping, err := restmapper.RESTMapping(schema.GroupKind{Group: gk.Group, Kind: gk.Kind})
+	if err != nil {
+		return false, fmt.Errorf("failed to get restmapping: %w", err)
+	}
+
+	switch restMapping.Scope.Name() {
+	case "":
+		return false, errors.New("Scope cannot be identified. Empty scope returned")
+	case meta.RESTScopeNameRoot:
+		return false, nil
+	default:
+		return true, nil
+	}
 }
 
 // ObjectReferenceToUnstructured converts an object reference to an unstructured object.

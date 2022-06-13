@@ -31,7 +31,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
 )
@@ -42,7 +41,7 @@ var _ = Describe("Workload cluster creation", func() {
 		specName            = "create-workload-cluster"
 		namespace           *corev1.Namespace
 		cancelWatches       context.CancelFunc
-		cluster             *clusterv1.Cluster
+		result              *clusterctl.ApplyClusterTemplateAndWaitResult
 		clusterName         string
 		clusterctlLogFolder string
 	)
@@ -60,18 +59,30 @@ var _ = Describe("Workload cluster creation", func() {
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
 		namespace, cancelWatches = setupSpecNamespace(ctx, specName, bootstrapClusterProxy, artifactFolder)
 
+		result = new(clusterctl.ApplyClusterTemplateAndWaitResult)
+
 		// We need to override clusterctl apply log folder to avoid getting our credentials exposed.
 		clusterctlLogFolder = filepath.Join(os.TempDir(), "clusters", bootstrapClusterProxy.GetName())
 	})
 
 	AfterEach(func() {
-		dumpSpecResourcesAndCleanup(ctx, specName, bootstrapClusterProxy, artifactFolder, namespace, cancelWatches, cluster, e2eConfig.GetIntervals, clusterName, clusterctlLogFolder, skipCleanup)
+		cleanInput := cleanupInput{
+			SpecName:        specName,
+			Cluster:         result.Cluster,
+			ClusterProxy:    bootstrapClusterProxy,
+			Namespace:       namespace,
+			CancelWatches:   cancelWatches,
+			IntervalsGetter: e2eConfig.GetIntervals,
+			SkipCleanup:     skipCleanup,
+			ArtifactFolder:  artifactFolder,
+		}
+
+		dumpSpecResourcesAndCleanup(ctx, cleanInput)
 	})
 
 	Context("Creating a single control-plane cluster", func() {
 		It("Should create a cluster with 1 worker node and can be scaled", func() {
 			By("Initializes with 1 worker node")
-			result := &clusterctl.ApplyClusterTemplateAndWaitResult{}
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -90,10 +101,8 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			}, result)
-			cluster = result.Cluster
 
 			By("Scaling worker node to 3")
-			result = &clusterctl.ApplyClusterTemplateAndWaitResult{}
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -112,14 +121,12 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			}, result)
-			cluster = result.Cluster
 		})
 	})
 
 	Context("Creating a highly available control-plane cluster", func() {
 		It("Should create a cluster with 3 control-plane and 2 worker nodes", func() {
 			By("Creating a high available cluster")
-			result := &clusterctl.ApplyClusterTemplateAndWaitResult{}
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 				ClusterProxy: bootstrapClusterProxy,
 				ConfigCluster: clusterctl.ConfigClusterInput{
@@ -138,7 +145,6 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
 			}, result)
-			cluster = result.Cluster
 		})
 	})
 })

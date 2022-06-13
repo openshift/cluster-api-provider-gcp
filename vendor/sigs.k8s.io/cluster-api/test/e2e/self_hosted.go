@@ -18,16 +18,17 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/e2e/internal/log"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -47,6 +48,7 @@ type SelfHostedSpecInput struct {
 }
 
 // SelfHostedSpec implements a test that verifies Cluster API creating a cluster, pivoting to a self-hosted cluster.
+// NOTE: This test works with Clusters with and without ClusterClass.
 func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput) {
 	var (
 		specName         = "self-hosted"
@@ -99,11 +101,28 @@ func SelfHostedSpec(ctx context.Context, inputGetter func() SelfHostedSpecInput)
 
 		By("Turning the workload cluster into a management cluster")
 
-		// In case of the cluster id a DockerCluster, we should load controller images into the nodes.
+		// In case the cluster is a DockerCluster, we should load controller images into the nodes.
 		// Nb. this can be achieved also by changing the DockerMachine spec, but for the time being we are using
 		// this approach because this allows to have a single source of truth for images, the e2e config
+		// Nb. If the cluster is a managed topology cluster.Spec.InfrastructureRef will be nil till
+		// the cluster object is reconciled. Therefore, we always try to fetch the reconciled cluster object from
+		// the server to check if it is a DockerCluster.
 		cluster := clusterResources.Cluster
-		if cluster.Spec.InfrastructureRef.Kind == "DockerCluster" {
+		isDockerCluster := false
+		Eventually(func() error {
+			c := input.BootstrapClusterProxy.GetClient()
+			tmpCluster := &clusterv1.Cluster{}
+			if err := c.Get(ctx, client.ObjectKey{Name: cluster.Name, Namespace: cluster.Namespace}, tmpCluster); err != nil {
+				return err
+			}
+			if tmpCluster.Spec.InfrastructureRef != nil {
+				isDockerCluster = tmpCluster.Spec.InfrastructureRef.Kind == "DockerCluster"
+				return nil
+			}
+			return errors.New("cluster object not yet reconciled")
+		}, "1m", "5s").Should(Succeed())
+
+		if isDockerCluster {
 			Expect(bootstrap.LoadImagesToKindCluster(ctx, bootstrap.LoadImagesToKindClusterInput{
 				Name:   cluster.Name,
 				Images: input.E2EConfig.Images,

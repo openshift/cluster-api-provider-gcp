@@ -20,15 +20,19 @@ package yamlprocessor
 // Processor defines the methods necessary for creating a specific yaml
 // processor.
 type Processor interface {
-	// GetTemplateName returns the name of the template that needs to be
+	// GetTemplateName returns the file name of the template that needs to be
 	// retrieved from the source.
 	GetTemplateName(version, flavor string) string
+
+	// GetClusterClassTemplateName returns the file name of the cluster class
+	// template that needs to be retrieved from the source.
+	GetClusterClassTemplateName(version, name string) string
 
 	// GetVariables parses the template blob of bytes and provides a
 	// list of variables that the template uses.
 	GetVariables([]byte) ([]string, error)
 
-	// GetVariables parses the template blob of bytes and provides a
+	// GetVariableMap parses the template blob of bytes and provides a
 	// map of variables that the template uses with their default values.
 	GetVariableMap([]byte) (map[string]*string, error)
 

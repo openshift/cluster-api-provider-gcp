@@ -23,6 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/util/homedir"
+
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 )
 
@@ -66,7 +67,7 @@ func newOverride(o *newOverrideInput) Overrider {
 func (o *overrides) Path() string {
 	basepath := filepath.Join(homedir.HomeDir(), config.ConfigFolder, overrideFolder)
 	f, err := o.configVariablesClient.Get(overrideFolderKey)
-	if err == nil && len(strings.TrimSpace(f)) != 0 {
+	if err == nil && strings.TrimSpace(f) != "" {
 		basepath = f
 	}
 
@@ -85,7 +86,7 @@ func getLocalOverride(info *newOverrideInput) ([]byte, error) {
 	// it the local override exists, use it
 	_, err := os.Stat(overridePath)
 	if err == nil {
-		content, err := os.ReadFile(overridePath)
+		content, err := os.ReadFile(overridePath) //nolint:gosec
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to read local override for %s", overridePath)
 		}

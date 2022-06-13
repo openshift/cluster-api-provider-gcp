@@ -26,16 +26,16 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // GetCAPIResourcesInput is the input for GetCAPIResources.
@@ -81,8 +81,9 @@ func getClusterAPITypes(ctx context.Context, lister Lister) []metav1.TypeMeta {
 	discoveredTypes := []metav1.TypeMeta{}
 
 	crdList := &apiextensionsv1.CustomResourceDefinitionList{}
-	err := lister.List(ctx, crdList, capiProviderOptions()...)
-	Expect(err).ToNot(HaveOccurred(), "failed to list CRDs for CAPI providers")
+	Eventually(func() error {
+		return lister.List(ctx, crdList, capiProviderOptions()...)
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "failed to list CRDs for CAPI providers")
 
 	for _, crd := range crdList.Items {
 		for _, version := range crd.Spec.Versions {

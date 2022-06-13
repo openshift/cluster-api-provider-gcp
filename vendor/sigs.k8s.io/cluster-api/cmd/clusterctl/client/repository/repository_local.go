@@ -23,10 +23,10 @@ import (
 	"runtime"
 	"strings"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/version"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 )
 
@@ -103,7 +103,7 @@ func (r *localRepository) GetFile(version, fileName string) ([]byte, error) {
 	if f.IsDir() {
 		return nil, errors.Errorf("invalid path: file %q is actually a directory %q", fileName, absolutePath)
 	}
-	content, err := os.ReadFile(absolutePath)
+	content, err := os.ReadFile(absolutePath) //nolint:gosec
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read file %q from local release %s", absolutePath, version)
 	}

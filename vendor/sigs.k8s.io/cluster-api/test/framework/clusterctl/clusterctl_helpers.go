@@ -26,7 +26,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	expv1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/internal/log"
 )
@@ -198,10 +198,11 @@ type ControlPlaneWaiters struct {
 
 // ApplyClusterTemplateAndWaitResult is the output type for ApplyClusterTemplateAndWait.
 type ApplyClusterTemplateAndWaitResult struct {
+	ClusterClass       *clusterv1.ClusterClass
 	Cluster            *clusterv1.Cluster
 	ControlPlane       *controlplanev1.KubeadmControlPlane
 	MachineDeployments []*clusterv1.MachineDeployment
-	MachinePools       []*clusterv1exp.MachinePool
+	MachinePools       []*expv1.MachinePool
 }
 
 // ExpectedWorkerNodes returns the expected number of worker nodes that will
@@ -278,6 +279,14 @@ func ApplyClusterTemplateAndWait(ctx context.Context, input ApplyClusterTemplate
 		Name:      input.ConfigCluster.ClusterName,
 	}, input.WaitForClusterIntervals...)
 
+	if result.Cluster.Spec.Topology != nil {
+		result.ClusterClass = framework.GetClusterClassByName(ctx, framework.GetClusterClassByNameInput{
+			Getter:    input.ClusterProxy.GetClient(),
+			Namespace: input.ConfigCluster.Namespace,
+			Name:      result.Cluster.Spec.Topology.Class,
+		})
+	}
+
 	log.Logf("Waiting for control plane to be initialized")
 	input.WaitForControlPlaneInitialized(ctx, input, result)
 
@@ -305,7 +314,7 @@ func ApplyClusterTemplateAndWait(ctx context.Context, input ApplyClusterTemplate
 		Getter:  input.ClusterProxy.GetClient(),
 		Lister:  input.ClusterProxy.GetClient(),
 		Cluster: result.Cluster,
-	}, input.WaitForMachineDeployments...)
+	}, input.WaitForMachinePools...)
 }
 
 // setDefaults sets the default values for ApplyClusterTemplateAndWaitInput if not set.

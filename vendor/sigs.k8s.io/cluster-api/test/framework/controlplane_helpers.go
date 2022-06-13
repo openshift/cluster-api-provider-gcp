@@ -21,16 +21,18 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 	"sigs.k8s.io/cluster-api/test/framework/internal/log"
 	"sigs.k8s.io/cluster-api/util/patch"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // CreateKubeadmControlPlaneInput is the input for CreateKubeadmControlPlane.
@@ -43,7 +45,9 @@ type CreateKubeadmControlPlaneInput struct {
 // CreateKubeadmControlPlane creates the control plane object and necessary dependencies.
 func CreateKubeadmControlPlane(ctx context.Context, input CreateKubeadmControlPlaneInput, intervals ...interface{}) {
 	By("creating the machine template")
-	Expect(input.Creator.Create(ctx, input.MachineTemplate)).To(Succeed())
+	Eventually(func() error {
+		return input.Creator.Create(ctx, input.MachineTemplate)
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
 
 	By("creating a KubeadmControlPlane")
 	Eventually(func() error {
@@ -67,7 +71,9 @@ type GetKubeadmControlPlaneByClusterInput struct {
 // it is necessary to ensure this is already happened before calling it.
 func GetKubeadmControlPlaneByCluster(ctx context.Context, input GetKubeadmControlPlaneByClusterInput) *controlplanev1.KubeadmControlPlane {
 	controlPlaneList := &controlplanev1.KubeadmControlPlaneList{}
-	Expect(input.Lister.List(ctx, controlPlaneList, byClusterOptions(input.ClusterName, input.Namespace)...)).To(Succeed(), "Failed to list KubeadmControlPlane object for Cluster %s/%s", input.Namespace, input.ClusterName)
+	Eventually(func() error {
+		return input.Lister.List(ctx, controlPlaneList, byClusterOptions(input.ClusterName, input.Namespace)...)
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to list KubeadmControlPlane object for Cluster %s/%s", input.Namespace, input.ClusterName)
 	Expect(len(controlPlaneList.Items)).ToNot(BeNumerically(">", 1), "Cluster %s/%s should not have more than 1 KubeadmControlPlane object", input.Namespace, input.ClusterName)
 	if len(controlPlaneList.Items) == 1 {
 		return &controlPlaneList.Items[0]
@@ -154,17 +160,21 @@ type WaitForControlPlaneToBeReadyInput struct {
 // WaitForControlPlaneToBeReady will wait for a control plane to be ready.
 func WaitForControlPlaneToBeReady(ctx context.Context, input WaitForControlPlaneToBeReadyInput, intervals ...interface{}) {
 	By("Waiting for the control plane to be ready")
-	Eventually(func() (bool, error) {
-		controlplane := &controlplanev1.KubeadmControlPlane{}
+	controlplane := &controlplanev1.KubeadmControlPlane{}
+	Eventually(func() (controlplanev1.KubeadmControlPlane, error) {
 		key := client.ObjectKey{
 			Namespace: input.ControlPlane.GetNamespace(),
 			Name:      input.ControlPlane.GetName(),
 		}
 		if err := input.Getter.Get(ctx, key, controlplane); err != nil {
-			return false, err
+			return *controlplane, errors.Wrapf(err, "failed to get KCP")
 		}
-		return controlplane.Status.Ready, nil
-	}, intervals...).Should(BeTrue())
+		return *controlplane, nil
+	}, intervals...).Should(MatchFields(IgnoreExtras, Fields{
+		"Status": MatchFields(IgnoreExtras, Fields{
+			"Ready": BeTrue(),
+		}),
+	}), PrettyPrint(controlplane)+"\n")
 }
 
 // AssertControlPlaneFailureDomainsInput is the input for AssertControlPlaneFailureDomains.
@@ -197,8 +207,9 @@ func AssertControlPlaneFailureDomains(ctx context.Context, input AssertControlPl
 	}
 
 	machineList := &clusterv1.MachineList{}
-	Expect(input.GetLister.List(ctx, machineList, inClustersNamespaceListOption, matchClusterListOption)).
-		To(Succeed(), "Couldn't list machines for the cluster %q", input.ClusterKey.Name)
+	Eventually(func() error {
+		return input.GetLister.List(ctx, machineList, inClustersNamespaceListOption, matchClusterListOption)
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Couldn't list machines for the cluster %q", input.ClusterKey.Name)
 
 	// Count all control plane machine failure domains.
 	for _, machine := range machineList.Items {
@@ -222,12 +233,15 @@ func DiscoveryAndWaitForControlPlaneInitialized(ctx context.Context, input Disco
 	Expect(input.Lister).ToNot(BeNil(), "Invalid argument. input.Lister can't be nil when calling DiscoveryAndWaitForControlPlaneInitialized")
 	Expect(input.Cluster).ToNot(BeNil(), "Invalid argument. input.Cluster can't be nil when calling DiscoveryAndWaitForControlPlaneInitialized")
 
-	controlPlane := GetKubeadmControlPlaneByCluster(ctx, GetKubeadmControlPlaneByClusterInput{
-		Lister:      input.Lister,
-		ClusterName: input.Cluster.Name,
-		Namespace:   input.Cluster.Namespace,
-	})
-	Expect(controlPlane).ToNot(BeNil())
+	var controlPlane *controlplanev1.KubeadmControlPlane
+	Eventually(func(g Gomega) {
+		controlPlane = GetKubeadmControlPlaneByCluster(ctx, GetKubeadmControlPlaneByClusterInput{
+			Lister:      input.Lister,
+			ClusterName: input.Cluster.Name,
+			Namespace:   input.Cluster.Namespace,
+		})
+		g.Expect(controlPlane).ToNot(BeNil())
+	}, "10s", "1s").Should(Succeed())
 
 	log.Logf("Waiting for the first control plane machine managed by %s/%s to be provisioned", controlPlane.Namespace, controlPlane.Name)
 	WaitForOneKubeadmControlPlaneMachineToExist(ctx, WaitForOneKubeadmControlPlaneMachineToExistInput{
@@ -276,10 +290,12 @@ type UpgradeControlPlaneAndWaitForUpgradeInput struct {
 	Cluster                     *clusterv1.Cluster
 	ControlPlane                *controlplanev1.KubeadmControlPlane
 	KubernetesUpgradeVersion    string
+	UpgradeMachineTemplate      *string
 	EtcdImageTag                string
 	DNSImageTag                 string
 	WaitForMachinesToBeUpgraded []interface{}
 	WaitForDNSUpgrade           []interface{}
+	WaitForKubeProxyUpgrade     []interface{}
 	WaitForEtcdUpgrade          []interface{}
 }
 
@@ -300,26 +316,24 @@ func UpgradeControlPlaneAndWaitForUpgrade(ctx context.Context, input UpgradeCont
 	Expect(err).ToNot(HaveOccurred())
 
 	input.ControlPlane.Spec.Version = input.KubernetesUpgradeVersion
-
+	if input.UpgradeMachineTemplate != nil {
+		input.ControlPlane.Spec.MachineTemplate.InfrastructureRef.Name = *input.UpgradeMachineTemplate
+	}
 	// If the ClusterConfiguration is not specified, create an empty one.
 	if input.ControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration == nil {
 		input.ControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration = new(bootstrapv1.ClusterConfiguration)
 	}
 
-	input.ControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.Etcd = bootstrapv1.Etcd{
-		Local: &bootstrapv1.LocalEtcd{
-			ImageMeta: bootstrapv1.ImageMeta{
-				ImageTag: input.EtcdImageTag,
-			},
-		},
-	}
-	input.ControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.DNS = bootstrapv1.DNS{
-		ImageMeta: bootstrapv1.ImageMeta{
-			ImageTag: input.DNSImageTag,
-		},
+	if input.ControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.Etcd.Local == nil {
+		input.ControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.Etcd.Local = new(bootstrapv1.LocalEtcd)
 	}
 
-	Expect(patchHelper.Patch(ctx, input.ControlPlane)).To(Succeed())
+	input.ControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.Etcd.Local.ImageMeta.ImageTag = input.EtcdImageTag
+	input.ControlPlane.Spec.KubeadmConfigSpec.ClusterConfiguration.DNS.ImageMeta.ImageTag = input.DNSImageTag
+
+	Eventually(func() error {
+		return patchHelper.Patch(ctx, input.ControlPlane)
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
 
 	log.Logf("Waiting for control-plane machines to have the upgraded kubernetes version")
 	WaitForControlPlaneMachinesToBeUpgraded(ctx, WaitForControlPlaneMachinesToBeUpgradedInput{
@@ -335,13 +349,13 @@ func UpgradeControlPlaneAndWaitForUpgrade(ctx context.Context, input UpgradeCont
 	WaitForKubeProxyUpgrade(ctx, WaitForKubeProxyUpgradeInput{
 		Getter:            workloadClient,
 		KubernetesVersion: input.KubernetesUpgradeVersion,
-	}, input.WaitForDNSUpgrade...)
+	}, input.WaitForKubeProxyUpgrade...)
 
 	log.Logf("Waiting for CoreDNS to have the upgraded image tag")
 	WaitForDNSUpgrade(ctx, WaitForDNSUpgradeInput{
 		Getter:     workloadClient,
 		DNSVersion: input.DNSImageTag,
-	})
+	}, input.WaitForDNSUpgrade...)
 
 	log.Logf("Waiting for etcd to have the upgraded image tag")
 	lblSelector, err := labels.Parse("component=etcd")
@@ -376,9 +390,12 @@ func ScaleAndWaitControlPlane(ctx context.Context, input ScaleAndWaitControlPlan
 
 	patchHelper, err := patch.NewHelper(input.ControlPlane, input.ClusterProxy.GetClient())
 	Expect(err).ToNot(HaveOccurred())
+	scaleBefore := pointer.Int32Deref(input.ControlPlane.Spec.Replicas, 0)
 	input.ControlPlane.Spec.Replicas = pointer.Int32Ptr(input.Replicas)
-	log.Logf("Scaling controlplane %s/%s from %v to %v replicas", input.ControlPlane.Namespace, input.ControlPlane.Name, input.ControlPlane.Spec.Replicas, input.Replicas)
-	Expect(patchHelper.Patch(ctx, input.ControlPlane)).To(Succeed())
+	log.Logf("Scaling controlplane %s/%s from %v to %v replicas", input.ControlPlane.Namespace, input.ControlPlane.Name, scaleBefore, input.Replicas)
+	Eventually(func() error {
+		return patchHelper.Patch(ctx, input.ControlPlane)
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
 
 	log.Logf("Waiting for correct number of replicas to exist")
 	Eventually(func() (int, error) {

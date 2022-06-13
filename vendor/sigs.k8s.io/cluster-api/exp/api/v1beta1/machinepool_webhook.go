@@ -18,15 +18,17 @@ package v1beta1
 
 import (
 	"fmt"
-
-	"k8s.io/utils/pointer"
+	"strings"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/version"
 )
 
 func (m *MachinePool) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -56,12 +58,18 @@ func (m *MachinePool) Default() {
 		m.Spec.MinReadySeconds = pointer.Int32Ptr(0)
 	}
 
-	if m.Spec.Template.Spec.Bootstrap.ConfigRef != nil && len(m.Spec.Template.Spec.Bootstrap.ConfigRef.Namespace) == 0 {
+	if m.Spec.Template.Spec.Bootstrap.ConfigRef != nil && m.Spec.Template.Spec.Bootstrap.ConfigRef.Namespace == "" {
 		m.Spec.Template.Spec.Bootstrap.ConfigRef.Namespace = m.Namespace
 	}
 
-	if len(m.Spec.Template.Spec.InfrastructureRef.Namespace) == 0 {
+	if m.Spec.Template.Spec.InfrastructureRef.Namespace == "" {
 		m.Spec.Template.Spec.InfrastructureRef.Namespace = m.Namespace
+	}
+
+	// tolerate version strings without a "v" prefix: prepend it if it's not there.
+	if m.Spec.Template.Spec.Version != nil && !strings.HasPrefix(*m.Spec.Template.Spec.Version, "v") {
+		normalizedVersion := "v" + *m.Spec.Template.Spec.Version
+		m.Spec.Template.Spec.Version = &normalizedVersion
 	}
 }
 
@@ -123,6 +131,12 @@ func (m *MachinePool) validate(old *MachinePool) error {
 			allErrs,
 			field.Invalid(field.NewPath("spec", "clusterName"), m.Spec.ClusterName, "field is immutable"),
 		)
+	}
+
+	if m.Spec.Template.Spec.Version != nil {
+		if !version.KubeSemver.MatchString(*m.Spec.Template.Spec.Version) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "template", "spec", "version"), *m.Spec.Template.Spec.Version, "must be a valid semantic version"))
+		}
 	}
 
 	if len(allErrs) == 0 {

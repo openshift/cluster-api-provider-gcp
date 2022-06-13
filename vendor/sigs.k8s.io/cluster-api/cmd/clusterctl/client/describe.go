@@ -38,13 +38,16 @@ type DescribeClusterOptions struct {
 	// to signal to the presentation layer to show all the conditions for the objects.
 	ShowOtherConditions string
 
-	// DisableNoEcho disable hiding MachineInfrastructure or BootstrapConfig objects if the object's ready condition is true
-	// or it has the same Status, Severity and Reason of the parent's object ready condition (it is an echo)
-	DisableNoEcho bool
+	// ShowMachineSets instructs the discovery process to include machine sets in the ObjectTree.
+	ShowMachineSets bool
 
-	// DisableGrouping disable grouping machines objects in case the ready condition
-	// has the same Status, Severity and Reason
-	DisableGrouping bool
+	// Echo displays MachineInfrastructure or BootstrapConfig objects if the object's ready condition is true
+	// or it has the same Status, Severity and Reason of the parent's object ready condition (it is an echo)
+	Echo bool
+
+	// Grouping groups machines objects in case the ready conditions
+	// have the same Status, Severity and Reason.
+	Grouping bool
 }
 
 // DescribeCluster returns the object tree representing the status of a Cluster API cluster.
@@ -78,7 +81,8 @@ func (c *clusterctlClient) DescribeCluster(options DescribeClusterOptions) (*tre
 	// Gets the object tree representing the status of a Cluster API cluster.
 	return tree.Discovery(context.TODO(), client, options.Namespace, options.ClusterName, tree.DiscoverOptions{
 		ShowOtherConditions: options.ShowOtherConditions,
-		DisableNoEcho:       options.DisableNoEcho,
-		DisableGrouping:     options.DisableGrouping,
+		ShowMachineSets:     options.ShowMachineSets,
+		Echo:                options.Echo,
+		Grouping:            options.Grouping,
 	})
 }

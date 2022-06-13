@@ -23,12 +23,12 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // DiscoverMachineHealthCheckAndWaitForRemediationInput is the input for DiscoverMachineHealthCheckAndWait.
@@ -101,7 +101,9 @@ type GetMachineHealthChecksForClusterInput struct {
 // it is necessary to ensure this is already happened before calling it.
 func GetMachineHealthChecksForCluster(ctx context.Context, input GetMachineHealthChecksForClusterInput) []*clusterv1.MachineHealthCheck {
 	machineHealthCheckList := &clusterv1.MachineHealthCheckList{}
-	Expect(input.Lister.List(ctx, machineHealthCheckList, byClusterOptions(input.ClusterName, input.Namespace)...)).To(Succeed(), "Failed to list MachineDeployments object for Cluster %s/%s", input.Namespace, input.ClusterName)
+	Eventually(func() error {
+		return input.Lister.List(ctx, machineHealthCheckList, byClusterOptions(input.ClusterName, input.Namespace)...)
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to list MachineHealthCheck object for Cluster %s/%s", input.Namespace, input.ClusterName)
 
 	machineHealthChecks := make([]*clusterv1.MachineHealthCheck, len(machineHealthCheckList.Items))
 	for i := range machineHealthCheckList.Items {

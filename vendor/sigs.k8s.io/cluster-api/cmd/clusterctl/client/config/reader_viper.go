@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/util/homedir"
+
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 )
 
@@ -89,7 +90,7 @@ func (v *viperReader) Init(path string) error {
 		case url.Scheme == "https" || url.Scheme == "http":
 			configPath := filepath.Join(homedir.HomeDir(), ConfigFolder)
 			if len(v.configPaths) > 0 {
-				configPath = filepath.Join(v.configPaths[0])
+				configPath = v.configPaths[0]
 			}
 			if err := os.MkdirAll(configPath, os.ModePerm); err != nil {
 				return err

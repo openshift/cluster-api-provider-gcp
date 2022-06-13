@@ -28,6 +28,7 @@ import (
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
@@ -57,7 +58,7 @@ const (
 // 3. Ensure all the ClusterRoleBinding which are referencing namespaced objects have the name prefixed with the namespace name
 // 4. Adds labels to all the components in order to allow easy identification of the provider objects.
 type Components interface {
-	// configuration of the provider the provider components belongs to.
+	// Provider holds configuration of the provider the provider components belong to.
 	config.Provider
 
 	// Version of the provider.
@@ -142,6 +143,25 @@ func (c *components) Objs() []unstructured.Unstructured {
 
 func (c *components) Yaml() ([]byte, error) {
 	return utilyaml.FromUnstructured(c.objs)
+}
+
+// ComponentsAlterFn defines the function that is used to alter the components.Objs().
+type ComponentsAlterFn func(objs []unstructured.Unstructured) ([]unstructured.Unstructured, error)
+
+// AlterComponents provides a mechanism to alter the component.Objs from outside
+// the repository module.
+func AlterComponents(comps Components, alterFn ComponentsAlterFn) error {
+	c, ok := comps.(*components)
+	if !ok {
+		return errors.New("could not alter components as Components is not of the correct type")
+	}
+
+	alteredObjs, err := alterFn(c.Objs())
+	if err != nil {
+		return err
+	}
+	c.objs = alteredObjs
+	return nil
 }
 
 // ComponentsOptions represents specific inputs that are passed in to

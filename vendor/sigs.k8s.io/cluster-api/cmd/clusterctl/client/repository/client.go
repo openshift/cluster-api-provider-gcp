@@ -20,6 +20,7 @@ import (
 	"net/url"
 
 	"github.com/pkg/errors"
+
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	yaml "sigs.k8s.io/cluster-api/cmd/clusterctl/client/yamlprocessor"
 )
@@ -31,7 +32,7 @@ import (
 type Client interface {
 	config.Provider
 
-	// GetVersion return the list of versions that are available in a provider repository
+	// GetVersions return the list of versions that are available in a provider repository
 	GetVersions() ([]string, error)
 
 	// Components provide access to YAML file for creating provider components.
@@ -40,6 +41,10 @@ type Client interface {
 	// Templates provide access to YAML file for generating workload cluster templates.
 	// Please note that templates are expected to exist for the infrastructure providers only.
 	Templates(version string) TemplateClient
+
+	// ClusterClasses provide access to YAML file for the cluster classes available
+	// for the provider.
+	ClusterClasses(version string) ClusterClassClient
 
 	// Metadata provide access to YAML with the provider's metadata.
 	Metadata(version string) MetadataClient
@@ -66,6 +71,10 @@ func (c *repositoryClient) Components() ComponentsClient {
 
 func (c *repositoryClient) Templates(version string) TemplateClient {
 	return newTemplateClient(TemplateClientInput{version, c.Provider, c.repository, c.configClient.Variables(), c.processor})
+}
+
+func (c *repositoryClient) ClusterClasses(version string) ClusterClassClient {
+	return newClusterClassClient(ClusterClassClientInput{version, c.Provider, c.repository, c.configClient.Variables(), c.processor})
 }
 
 func (c *repositoryClient) Metadata(version string) MetadataClient {
@@ -143,7 +152,7 @@ type Repository interface {
 	// GetFile return a file for a given provider version.
 	GetFile(version string, path string) ([]byte, error)
 
-	// GetVersion return the list of versions that are available in a provider repository
+	// GetVersions return the list of versions that are available in a provider repository
 	GetVersions() ([]string, error)
 }
 
@@ -157,7 +166,7 @@ func repositoryFactory(providerConfig config.Provider, configVariablesClient con
 
 	// if the url is a github repository
 	if rURL.Scheme == httpsScheme && rURL.Host == githubDomain {
-		repo, err := newGitHubRepository(providerConfig, configVariablesClient)
+		repo, err := NewGitHubRepository(providerConfig, configVariablesClient)
 		if err != nil {
 			return nil, errors.Wrap(err, "error creating the GitHub repository client")
 		}
