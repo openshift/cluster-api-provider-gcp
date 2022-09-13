@@ -31,6 +31,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/discovery"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -65,6 +68,7 @@ type ClusterctlUpgradeSpecInput struct {
 	// provider contract to use to initialise the secondary management cluster, e.g. `v1alpha3`
 	InitWithProvidersContract string
 	SkipCleanup               bool
+	ControlPlaneWaiters       clusterctl.ControlPlaneWaiters
 	PreInit                   func(managementClusterProxy framework.ClusterProxy)
 	PreUpgrade                func(managementClusterProxy framework.ClusterProxy)
 	PostUpgrade               func(managementClusterProxy framework.ClusterProxy)
@@ -163,6 +167,7 @@ func ClusterctlUpgradeSpec(ctx context.Context, inputGetter func() ClusterctlUpg
 				ControlPlaneMachineCount: pointer.Int64Ptr(1),
 				WorkerMachineCount:       pointer.Int64Ptr(1),
 			},
+			ControlPlaneWaiters:          input.ControlPlaneWaiters,
 			WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-cluster"),
 			WaitForControlPlaneIntervals: input.E2EConfig.GetIntervals(specName, "wait-control-plane"),
 			WaitForMachineDeployments:    input.E2EConfig.GetIntervals(specName, "wait-worker-nodes"),
@@ -189,7 +194,7 @@ func ClusterctlUpgradeSpec(ctx context.Context, inputGetter func() ClusterctlUpg
 		// Download the older clusterctl version to be used for setting up the management cluster to be upgraded
 
 		log.Logf("Downloading clusterctl binary from %s", clusterctlBinaryURL)
-		clusterctlBinaryPath := downloadToTmpFile(clusterctlBinaryURL)
+		clusterctlBinaryPath := downloadToTmpFile(ctx, clusterctlBinaryURL)
 		defer os.Remove(clusterctlBinaryPath) // clean up
 
 		err := os.Chmod(clusterctlBinaryPath, 0744) //nolint:gosec
@@ -292,6 +297,18 @@ func ClusterctlUpgradeSpec(ctx context.Context, inputGetter func() ClusterctlUpg
 			input.PreUpgrade(managementClusterProxy)
 		}
 
+		// Get the workloadCluster before the management cluster is upgraded to make sure that the upgrade did not trigger
+		// any unexpected rollouts.
+		preUpgradeMachineList := &unstructured.UnstructuredList{}
+		preUpgradeMachineList.SetGroupVersionKind(clusterv1alpha3.GroupVersion.WithKind("MachineList"))
+		err = managementClusterProxy.GetClient().List(
+			ctx,
+			preUpgradeMachineList,
+			client.InNamespace(testNamespace.Name),
+			client.MatchingLabels{clusterv1.ClusterLabelName: workLoadClusterName},
+		)
+		Expect(err).NotTo(HaveOccurred())
+
 		By("Upgrading providers to the latest version available")
 		clusterctl.UpgradeManagementClusterAndWait(ctx, clusterctl.UpgradeManagementClusterAndWaitInput{
 			ClusterctlConfigPath: input.ClusterctlConfigPath,
@@ -306,6 +323,20 @@ func ClusterctlUpgradeSpec(ctx context.Context, inputGetter func() ClusterctlUpg
 			By("Running Post-upgrade steps against the management cluster")
 			input.PostUpgrade(managementClusterProxy)
 		}
+
+		// After the upgrade check that there were no unexpected rollouts.
+		Consistently(func() bool {
+			postUpgradeMachineList := &unstructured.UnstructuredList{}
+			postUpgradeMachineList.SetGroupVersionKind(clusterv1.GroupVersion.WithKind("MachineList"))
+			err = managementClusterProxy.GetClient().List(
+				ctx,
+				postUpgradeMachineList,
+				client.InNamespace(testNamespace.Name),
+				client.MatchingLabels{clusterv1.ClusterLabelName: workLoadClusterName},
+			)
+			Expect(err).NotTo(HaveOccurred())
+			return matchUnstructuredLists(preUpgradeMachineList, postUpgradeMachineList)
+		}, "3m", "30s").Should(BeTrue(), "Machines should remain the same after the upgrade")
 
 		// After upgrading we are sure the version is the latest version of the API,
 		// so it is possible to use the standard helpers
@@ -391,13 +422,16 @@ func ClusterctlUpgradeSpec(ctx context.Context, inputGetter func() ClusterctlUpg
 	})
 }
 
-func downloadToTmpFile(url string) string {
+func downloadToTmpFile(ctx context.Context, url string) string {
 	tmpFile, err := os.CreateTemp("", "clusterctl")
 	Expect(err).ToNot(HaveOccurred(), "failed to get temporary file")
 	defer tmpFile.Close()
 
 	// Get the data
-	resp, err := http.Get(url) //nolint:gosec
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	Expect(err).ToNot(HaveOccurred(), "failed to get clusterctl: failed to create request")
+
+	resp, err := http.DefaultClient.Do(req)
 	Expect(err).ToNot(HaveOccurred(), "failed to get clusterctl")
 	defer resp.Body.Close()
 
@@ -546,4 +580,25 @@ func waitForClusterDeletedV1alpha4(ctx context.Context, input waitForClusterDele
 		}
 		return apierrors.IsNotFound(input.Getter.Get(ctx, key, cluster))
 	}, intervals...).Should(BeTrue())
+}
+
+func matchUnstructuredLists(l1 *unstructured.UnstructuredList, l2 *unstructured.UnstructuredList) bool {
+	if l1 == nil && l2 == nil {
+		return true
+	}
+	if l1 == nil || l2 == nil {
+		return false
+	}
+	if len(l1.Items) != len(l2.Items) {
+		return false
+	}
+	s1 := sets.NewString()
+	for _, i := range l1.Items {
+		s1.Insert(types.NamespacedName{Namespace: i.GetNamespace(), Name: i.GetName()}.String())
+	}
+	s2 := sets.NewString()
+	for _, i := range l2.Items {
+		s2.Insert(types.NamespacedName{Namespace: i.GetNamespace(), Name: i.GetName()}.String())
+	}
+	return s1.Equal(s2)
 }
