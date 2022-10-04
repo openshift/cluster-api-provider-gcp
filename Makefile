@@ -53,6 +53,7 @@ E2E_CONF_FILE ?= $(ROOT_DIR)/test/e2e/config/gcp-ci.yaml
 E2E_CONF_FILE_ENVSUBST := $(ROOT_DIR)/test/e2e/config/gcp-ci-envsubst.yaml
 E2E_DATA_DIR ?= $(ROOT_DIR)/test/e2e/data
 KUBETEST_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/conformance.yaml)
+CONVERSION_VERIFIER:= $(TOOLS_BIN_DIR)/conversion-verifier
 
 # Binaries.
 CLUSTERCTL := $(BIN_DIR)/clusterctl
@@ -69,9 +70,13 @@ ENVSUBST_VER := v1.2.0
 ENVSUBST_BIN := envsubst
 ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)
 
-GOLANGCI_LINT_VER := v1.46.2
+GOLANGCI_LINT_VER := v1.49.0
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
+
+KIND_VER := v0.14.0
+KIND_BIN := kind
+KIND := $(TOOLS_BIN_DIR)/$(KIND_BIN)-$(KIND_VER)
 
 KUSTOMIZE_VER := v4.5.2
 KUSTOMIZE_BIN := kustomize
@@ -95,7 +100,7 @@ SETUP_ENVTEST_VER := v0.0.0-20211110210527-619e6b92dab9
 SETUP_ENVTEST_BIN := setup-envtest
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)
 
-GO_APIDIFF_VER := v0.1.0
+GO_APIDIFF_VER := v0.4.0
 GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)
 
@@ -133,7 +138,7 @@ endif
 # Build time versioning details.
 LDFLAGS := $(shell hack/version.sh)
 
-GOLANG_VERSION := 1.17.11
+GOLANG_VERSION := 1.18.5
 
 # CI
 CAPG_WORKER_CLUSTER_KUBECONFIG ?= "/tmp/kubeconfig"
@@ -176,9 +181,9 @@ test-e2e-run: $(ENVSUBST) $(KUBECTL) $(GINKGO) e2e-image ## Run the end-to-end t
 
 .PHONY: test-cover
 test-cover:  ## Run unit and integration tests and generate a coverage report
-	$(MAKE) test TEST_ARGS="$(TEST_ARGS) -coverprofile=out/coverage.out"
-	go tool cover -func=out/coverage.out -o out/coverage.txt
-	go tool cover -html=out/coverage.out -o out/coverage.html
+	$(MAKE) test TEST_ARGS="$(TEST_ARGS) -coverprofile=coverage.out"
+	go tool cover -func=coverage.out -o coverage.txt
+	go tool cover -html=coverage.out -o coverage.html
 
 .PHONY: test-junit
 test-junit: $(SETUP_ENVTEST) $(GOTESTSUM) ## Run tests with verbose setting and generate a junit report
@@ -251,6 +256,9 @@ $(RELEASE_NOTES): ## Build release notes.
 $(GO_APIDIFF): ## Build go-apidiff from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/joelanford/go-apidiff $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
 
+$(CONVERSION_VERIFIER): go.mod
+	cd $(TOOLS_DIR); go build -tags=tools -o $@ sigs.k8s.io/cluster-api/hack/tools/conversion-verifier
+
 $(GINKGO): ## Build ginkgo.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
 
@@ -261,11 +269,17 @@ $(KUBECTL): ## Build kubectl
 	ln -sf $(KUBECTL) $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)
 	chmod +x $(KUBECTL) $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)
 
+$(KIND): ## Build kind into tools folder
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kind $(KIND_BIN) $(KIND_VER)
+
 .PHONY: $(KUBECTL_BIN)
 $(KUBECTL_BIN): $(KUBECTL) ## Building kubectl from tools folder
 
 .PHONY: $(GO_APIDIFF_BIN)
 $(GO_APIDIFF_BIN): $(GO_APIDIFF)
+
+.PHONY: $(KIND_BIN)
+$(KIND_BIN): $(KIND) ## Building Kind from tools folder
 
 
 ## --------------------------------------
@@ -290,6 +304,7 @@ lint-full: $(GOLANGCI_LINT) ## Run slower linters to detect possible issues
 .PHONY: modules
 modules: ## Runs go mod to ensure proper vendoring.
 	go mod tidy
+	cd $(TOOLS_DIR); go mod tidy
 
 .PHONY: generate
 generate: ## Generate code
@@ -437,48 +452,51 @@ release-notes: $(RELEASE_NOTES)
 
 CLUSTER_NAME ?= test1
 
+.PHONY: install-tools # populate hack/tools/bin
+install-tools: $(ENVSUBST) $(KUSTOMIZE) $(KUBECTL) $(GINKGO) $(KIND)
+
 .PHONY: create-management-cluster
-create-management-cluster: $(KUSTOMIZE) $(ENVSUBST)
+create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KIND) $(KUBECTL)
 	## Create kind management cluster.
-	kind create cluster --name=clusterapi
+	$(KIND) create cluster --name=clusterapi
 
 	# Install cert manager and wait for availability
 	./hack/install-cert-manager.sh
 
 	# Deploy CAPI
-	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.4/cluster-api-components.yaml | $(ENVSUBST) | kubectl apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.2.1/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Deploy CAPG
-	kind load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=clusterapi
-	$(KUSTOMIZE) build config/default | $(ENVSUBST) | kubectl apply -f -
+	$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=clusterapi
+	$(KUSTOMIZE) build config/default | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Wait for CAPI pods
-	kubectl wait --for=condition=Available --timeout=5m -n capi-system deployment -l cluster.x-k8s.io/provider=cluster-api
-	kubectl wait --for=condition=Available --timeout=5m -n capi-kubeadm-bootstrap-system deployment -l cluster.x-k8s.io/provider=bootstrap-kubeadm
-	kubectl wait --for=condition=Available --timeout=5m -n capi-kubeadm-control-plane-system deployment -l cluster.x-k8s.io/provider=control-plane-kubeadm
+	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capi-system deployment -l cluster.x-k8s.io/provider=cluster-api
+	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capi-kubeadm-bootstrap-system deployment -l cluster.x-k8s.io/provider=bootstrap-kubeadm
+	$(KUBECTL) wait --for=condition=Available --timeout=5m -n capi-kubeadm-control-plane-system deployment -l cluster.x-k8s.io/provider=control-plane-kubeadm
 
 	# Wait for CAPG pods
-	kubectl wait --for=condition=Ready --timeout=5m -n capg-system pod -l cluster.x-k8s.io/provider=infrastructure-gcp
+	$(KUBECTL) wait --for=condition=Ready --timeout=5m -n capg-system pod -l cluster.x-k8s.io/provider=infrastructure-gcp
 
 	# required sleep for when creating management and workload cluster simultaneously
 	sleep 10
-	@echo 'Set kubectl context to the kind management cluster by running "kubectl config set-context kind-clusterapi"'
+	@echo 'Set kubectl context to the kind management cluster by running "$(KUBECTL) config set-context kind-clusterapi"'
 
 .PHONY: create-workload-cluster
-create-workload-cluster: $(KUSTOMIZE) $(ENVSUBST)
+create-workload-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL)
 	# Create workload Cluster.
-	$(KUSTOMIZE) build templates | $(ENVSUBST) | kubectl apply -f -
+	$(KUSTOMIZE) build templates | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Wait for the kubeconfig to become available.
-	${TIMEOUT} 5m bash -c "while ! kubectl get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
+	${TIMEOUT} 5m bash -c "while ! $(KUBECTL) get secrets | grep $(CLUSTER_NAME)-kubeconfig; do sleep 1; done"
 	# Get kubeconfig and store it locally.
-	kubectl get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > $(CAPG_WORKER_CLUSTER_KUBECONFIG)
+	$(KUBECTL) get secrets $(CLUSTER_NAME)-kubeconfig -o json | jq -r .data.value | base64 --decode > $(CAPG_WORKER_CLUSTER_KUBECONFIG)
 	${TIMEOUT} 15m bash -c "while ! kubectl --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) get nodes | grep master; do sleep 1; done"
 
 	# Deploy calico
-	kubectl --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) apply -f https://docs.projectcalico.org/manifests/calico.yaml
+	$(KUBECTL) --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) apply -f https://docs.projectcalico.org/manifests/calico.yaml
 
-	@echo 'run "kubectl --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) ..." to work with the new target cluster'
+	@echo 'run "$(KUBECTL) --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) ..." to work with the new target cluster'
 
 .PHONY: create-cluster
 create-cluster: create-management-cluster create-workload-cluster ## Create a development Kubernetes cluster on GCP in a KIND management cluster.
@@ -486,13 +504,13 @@ create-cluster: create-management-cluster create-workload-cluster ## Create a de
 .PHONY: delete-workload-cluster
 delete-workload-cluster: ## Deletes the example workload Kubernetes cluster
 	@echo 'Your GCP resources will now be deleted, this can take up to 20 minutes'
-	kubectl delete cluster $(CLUSTER_NAME)
+	$(KUBECTL) delete cluster $(CLUSTER_NAME)
 
 .PHONY: kind-reset
 kind-reset: ## Destroys the kind clusters.
-	kind delete cluster --name=capg || true
-	kind delete cluster --name=capg-e2e || true
-	kind delete cluster --name=clusterapi || true
+	$(KIND) delete cluster --name=capg || true
+	$(KIND) delete cluster --name=capg-e2e || true
+	$(KIND) delete cluster --name=clusterapi || true
 
 ## --------------------------------------
 ## Tilt / Kind
@@ -535,14 +553,23 @@ clean-release: ## Remove the release folder
 
 .PHONY: apidiff
 apidiff: $(GO_APIDIFF) ## Check for API differences.
-	$(GO_APIDIFF) $(shell git rev-parse origin/main) --print-compatible
+	@$(call checkdiff) > /dev/null
+	@if ($(call checkdiff) | grep "api/"); then \
+		$(GO_APIDIFF) $(shell git rev-parse origin/main) --print-compatible; \
+	else \
+		echo "No changes to 'api/'. Nothing to do."; \
+	fi
+
+define checkdiff
+	git --no-pager diff --name-only FETCH_HEAD
+endef
 
 .PHONY: format-tiltfile
 format-tiltfile: ## Format the Tiltfile.
 	./hack/verify-starlark.sh fix
 
 .PHONY: verify
-verify: verify-boilerplate verify-modules verify-gen verify-shellcheck verify-tiltfile
+verify: verify-boilerplate verify-modules verify-gen verify-shellcheck verify-tiltfile verify-conversions
 
 .PHONY: verify-boilerplate
 verify-boilerplate:
@@ -555,6 +582,10 @@ verify-shellcheck:
 .PHONY: verify-tiltfile
 verify-tiltfile: ## Verify Tiltfile format.
 	./hack/verify-starlark.sh
+
+.PHONY: verify-conversions
+verify-conversions: $(CONVERSION_VERIFIER) ## verifies expected API conversion are in place
+	cd $(ROOT_DIR); $(CONVERSION_VERIFIER)
 
 .PHONY: verify-modules
 verify-modules: modules

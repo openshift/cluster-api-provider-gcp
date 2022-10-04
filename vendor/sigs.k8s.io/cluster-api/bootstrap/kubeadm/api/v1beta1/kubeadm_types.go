@@ -54,6 +54,12 @@ type InitConfiguration struct {
 	// +optional
 	LocalAPIEndpoint APIEndpoint `json:"localAPIEndpoint,omitempty"`
 
+	// SkipPhases is a list of phases to skip during command execution.
+	// The list of phases can be obtained with the "kubeadm init --help" command.
+	// This option takes effect only on Kubernetes >=1.22.0.
+	// +optional
+	SkipPhases []string `json:"skipPhases,omitempty"`
+
 	// Patches contains options related to applying patches to components deployed by kubeadm during
 	// "kubeadm init". The minimum kubernetes version needed to support Patches is v1.22
 	// +optional
@@ -118,8 +124,8 @@ type ClusterConfiguration struct {
 	CertificatesDir string `json:"certificatesDir,omitempty"`
 
 	// ImageRepository sets the container registry to pull images from.
-	// If empty, `k8s.gcr.io` will be used by default; in case of kubernetes version is a CI build (kubernetes version starts with `ci/` or `ci-cross/`)
-	// `gcr.io/k8s-staging-ci-images` will be used as a default for control plane components and for kube-proxy, while `k8s.gcr.io`
+	// If empty, `registry.k8s.io` will be used by default; in case of kubernetes version is a CI build (kubernetes version starts with `ci/` or `ci-cross/`)
+	// `gcr.io/k8s-staging-ci-images` will be used as a default for control plane components and for kube-proxy, while `registry.k8s.io`
 	// will be used for all the other images.
 	// +optional
 	ImageRepository string `json:"imageRepository,omitempty"`
@@ -365,6 +371,12 @@ type JoinConfiguration struct {
 	// If nil, no additional control plane instance will be deployed.
 	// +optional
 	ControlPlane *JoinControlPlane `json:"controlPlane,omitempty"`
+
+	// SkipPhases is a list of phases to skip during command execution.
+	// The list of phases can be obtained with the "kubeadm init --help" command.
+	// This option takes effect only on Kubernetes >=1.22.0.
+	// +optional
+	SkipPhases []string `json:"skipPhases,omitempty"`
 
 	// Patches contains options related to applying patches to components deployed by kubeadm during
 	// "kubeadm join". The minimum kubernetes version needed to support Patches is v1.22

@@ -2,6 +2,8 @@
 
 envsubst_cmd = "./hack/tools/bin/envsubst"
 tools_bin = "./hack/tools/bin"
+kubectl_cmd = "./hack/tools/bin/kubectl"
+kind_cmd = "./hack/tools/bin/kind"
 
 #Add tools to path
 os.putenv("PATH", os.getenv("PATH") + ":" + tools_bin)
@@ -16,9 +18,9 @@ settings = {
     "deploy_cert_manager": True,
     "preload_images_for_kind": True,
     "kind_cluster_name": "capg",
-    "capi_version": "v1.1.4",
+    "capi_version": "v1.2.1",
     "cert_manager_version": "v1.1.0",
-    "kubernetes_version": "v1.22.3",
+    "kubernetes_version": "v1.22.11",
 }
 
 keys = ["GCP_B64ENCODED_CREDENTIALS"]
@@ -42,14 +44,14 @@ if "default_registry" in settings:
 def deploy_capi():
     version = settings.get("capi_version")
     capi_uri = "https://github.com/kubernetes-sigs/cluster-api/releases/download/{}/cluster-api-components.yaml".format(version)
-    cmd = "curl -sSL {} | {} | kubectl apply -f -".format(capi_uri, envsubst_cmd)
+    cmd = "curl -sSL {} | {} | {} apply -f -".format(capi_uri, envsubst_cmd, kubectl_cmd)
     local(cmd, quiet = True)
     if settings.get("extra_args"):
         extra_args = settings.get("extra_args")
         if extra_args.get("core"):
             core_extra_args = extra_args.get("core")
             if core_extra_args:
-                for namespace in ["capi-system", "capi-webhook-system"]:
+                for namespace in ["capi-system"]:
                     patch_args_with_extra_args(namespace, "capi-controller-manager", core_extra_args)
         if extra_args.get("kubeadm-bootstrap"):
             kb_extra_args = extra_args.get("kubeadm-bootstrap")
@@ -57,17 +59,17 @@ def deploy_capi():
                 patch_args_with_extra_args("capi-kubeadm-bootstrap-system", "capi-kubeadm-bootstrap-controller-manager", kb_extra_args)
 
 def patch_args_with_extra_args(namespace, name, extra_args):
-    args_str = str(local("kubectl get deployments {} -n {} -o jsonpath={{.spec.template.spec.containers[1].args}}".format(name, namespace)))
+    args_str = str(local("{} get deployments {} -n {} -o jsonpath={{.spec.template.spec.containers[0].args}}".format(kubectl_cmd, name, namespace)))
     args_to_add = [arg for arg in extra_args if arg not in args_str]
     if args_to_add:
         args = args_str[1:-1].split()
         args.extend(args_to_add)
         patch = [{
             "op": "replace",
-            "path": "/spec/template/spec/containers/1/args",
+            "path": "/spec/template/spec/containers/0/args",
             "value": args,
         }]
-        local("kubectl patch deployment {} -n {} --type json -p='{}'".format(name, namespace, str(encode_json(patch)).replace("\n", "")))
+        local("{} patch deployment {} -n {} --type json -p='{}'".format(kubectl_cmd, name, namespace, str(encode_json(patch)).replace("\n", "")))
 
 # Users may define their own Tilt customizations in tilt.d. This directory is excluded from git and these files will
 # not be checked in to version control.
@@ -92,11 +94,11 @@ def validate_auth():
     substitutions = settings.get("kustomize_substitutions", {})
     missing = [k for k in keys if k not in substitutions]
     if missing:
-        fail("missing kustomize_substitutions keys {} in tilt-setting.json".format(missing))
+        fail("missing kustomize_substitutions keys {} in tilt-settings.json".format(missing))
 
 tilt_helper_dockerfile_header = """
 # Tilt image
-FROM golang:1.17 as tilt-helper
+FROM golang:1.18 as tilt-helper
 # Support live reloading with Tilt
 RUN wget --output-document /restart.sh --quiet https://raw.githubusercontent.com/windmilleng/rerun-process-wrapper/master/restart.sh  && \
     wget --output-document /start.sh --quiet https://raw.githubusercontent.com/windmilleng/rerun-process-wrapper/master/start.sh && \
@@ -185,9 +187,9 @@ def kustomizesub(folder):
     return yaml
 
 def waitforsystem():
-    local("kubectl wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-bootstrap-system")
-    local("kubectl wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-control-plane-system")
-    local("kubectl wait --for=condition=ready --timeout=300s pod --all -n capi-system")
+    local(kubectl_cmd + " wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-bootstrap-system")
+    local(kubectl_cmd + " wait --for=condition=ready --timeout=300s pod --all -n capi-kubeadm-control-plane-system")
+    local(kubectl_cmd + " wait --for=condition=ready --timeout=300s pod --all -n capi-system")
 
 ##############################
 # Actual work happens here

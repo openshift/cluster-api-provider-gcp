@@ -115,6 +115,11 @@ func (s *ClusterScope) NetworkName() string {
 	return pointer.StringDeref(s.GCPCluster.Spec.Network.Name, "default")
 }
 
+// NetworkLink returns the partial URL for the network.
+func (s *ClusterScope) NetworkLink() string {
+	return fmt.Sprintf("projects/%s/global/networks/%s", s.Project(), s.NetworkName())
+}
+
 // Network returns the cluster network object.
 func (s *ClusterScope) Network() *infrav1.Network {
 	return &s.GCPCluster.Status.Network
@@ -167,6 +172,7 @@ func (s *ClusterScope) NetworkSpec() *compute.Network {
 		Name:                  s.NetworkName(),
 		Description:           infrav1.ClusterTagKey(s.Name()),
 		AutoCreateSubnetworks: createSubnet,
+		ForceSendFields:       []string{"AutoCreateSubnetworks"},
 	}
 
 	return network
@@ -189,15 +195,37 @@ func (s *ClusterScope) NatRouterSpec() *compute.Router {
 
 // ANCHOR_END: ClusterNetworkSpec
 
+// SubnetSpecs returns google compute subnets spec.
+func (s *ClusterScope) SubnetSpecs() []*compute.Subnetwork {
+	subnets := []*compute.Subnetwork{}
+	for _, subnetwork := range s.GCPCluster.Spec.Network.Subnets {
+		secondaryIPRanges := []*compute.SubnetworkSecondaryRange{}
+		for _, secondaryCidrBlock := range subnetwork.SecondaryCidrBlocks {
+			secondaryIPRanges = append(secondaryIPRanges, &compute.SubnetworkSecondaryRange{IpCidrRange: secondaryCidrBlock})
+		}
+		subnets = append(subnets, &compute.Subnetwork{
+			Name:                  subnetwork.Name,
+			Region:                subnetwork.Region,
+			EnableFlowLogs:        pointer.BoolDeref(subnetwork.EnableFlowLogs, false),
+			PrivateIpGoogleAccess: pointer.BoolDeref(subnetwork.PrivateGoogleAccess, false),
+			IpCidrRange:           subnetwork.CidrBlock,
+			SecondaryIpRanges:     secondaryIPRanges,
+			Description:           pointer.StringDeref(subnetwork.Description, infrav1.ClusterTagKey(s.Name())),
+			Network:               s.NetworkLink(),
+		})
+	}
+
+	return subnets
+}
+
 // ANCHOR: ClusterFirewallSpec
 
 // FirewallRulesSpec returns google compute firewall spec.
 func (s *ClusterScope) FirewallRulesSpec() []*compute.Firewall {
-	network := s.Network()
 	firewallRules := []*compute.Firewall{
 		{
 			Name:    fmt.Sprintf("allow-%s-healthchecks", s.Name()),
-			Network: *network.SelfLink,
+			Network: s.NetworkLink(),
 			Allowed: []*compute.FirewallAllowed{
 				{
 					IPProtocol: "TCP",
@@ -217,7 +245,7 @@ func (s *ClusterScope) FirewallRulesSpec() []*compute.Firewall {
 		},
 		{
 			Name:    fmt.Sprintf("allow-%s-cluster", s.Name()),
-			Network: *network.SelfLink,
+			Network: s.NetworkLink(),
 			Allowed: []*compute.FirewallAllowed{
 				{
 					IPProtocol: "all",
