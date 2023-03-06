@@ -37,11 +37,11 @@ func (in Labels) HasOwned(cluster string) bool {
 	return ok && ResourceLifecycle(value) == ResourceLifecycleOwned
 }
 
-// // HasOwned returns true if the tags contains a tag that marks the resource as owned by the cluster from the perspective of the in-tree cloud provider.
-// func (in Labels) HasGCPCloudProviderOwned(cluster string) bool {
-// 	value, ok := t[ClusterGCPCloudProviderTagKey(cluster)]
-// 	return ok && ResourceLifecycle(value) == ResourceLifecycleOwned
-// }
+// HasOwned returns true if the tags contains a tag that marks the resource as owned by the cluster from the perspective of the in-tree cloud provider.
+func (in Labels) HasGCPCloudProviderOwned(cluster string) bool {
+	value, ok := in[ClusterGCPCloudProviderTagKey(cluster)]
+	return ok && ResourceLifecycle(value) == ResourceLifecycleOwned
+}
 
 // GetRole returns the Cluster API role for the tagged resource.
 func (in Labels) GetRole() string {
@@ -109,6 +109,14 @@ const (
 	// dedicated to this cluster api provider implementation.
 	NameGCPClusterAPIRole = NameGCPProviderPrefix + "role"
 
+	// NameKubernetesGCPCloudProviderPrefix is the tag name used by the cloud provider to logically
+	// separate independent cluster resources. We use it to identify which resources we expect
+	// to be permissive about state changes.
+	// logically independent clusters running in the same AZ.
+	// The tag key = NameKubernetesGCPCloudProviderPrefix + clusterID
+	// The tag value is an ownership value.
+	NameKubernetesGCPCloudProviderPrefix = "kubernetes-io-cluster-"
+
 	// APIServerRoleTagValue describes the value for the apiserver role.
 	APIServerRoleTagValue = "apiserver"
 )
@@ -119,9 +127,9 @@ func ClusterTagKey(name string) string {
 }
 
 // ClusterGCPCloudProviderTagKey generates the key for resources associated a cluster's GCP cloud provider.
-// func ClusterGCPCloudProviderTagKey(name string) string {
-// return fmt.Sprintf("%s%s", NameKubernetesGCPCloudProviderPrefix, name)
-// }
+func ClusterGCPCloudProviderTagKey(name string) string {
+	return fmt.Sprintf("%s%s", NameKubernetesGCPCloudProviderPrefix, name)
+}
 
 // BuildParams is used to build tags around an gcp resource.
 type BuildParams struct {

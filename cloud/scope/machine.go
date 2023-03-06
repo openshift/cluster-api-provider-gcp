@@ -339,8 +339,11 @@ func (m *MachineScope) InstanceSpec() *compute.Instance {
 			ClusterName: m.ClusterGetter.Name(),
 			Lifecycle:   infrav1.ResourceLifecycleOwned,
 			Role:        pointer.StringPtr(m.Role()),
-			// TODO(vincepri): Check what needs to be added for the cloud provider label.
-			Additional: m.ClusterGetter.AdditionalLabels().AddLabels(m.GCPMachine.Spec.AdditionalLabels),
+			Additional: m.ClusterGetter.AdditionalLabels().AddLabels(m.GCPMachine.Spec.AdditionalLabels).AddLabels(
+				infrav1.Labels{
+					infrav1.ClusterGCPCloudProviderTagKey(m.ClusterGetter.Name()): string(infrav1.ResourceLifecycleOwned),
+				},
+			),
 		}),
 		Scheduling: &compute.Scheduling{
 			Preemptible: m.GCPMachine.Spec.Preemptible,
