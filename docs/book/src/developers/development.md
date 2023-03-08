@@ -19,7 +19,7 @@
 5. Install [Kustomize][kustomize]
    - `brew install kustomize` on macOS.
    - [install instructions](https://kubectl.docs.kubernetes.io/installation/kustomize/) on Windows + WSL2, Linux and macOS.
-6. Install Python 3.x or 2.7.x, if neither is already installed.
+6. Install Python 3.x, if neither is already installed.
 7. Install make.
    - `brew install make` on MacOS.
    - `sudo apt install make` on Windows + WSL2.
@@ -70,7 +70,7 @@ Change some code!
 
 This repository uses [Go Modules](https://github.com/golang/go/wiki/Modules) to track vendor dependencies.
 
-To pin a new dependecy:
+To pin a new dependency:
 
 - Run `go get <repository>@<version>`
 - (Optional) Add a replace statement in `go.mod`
@@ -79,7 +79,7 @@ Makefile targets and scripts are offered to work with go modules:
 
 - `make verify-modules` checks whether go modules are out of date.
 - `make modules` runs `go mod tidy` to ensure proper vendoring.
-- `hack/ensure-go.sh` checks that the Go version and enviornment variables are properly set.
+- `hack/ensure-go.sh` checks that the Go version and environment variables are properly set.
 
 ### Setting up the environment
 

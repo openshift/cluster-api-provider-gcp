@@ -18,9 +18,11 @@ package config
 
 import (
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 
+	"github.com/drone/envsubst/v2"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/validation"
 
@@ -43,6 +45,7 @@ const (
 	DOProviderName             = "digitalocean"
 	GCPProviderName            = "gcp"
 	HetznerProviderName        = "hetzner"
+	OutscaleProviderName       = "outscale"
 	IBMCloudProviderName       = "ibmcloud"
 	Metal3ProviderName         = "metal3"
 	NestedProviderName         = "nested"
@@ -55,21 +58,24 @@ const (
 	VSphereProviderName        = "vsphere"
 	MAASProviderName           = "maas"
 	KubevirtProviderName       = "kubevirt"
+	KubeKeyProviderName        = "kubekey"
 	VclusterProviderName       = "vcluster"
 	VirtinkProviderName        = "virtink"
 )
 
 // Bootstrap providers.
 const (
-	KubeadmBootstrapProviderName = "kubeadm"
-	TalosBootstrapProviderName   = "talos"
+	KubeadmBootstrapProviderName    = "kubeadm"
+	KubeKeyK3sBootstrapProviderName = "kubekey-k3s"
+	TalosBootstrapProviderName      = "talos"
 )
 
 // ControlPlane providers.
 const (
-	KubeadmControlPlaneProviderName = "kubeadm"
-	TalosControlPlaneProviderName   = "talos"
-	NestedControlPlaneProviderName  = "nested"
+	KubeadmControlPlaneProviderName    = "kubeadm"
+	KubeKeyK3sControlPlaneProviderName = "kubekey-k3s"
+	TalosControlPlaneProviderName      = "talos"
+	NestedControlPlaneProviderName     = "nested"
 )
 
 // Other.
@@ -206,6 +212,11 @@ func (p *providersClient) defaults() []Provider {
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
+			name:         OutscaleProviderName,
+			url:          "https://github.com/outscale-dev/cluster-api-provider-outscale/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
 			name:         IBMCloudProviderName,
 			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
@@ -213,6 +224,11 @@ func (p *providersClient) defaults() []Provider {
 		&provider{
 			name:         NutanixProviderName,
 			url:          "https://github.com/nutanix-cloud-native/cluster-api-provider-nutanix/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
+			name:         KubeKeyProviderName,
+			url:          "https://github.com/kubesphere/kubekey/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
@@ -238,6 +254,11 @@ func (p *providersClient) defaults() []Provider {
 			providerType: clusterctlv1.BootstrapProviderType,
 		},
 		&provider{
+			name:         KubeKeyK3sBootstrapProviderName,
+			url:          "https://github.com/kubesphere/kubekey/releases/latest/bootstrap-components.yaml",
+			providerType: clusterctlv1.BootstrapProviderType,
+		},
+		&provider{
 			name:         TalosBootstrapProviderName,
 			url:          "https://github.com/siderolabs/cluster-api-bootstrap-provider-talos/releases/latest/bootstrap-components.yaml",
 			providerType: clusterctlv1.BootstrapProviderType,
@@ -246,6 +267,11 @@ func (p *providersClient) defaults() []Provider {
 		&provider{
 			name:         KubeadmControlPlaneProviderName,
 			url:          "https://github.com/kubernetes-sigs/cluster-api/releases/latest/control-plane-components.yaml",
+			providerType: clusterctlv1.ControlPlaneProviderType,
+		},
+		&provider{
+			name:         KubeKeyK3sControlPlaneProviderName,
+			url:          "https://github.com/kubesphere/kubekey/releases/latest/control-plane-components.yaml",
 			providerType: clusterctlv1.ControlPlaneProviderType,
 		},
 		&provider{
@@ -283,6 +309,12 @@ func (p *providersClient) List() ([]Provider, error) {
 	}
 
 	for _, u := range userDefinedProviders {
+		var err error
+		u.URL, err = envsubst.Eval(u.URL, os.Getenv)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to evaluate url: %q", u.URL)
+		}
+
 		provider := NewProvider(u.Name, u.URL, u.Type)
 		if err := validateProvider(provider); err != nil {
 			return nil, errors.Wrapf(err, "error validating configuration for the %s with name %s. Please fix the providers value in clusterctl configuration file", provider.Type(), provider.Name())

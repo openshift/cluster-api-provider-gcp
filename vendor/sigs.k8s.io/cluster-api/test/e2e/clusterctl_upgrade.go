@@ -68,12 +68,24 @@ type ClusterctlUpgradeSpecInput struct {
 	// provider contract to use to initialise the secondary management cluster, e.g. `v1alpha3`
 	InitWithProvidersContract string
 	SkipCleanup               bool
-	ControlPlaneWaiters       clusterctl.ControlPlaneWaiters
-	PreInit                   func(managementClusterProxy framework.ClusterProxy)
-	PreUpgrade                func(managementClusterProxy framework.ClusterProxy)
-	PostUpgrade               func(managementClusterProxy framework.ClusterProxy)
-	MgmtFlavor                string
-	WorkloadFlavor            string
+	// PreWaitForCluster is a function that can be used as a hook to apply extra resources (that cannot be part of the template) in the generated namespace hosting the cluster
+	// This function is called after applying the cluster template and before waiting for the cluster resources.
+	PreWaitForCluster   func(managementClusterProxy framework.ClusterProxy, workloadClusterNamespace string, workloadClusterName string)
+	ControlPlaneWaiters clusterctl.ControlPlaneWaiters
+	PreInit             func(managementClusterProxy framework.ClusterProxy)
+	PreUpgrade          func(managementClusterProxy framework.ClusterProxy)
+	PostUpgrade         func(managementClusterProxy framework.ClusterProxy)
+	// PreCleanupManagementCluster hook can be used for extra steps that might be required from providers, for example, remove conflicting service (such as DHCP) running on
+	// the target management cluster and run it on bootstrap (before the latter resumes LCM) if both clusters share the same LAN
+	PreCleanupManagementCluster func(managementClusterProxy framework.ClusterProxy)
+	MgmtFlavor                  string
+	CNIManifestPath             string
+	WorkloadFlavor              string
+	// Custom providers can be specified to upgrade to a pre-release or a custom version instead of upgrading to the latest using contact
+	CoreProvider            string
+	BootstrapProviders      []string
+	ControlPlaneProviders   []string
+	InfrastructureProviders []string
 }
 
 // ClusterctlUpgradeSpec implements a test that verifies clusterctl upgrade of a management cluster.
@@ -167,6 +179,12 @@ func ClusterctlUpgradeSpec(ctx context.Context, inputGetter func() ClusterctlUpg
 				ControlPlaneMachineCount: pointer.Int64Ptr(1),
 				WorkerMachineCount:       pointer.Int64Ptr(1),
 			},
+			PreWaitForCluster: func() {
+				if input.PreWaitForCluster != nil {
+					input.PreWaitForCluster(input.BootstrapClusterProxy, managementClusterNamespace.Name, managementClusterName)
+				}
+			},
+			CNIManifestPath:              input.CNIManifestPath,
 			ControlPlaneWaiters:          input.ControlPlaneWaiters,
 			WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-cluster"),
 			WaitForControlPlaneIntervals: input.E2EConfig.GetIntervals(specName, "wait-control-plane"),
@@ -276,6 +294,11 @@ func ClusterctlUpgradeSpec(ctx context.Context, inputGetter func() ClusterctlUpg
 		log.Logf("Applying the cluster template yaml to the cluster")
 		Expect(managementClusterProxy.Apply(ctx, workloadClusterTemplate)).To(Succeed())
 
+		if input.PreWaitForCluster != nil {
+			By("Running PreWaitForCluster steps against the management cluster")
+			input.PreWaitForCluster(managementClusterProxy, testNamespace.Name, workLoadClusterName)
+		}
+
 		By("Waiting for the machines to exists")
 		Eventually(func() (int64, error) {
 			var n int64
@@ -309,13 +332,32 @@ func ClusterctlUpgradeSpec(ctx context.Context, inputGetter func() ClusterctlUpg
 		)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Upgrading providers to the latest version available")
-		clusterctl.UpgradeManagementClusterAndWait(ctx, clusterctl.UpgradeManagementClusterAndWaitInput{
-			ClusterctlConfigPath: input.ClusterctlConfigPath,
-			ClusterProxy:         managementClusterProxy,
-			Contract:             clusterv1.GroupVersion.Version,
-			LogFolder:            filepath.Join(input.ArtifactFolder, "clusters", cluster.Name),
-		}, input.E2EConfig.GetIntervals(specName, "wait-controllers")...)
+		// Check if the user want a custom upgrade
+		isCustomUpgrade := input.CoreProvider != "" ||
+			len(input.BootstrapProviders) > 0 ||
+			len(input.ControlPlaneProviders) > 0 ||
+			len(input.InfrastructureProviders) > 0
+
+		if isCustomUpgrade {
+			By("Upgrading providers to custom versions")
+			clusterctl.UpgradeManagementClusterAndWait(ctx, clusterctl.UpgradeManagementClusterAndWaitInput{
+				ClusterctlConfigPath:    input.ClusterctlConfigPath,
+				ClusterProxy:            managementClusterProxy,
+				CoreProvider:            input.CoreProvider,
+				BootstrapProviders:      input.BootstrapProviders,
+				ControlPlaneProviders:   input.ControlPlaneProviders,
+				InfrastructureProviders: input.InfrastructureProviders,
+				LogFolder:               filepath.Join(input.ArtifactFolder, "clusters", cluster.Name),
+			}, input.E2EConfig.GetIntervals(specName, "wait-controllers")...)
+		} else {
+			By("Upgrading providers to the latest version available")
+			clusterctl.UpgradeManagementClusterAndWait(ctx, clusterctl.UpgradeManagementClusterAndWaitInput{
+				ClusterctlConfigPath: input.ClusterctlConfigPath,
+				ClusterProxy:         managementClusterProxy,
+				Contract:             clusterv1.GroupVersion.Version,
+				LogFolder:            filepath.Join(input.ArtifactFolder, "clusters", cluster.Name),
+			}, input.E2EConfig.GetIntervals(specName, "wait-controllers")...)
+		}
 
 		By("THE MANAGEMENT CLUSTER WAS SUCCESSFULLY UPGRADED!")
 
@@ -417,6 +459,10 @@ func ClusterctlUpgradeSpec(ctx context.Context, inputGetter func() ClusterctlUpg
 			testCancelWatches()
 		}
 
+		if input.PreCleanupManagementCluster != nil {
+			By("Running PreCleanupManagementCluster steps against the management cluster")
+			input.PreCleanupManagementCluster(managementClusterProxy)
+		}
 		// Dumps all the resources in the spec namespace, then cleanups the cluster object and the spec namespace itself.
 		dumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, managementClusterNamespace, managementClusterCancelWatches, managementClusterResources.Cluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
