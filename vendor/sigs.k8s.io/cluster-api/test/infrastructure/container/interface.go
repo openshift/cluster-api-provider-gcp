@@ -31,6 +31,8 @@ type providerKey struct{}
 type Runtime interface {
 	SaveContainerImage(ctx context.Context, image, dest string) error
 	PullContainerImageIfNotExists(ctx context.Context, image string) error
+	PullContainerImage(ctx context.Context, image string) error
+	ImageExistsLocally(ctx context.Context, image string) (bool, error)
 	GetHostPort(ctx context.Context, containerName, portAndProtocol string) (string, error)
 	GetContainerIPs(ctx context.Context, containerName string) (string, string, error)
 	ExecContainer(ctx context.Context, containerName string, config *ExecContainerInput, command string, args ...string) error
@@ -93,6 +95,9 @@ type RunContainerInput struct {
 	PortMappings []PortMapping
 	// IPFamily is the IP version to use.
 	IPFamily clusterv1.ClusterIPFamily
+	// RestartPolicy to use for the container.
+	// If not set, defaults to "unless-stopped".
+	RestartPolicy string
 }
 
 // ExecContainerInput contains values for running exec on a container.

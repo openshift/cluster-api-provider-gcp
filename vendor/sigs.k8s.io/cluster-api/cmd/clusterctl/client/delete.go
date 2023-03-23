@@ -30,20 +30,23 @@ type DeleteOptions struct {
 	// default rules for kubeconfig discovery will be used.
 	Kubeconfig Kubeconfig
 
-	// CoreProvider version (e.g. cluster-api:v0.3.0) to add to the management cluster. If unspecified, the
-	// cluster-api core provider's latest release is used.
+	// CoreProvider version (e.g. cluster-api:v1.1.5) to delete from the management cluster.
 	CoreProvider string
 
-	// BootstrapProviders and versions (e.g. kubeadm:v0.3.0) to add to the management cluster.
-	// If unspecified, the kubeadm bootstrap provider's latest release is used.
+	// BootstrapProviders and versions (e.g. kubeadm:v1.1.5) to delete from the management cluster.
 	BootstrapProviders []string
 
-	// InfrastructureProviders and versions (e.g. aws:v0.5.0) to add to the management cluster.
+	// InfrastructureProviders and versions (e.g. aws:v0.5.0) to delete from the management cluster.
 	InfrastructureProviders []string
 
-	// ControlPlaneProviders and versions (e.g. kubeadm:v0.3.0) to add to the management cluster.
-	// If unspecified, the kubeadm control plane provider latest release is used.
+	// ControlPlaneProviders and versions (e.g. kubeadm:v1.1.5) to delete from the management cluster.
 	ControlPlaneProviders []string
+
+	// IPAMProviders and versions (e.g. infoblox:v0.0.1) to delete from the management cluster.
+	IPAMProviders []string
+
+	// RuntimeExtensionProviders and versions (e.g. test:v0.0.1) to delete from the management cluster.
+	RuntimeExtensionProviders []string
 
 	// DeleteAll set for deletion of all the providers.
 	DeleteAll bool
@@ -109,6 +112,16 @@ func (c *clusterctlClient) Delete(options DeleteOptions) error {
 			return err
 		}
 
+		providers, err = appendProviders(providers, clusterctlv1.IPAMProviderType, options.IPAMProviders...)
+		if err != nil {
+			return err
+		}
+
+		providers, err = appendProviders(providers, clusterctlv1.RuntimeExtensionProviderType, options.RuntimeExtensionProviders...)
+		if err != nil {
+			return err
+		}
+
 		for _, provider := range providers {
 			// Try to detect the namespace where the provider lives
 			provider.Namespace, err = clusterClient.ProviderInventory().GetProviderNamespace(provider.ProviderName, provider.GetProviderType())
@@ -116,7 +129,7 @@ func (c *clusterctlClient) Delete(options DeleteOptions) error {
 				return err
 			}
 			if provider.Namespace == "" {
-				return errors.Errorf("Failed to identify the namespace for the %q provider.", provider.ProviderName)
+				return errors.Errorf("failed to identify the namespace for the %q provider", provider.ProviderName)
 			}
 
 			if provider.Version != "" {
@@ -125,7 +138,7 @@ func (c *clusterctlClient) Delete(options DeleteOptions) error {
 					return err
 				}
 				if provider.Version != version {
-					return errors.Errorf("Failed to identity the provider %q with version %q.", provider.ProviderName, provider.Version)
+					return errors.Errorf("failed to identify the provider %q with version %q", provider.ProviderName, provider.Version)
 				}
 			}
 

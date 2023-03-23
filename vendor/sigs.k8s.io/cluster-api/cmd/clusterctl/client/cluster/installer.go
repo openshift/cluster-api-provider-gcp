@@ -25,7 +25,10 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,8 +38,10 @@ import (
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/repository"
+	"sigs.k8s.io/cluster-api/cmd/clusterctl/internal/scheme"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/internal/util"
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
+	"sigs.k8s.io/cluster-api/util/contract"
 )
 
 // ProviderInstaller defines methods for enforcing consistency rules for provider installation.
@@ -53,6 +58,8 @@ type ProviderInstaller interface {
 	// The following checks are performed in order to ensure a fully operational cluster:
 	// - There must be only one instance of the same provider
 	// - All the providers in must support the same API Version of Cluster API (contract)
+	// - All provider CRDs that are referenced in core Cluster API CRDs must comply with the CRD naming scheme,
+	//   otherwise a warning is logged.
 	Validate() error
 
 	// Images returns the list of images required for installing the providers ready in the install queue.
@@ -96,7 +103,7 @@ func (i *providerInstaller) Install(opts InstallOptions) ([]repository.Component
 		ret = append(ret, components)
 	}
 
-	return ret, i.waitForProvidersReady(opts)
+	return ret, waitForProvidersReady(opts, i.installQueue, i.proxy)
 }
 
 func installComponentsAndUpdateInventory(components repository.Components, providerComponents ComponentsClient, providerInventory InventoryClient) error {
@@ -115,7 +122,7 @@ func installComponentsAndUpdateInventory(components repository.Components, provi
 }
 
 // waitForProvidersReady waits till the installed components are ready.
-func (i *providerInstaller) waitForProvidersReady(opts InstallOptions) error {
+func waitForProvidersReady(opts InstallOptions, installQueue []repository.Components, proxy Proxy) error {
 	// If we dont have to wait for providers to be installed
 	// return early.
 	if !opts.WaitProviders {
@@ -125,15 +132,15 @@ func (i *providerInstaller) waitForProvidersReady(opts InstallOptions) error {
 	log := logf.Log
 	log.Info("Waiting for providers to be available...")
 
-	return i.waitManagerDeploymentsReady(opts)
+	return waitManagerDeploymentsReady(opts, installQueue, proxy)
 }
 
 // waitManagerDeploymentsReady waits till the installed manager deployments are ready.
-func (i *providerInstaller) waitManagerDeploymentsReady(opts InstallOptions) error {
-	for _, components := range i.installQueue {
+func waitManagerDeploymentsReady(opts InstallOptions, installQueue []repository.Components, proxy Proxy) error {
+	for _, components := range installQueue {
 		for _, obj := range components.Objs() {
 			if util.IsDeploymentWithManager(obj) {
-				if err := i.waitDeploymentReady(obj, opts.WaitProviderTimeout); err != nil {
+				if err := waitDeploymentReady(obj, opts.WaitProviderTimeout, proxy); err != nil {
 					return err
 				}
 			}
@@ -142,9 +149,9 @@ func (i *providerInstaller) waitManagerDeploymentsReady(opts InstallOptions) err
 	return nil
 }
 
-func (i *providerInstaller) waitDeploymentReady(deployment unstructured.Unstructured, timeout time.Duration) error {
+func waitDeploymentReady(deployment unstructured.Unstructured, timeout time.Duration, proxy Proxy) error {
 	return wait.Poll(100*time.Millisecond, timeout, func() (bool, error) {
-		c, err := i.proxy.NewClient()
+		c, err := proxy.NewClient()
 		if err != nil {
 			return false, err
 		}
@@ -209,7 +216,73 @@ func (i *providerInstaller) Validate() error {
 			return errors.Errorf("installing provider %q can lead to a non functioning management cluster: the target version for the provider supports the %s API Version of Cluster API (contract), while the management cluster is using %s", components.ManifestLabel(), providerContract, managementClusterContract)
 		}
 	}
+
+	// Validate if provider CRDs comply with the naming scheme.
+	for _, components := range i.installQueue {
+		componentObjects := components.Objs()
+
+		for _, obj := range componentObjects {
+			// Continue if object is not a CRD.
+			if obj.GetKind() != customResourceDefinitionKind {
+				continue
+			}
+
+			gk, err := getCRDGroupKind(obj)
+			if err != nil {
+				return errors.Wrap(err, "Failed to read group and kind from CustomResourceDefinition")
+			}
+
+			if err := validateCRDName(obj, gk); err != nil {
+				logf.Log.Info(err.Error())
+			}
+		}
+	}
+
 	return nil
+}
+
+func getCRDGroupKind(obj unstructured.Unstructured) (*schema.GroupKind, error) {
+	var group string
+	var kind string
+	version := obj.GroupVersionKind().Version
+	switch version {
+	case apiextensionsv1beta1.SchemeGroupVersion.Version:
+		crd := &apiextensionsv1beta1.CustomResourceDefinition{}
+		if err := scheme.Scheme.Convert(&obj, crd, nil); err != nil {
+			return nil, errors.Wrapf(err, "failed to convert %s CustomResourceDefinition %q", version, obj.GetName())
+		}
+		group = crd.Spec.Group
+		kind = crd.Spec.Names.Kind
+	case apiextensionsv1.SchemeGroupVersion.Version:
+		crd := &apiextensionsv1.CustomResourceDefinition{}
+		if err := scheme.Scheme.Convert(&obj, crd, nil); err != nil {
+			return nil, errors.Wrapf(err, "failed to convert %s CustomResourceDefinition %q", version, obj.GetName())
+		}
+		group = crd.Spec.Group
+		kind = crd.Spec.Names.Kind
+	default:
+		return nil, errors.Errorf("failed to read %s CustomResourceDefinition %q", version, obj.GetName())
+	}
+	return &schema.GroupKind{Group: group, Kind: kind}, nil
+}
+
+func validateCRDName(obj unstructured.Unstructured, gk *schema.GroupKind) error {
+	// Return if CRD has skip CRD name preflight check annotation.
+	if _, ok := obj.GetAnnotations()[clusterctlv1.SkipCRDNamePreflightCheckAnnotation]; ok {
+		return nil
+	}
+
+	correctCRDName := contract.CalculateCRDName(gk.Group, gk.Kind)
+
+	// Return if name is correct.
+	if obj.GetName() == correctCRDName {
+		return nil
+	}
+
+	return errors.Errorf("WARNING: CRD name %q is invalid for a CRD referenced in a core Cluster API CRD,"+
+		"it should be %q. Support for CRDs that are referenced in core Cluster API resources with invalid names will be "+
+		"dropped in a future Cluster API release. Note: Please check if this CRD is actually referenced in core Cluster API "+
+		"CRDs. If not, this warning can be hidden by setting the %q' annotation.", obj.GetName(), correctCRDName, clusterctlv1.SkipCRDNamePreflightCheckAnnotation)
 }
 
 // getProviderContract returns the API Version of Cluster API (contract) for a provider instance.

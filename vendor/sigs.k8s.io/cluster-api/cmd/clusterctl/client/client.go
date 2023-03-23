@@ -33,6 +33,9 @@ type Client interface {
 	// GetProviderComponents returns the provider components for a given provider with options including targetNamespace.
 	GetProviderComponents(provider string, providerType clusterctlv1.ProviderType, options ComponentsOptions) (Components, error)
 
+	// GenerateProvider returns the provider components for a given provider with options including targetNamespace.
+	GenerateProvider(provider string, providerType clusterctlv1.ProviderType, options ComponentsOptions) (Components, error)
+
 	// Init initializes a management cluster by adding the requested list of providers.
 	Init(options InitOptions) ([]Components, error)
 
@@ -52,14 +55,18 @@ type Client interface {
 	Move(options MoveOptions) error
 
 	// Backup saves all the Cluster API objects existing in a namespace (or from all the namespaces if empty) to a target management cluster.
+	//
+	// Deprecated: This will be dropped in a future release. Please use Move.
 	Backup(options BackupOptions) error
 
 	// Restore restores all the Cluster API objects existing in a configured directory based on a glob to a target management cluster.
+	//
+	// Deprecated: This will be dropped in a future release. Please use Move.
 	Restore(options RestoreOptions) error
 
 	// PlanUpgrade returns a set of suggested Upgrade plans for the cluster, and more specifically:
-	// - Upgrade to the latest version in the the v1alpha3 series: ....
-	// - Upgrade to the latest version in the the v1alpha4 series: ....
+	// - Upgrade to the latest version in the v1alpha3 series: ....
+	// - Upgrade to the latest version in the v1alpha4 series: ....
 	PlanUpgrade(options PlanUpgradeOptions) ([]UpgradePlan, error)
 
 	// PlanCertManagerUpgrade returns a CertManagerUpgradePlan.

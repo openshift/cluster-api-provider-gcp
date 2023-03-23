@@ -22,6 +22,8 @@ import (
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -85,9 +87,12 @@ type topologyReconcileLogger struct {
 func (l *topologyReconcileLogger) WithObject(obj client.Object) Logger {
 	return &topologyReconcileLogger{
 		Logger: l.Logger.WithValues(
-			"object groupVersion", obj.GetObjectKind().GroupVersionKind().GroupVersion().String(),
-			"object kind", obj.GetObjectKind().GroupVersionKind().Kind,
-			"object", obj.GetName(),
+			"resource", metav1.GroupVersionResource{
+				Version:  obj.GetObjectKind().GroupVersionKind().Version,
+				Group:    obj.GetObjectKind().GroupVersionKind().GroupKind().Group,
+				Resource: obj.GetObjectKind().GroupVersionKind().Kind,
+			},
+			obj.GetObjectKind().GroupVersionKind().Kind, klog.KObj(obj),
 		),
 	}
 }
@@ -97,9 +102,12 @@ func (l *topologyReconcileLogger) WithObject(obj client.Object) Logger {
 func (l *topologyReconcileLogger) WithRef(ref *corev1.ObjectReference) Logger {
 	return &topologyReconcileLogger{
 		Logger: l.Logger.WithValues(
-			"object groupVersion", ref.APIVersion,
-			"object kind", ref.Kind,
-			"object", ref.Name,
+			"resource", metav1.GroupVersionResource{
+				Version:  ref.GetObjectKind().GroupVersionKind().Version,
+				Group:    ref.GetObjectKind().GroupVersionKind().GroupKind().Group,
+				Resource: ref.GetObjectKind().GroupVersionKind().Kind,
+			},
+			ref.GetObjectKind().GroupVersionKind().Kind, klog.KRef(ref.Namespace, ref.Name),
 		),
 	}
 }
@@ -109,8 +117,8 @@ func (l *topologyReconcileLogger) WithMachineDeployment(md *clusterv1.MachineDep
 	topologyName := md.Labels[clusterv1.ClusterTopologyMachineDeploymentLabelName]
 	return &topologyReconcileLogger{
 		Logger: l.Logger.WithValues(
-			"machineDeployment name", md.GetName(),
-			"machineDeployment topologyName", topologyName,
+			"MachineDeployment", klog.KObj(md),
+			"MachineDeploymentTopology", topologyName,
 		),
 	}
 }

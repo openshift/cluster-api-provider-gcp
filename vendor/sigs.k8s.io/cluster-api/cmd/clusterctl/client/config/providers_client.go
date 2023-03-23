@@ -18,9 +18,11 @@ package config
 
 import (
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 
+	"github.com/drone/envsubst/v2"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/validation"
 
@@ -35,38 +37,48 @@ const (
 
 // Infra providers.
 const (
-	AWSProviderName       = "aws"
-	AzureProviderName     = "azure"
-	BYOHProviderName      = "byoh"
-	DockerProviderName    = "docker"
-	DOProviderName        = "digitalocean"
-	GCPProviderName       = "gcp"
-	HetznerProviderName   = "hetzner"
-	IBMCloudProviderName  = "ibmcloud"
-	Metal3ProviderName    = "metal3"
-	NestedProviderName    = "nested"
-	NutanixProviderName   = "nutanix"
-	OCIProviderName       = "oci"
-	OpenStackProviderName = "openstack"
-	PacketProviderName    = "packet"
-	SideroProviderName    = "sidero"
-	VSphereProviderName   = "vsphere"
-	MAASProviderName      = "maas"
+	AWSProviderName            = "aws"
+	AzureProviderName          = "azure"
+	BYOHProviderName           = "byoh"
+	CloudStackProviderName     = "cloudstack"
+	DockerProviderName         = "docker"
+	DOProviderName             = "digitalocean"
+	GCPProviderName            = "gcp"
+	HetznerProviderName        = "hetzner"
+	OutscaleProviderName       = "outscale"
+	IBMCloudProviderName       = "ibmcloud"
+	Metal3ProviderName         = "metal3"
+	NestedProviderName         = "nested"
+	NutanixProviderName        = "nutanix"
+	OCIProviderName            = "oci"
+	OpenStackProviderName      = "openstack"
+	PacketProviderName         = "packet"
+	SideroProviderName         = "sidero"
+	VCloudDirectorProviderName = "vcd"
+	VSphereProviderName        = "vsphere"
+	MAASProviderName           = "maas"
+	KubevirtProviderName       = "kubevirt"
+	KubeKeyProviderName        = "kubekey"
+	VclusterProviderName       = "vcluster"
+	VirtinkProviderName        = "virtink"
+	CoxEdgeProviderName        = "coxedge"
 )
 
 // Bootstrap providers.
 const (
-	KubeadmBootstrapProviderName = "kubeadm"
-	TalosBootstrapProviderName   = "talos"
-	AWSEKSBootstrapProviderName  = "aws-eks"
+	KubeadmBootstrapProviderName    = "kubeadm"
+	TalosBootstrapProviderName      = "talos"
+	MicroK8sBootstrapProviderName   = "microk8s"
+	KubeKeyK3sBootstrapProviderName = "kubekey-k3s"
 )
 
 // ControlPlane providers.
 const (
-	KubeadmControlPlaneProviderName = "kubeadm"
-	TalosControlPlaneProviderName   = "talos"
-	AWSEKSControlPlaneProviderName  = "aws-eks"
-	NestedControlPlaneProviderName  = "nested"
+	KubeadmControlPlaneProviderName    = "kubeadm"
+	TalosControlPlaneProviderName      = "talos"
+	MicroK8sControlPlaneProviderName   = "microk8s"
+	NestedControlPlaneProviderName     = "nested"
+	KubeKeyK3sControlPlaneProviderName = "kubekey-k3s"
 )
 
 // Other.
@@ -133,6 +145,11 @@ func (p *providersClient) defaults() []Provider {
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
+			name:         CloudStackProviderName,
+			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-cloudstack/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
 			name:         DOProviderName,
 			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-digitalocean/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
@@ -173,6 +190,11 @@ func (p *providersClient) defaults() []Provider {
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
+			name:         VCloudDirectorProviderName,
+			url:          "https://github.com/vmware/cluster-api-provider-cloud-director/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
 			name:         VSphereProviderName,
 			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-vsphere/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
@@ -180,6 +202,11 @@ func (p *providersClient) defaults() []Provider {
 		&provider{
 			name:         MAASProviderName,
 			url:          "https://github.com/spectrocloud/cluster-api-provider-maas/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
+			name:         CoxEdgeProviderName,
+			url:          "https://github.com/coxedge/cluster-api-provider-coxedge/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
@@ -193,6 +220,11 @@ func (p *providersClient) defaults() []Provider {
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 		&provider{
+			name:         OutscaleProviderName,
+			url:          "https://github.com/outscale/cluster-api-provider-outscale/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
 			name:         IBMCloudProviderName,
 			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
@@ -200,6 +232,26 @@ func (p *providersClient) defaults() []Provider {
 		&provider{
 			name:         NutanixProviderName,
 			url:          "https://github.com/nutanix-cloud-native/cluster-api-provider-nutanix/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
+			name:         KubeKeyProviderName,
+			url:          "https://github.com/kubesphere/kubekey/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
+			name:         KubevirtProviderName,
+			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-kubevirt/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
+			name:         VclusterProviderName,
+			url:          "https://github.com/loft-sh/cluster-api-provider-vcluster/releases/latest/infrastructure-components.yaml",
+			providerType: clusterctlv1.InfrastructureProviderType,
+		},
+		&provider{
+			name:         VirtinkProviderName,
+			url:          "https://github.com/smartxworks/cluster-api-provider-virtink/releases/latest/infrastructure-components.yaml",
 			providerType: clusterctlv1.InfrastructureProviderType,
 		},
 
@@ -210,13 +262,18 @@ func (p *providersClient) defaults() []Provider {
 			providerType: clusterctlv1.BootstrapProviderType,
 		},
 		&provider{
+			name:         KubeKeyK3sBootstrapProviderName,
+			url:          "https://github.com/kubesphere/kubekey/releases/latest/bootstrap-components.yaml",
+			providerType: clusterctlv1.BootstrapProviderType,
+		},
+		&provider{
 			name:         TalosBootstrapProviderName,
 			url:          "https://github.com/siderolabs/cluster-api-bootstrap-provider-talos/releases/latest/bootstrap-components.yaml",
 			providerType: clusterctlv1.BootstrapProviderType,
 		},
 		&provider{
-			name:         AWSEKSBootstrapProviderName,
-			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/latest/eks-bootstrap-components.yaml",
+			name:         MicroK8sBootstrapProviderName,
+			url:          "https://github.com/canonical/cluster-api-bootstrap-provider-microk8s/releases/latest/bootstrap-components.yaml",
 			providerType: clusterctlv1.BootstrapProviderType,
 		},
 		// ControlPlane providers
@@ -226,13 +283,18 @@ func (p *providersClient) defaults() []Provider {
 			providerType: clusterctlv1.ControlPlaneProviderType,
 		},
 		&provider{
+			name:         KubeKeyK3sControlPlaneProviderName,
+			url:          "https://github.com/kubesphere/kubekey/releases/latest/control-plane-components.yaml",
+			providerType: clusterctlv1.ControlPlaneProviderType,
+		},
+		&provider{
 			name:         TalosControlPlaneProviderName,
 			url:          "https://github.com/siderolabs/cluster-api-control-plane-provider-talos/releases/latest/control-plane-components.yaml",
 			providerType: clusterctlv1.ControlPlaneProviderType,
 		},
 		&provider{
-			name:         AWSEKSControlPlaneProviderName,
-			url:          "https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/latest/eks-controlplane-components.yaml",
+			name:         MicroK8sControlPlaneProviderName,
+			url:          "https://github.com/canonical/cluster-api-control-plane-provider-microk8s/releases/latest/control-plane-components.yaml",
 			providerType: clusterctlv1.ControlPlaneProviderType,
 		},
 		&provider{
@@ -265,6 +327,12 @@ func (p *providersClient) List() ([]Provider, error) {
 	}
 
 	for _, u := range userDefinedProviders {
+		var err error
+		u.URL, err = envsubst.Eval(u.URL, os.Getenv)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to evaluate url: %q", u.URL)
+		}
+
 		provider := NewProvider(u.Name, u.URL, u.Type)
 		if err := validateProvider(provider); err != nil {
 			return nil, errors.Wrapf(err, "error validating configuration for the %s with name %s. Please fix the providers value in clusterctl configuration file", provider.Type(), provider.Name())
@@ -316,8 +384,7 @@ func validateProvider(r Provider) error {
 		return errors.Errorf("name %s must be used with the %s type (name: %s, type: %s)", ClusterAPIProviderName, clusterctlv1.CoreProviderType, r.Name(), r.Type())
 	}
 
-	errMsgs := validation.IsDNS1123Subdomain(r.Name())
-	if len(errMsgs) != 0 {
+	if errMsgs := validation.IsDNS1123Subdomain(r.Name()); len(errMsgs) != 0 {
 		return errors.Errorf("invalid provider name: %s", strings.Join(errMsgs, "; "))
 	}
 	if r.URL() == "" {
@@ -332,14 +399,18 @@ func validateProvider(r Provider) error {
 	case clusterctlv1.CoreProviderType,
 		clusterctlv1.BootstrapProviderType,
 		clusterctlv1.InfrastructureProviderType,
-		clusterctlv1.ControlPlaneProviderType:
+		clusterctlv1.ControlPlaneProviderType,
+		clusterctlv1.IPAMProviderType,
+		clusterctlv1.RuntimeExtensionProviderType:
 		break
 	default:
-		return errors.Errorf("invalid provider type. Allowed values are [%s, %s, %s, %s]",
+		return errors.Errorf("invalid provider type. Allowed values are [%s, %s, %s, %s, %s, %s]",
 			clusterctlv1.CoreProviderType,
 			clusterctlv1.BootstrapProviderType,
 			clusterctlv1.InfrastructureProviderType,
-			clusterctlv1.ControlPlaneProviderType)
+			clusterctlv1.ControlPlaneProviderType,
+			clusterctlv1.IPAMProviderType,
+			clusterctlv1.RuntimeExtensionProviderType)
 	}
 	return nil
 }

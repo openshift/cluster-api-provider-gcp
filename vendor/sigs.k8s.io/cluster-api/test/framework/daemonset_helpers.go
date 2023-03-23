@@ -19,12 +19,14 @@ package framework
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo"
+	"github.com/blang/semver"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"sigs.k8s.io/cluster-api/internal/util/kubeadm"
 	containerutil "sigs.k8s.io/cluster-api/util/container"
 )
 
@@ -38,13 +40,21 @@ type WaitForKubeProxyUpgradeInput struct {
 func WaitForKubeProxyUpgrade(ctx context.Context, input WaitForKubeProxyUpgradeInput, intervals ...interface{}) {
 	By("Ensuring kube-proxy has the correct image")
 
+	parsedVersion, err := semver.ParseTolerant(input.KubernetesVersion)
+	Expect(err).ToNot(HaveOccurred())
+
+	// Validate the kube-proxy image according to how KCP sets the image in the kube-proxy DaemonSet.
+	// KCP does this based on the default registry of the Kubernetes/kubeadm version.
+	wantKubeProxyImage := kubeadm.GetDefaultRegistry(parsedVersion) + "/kube-proxy:" + containerutil.SemverToOCIImageTag(input.KubernetesVersion)
+
 	Eventually(func() (bool, error) {
 		ds := &appsv1.DaemonSet{}
 
 		if err := input.Getter.Get(ctx, client.ObjectKey{Name: "kube-proxy", Namespace: metav1.NamespaceSystem}, ds); err != nil {
 			return false, err
 		}
-		if ds.Spec.Template.Spec.Containers[0].Image == "k8s.gcr.io/kube-proxy:"+containerutil.SemverToOCIImageTag(input.KubernetesVersion) {
+
+		if ds.Spec.Template.Spec.Containers[0].Image == wantKubeProxyImage {
 			return true, nil
 		}
 		return false, nil

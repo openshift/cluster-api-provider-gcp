@@ -33,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	intstrutil "k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/integer"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -137,7 +138,8 @@ var annotationsToSkip = map[string]bool{
 
 // skipCopyAnnotation returns true if we should skip copying the annotation with the given annotation key
 // TODO(tbd): How to decide which annotations should / should not be copied?
-//       See https://github.com/kubernetes/kubernetes/pull/20035#issuecomment-179558615
+//
+//	See https://github.com/kubernetes/kubernetes/pull/20035#issuecomment-179558615
 func skipCopyAnnotation(key string) bool {
 	return annotationsToSkip[key]
 }
@@ -168,7 +170,7 @@ func getMaxReplicasAnnotation(ms *clusterv1.MachineSet, logger logr.Logger) (int
 }
 
 func getIntFromAnnotation(ms *clusterv1.MachineSet, annotationKey string, logger logr.Logger) (int32, bool) {
-	logger = logger.WithValues("machineset", ms.Name, "annotationKey", annotationKey)
+	logger = logger.WithValues("MachineSet", klog.KObj(ms))
 
 	annotationValue, ok := ms.Annotations[annotationKey]
 	if !ok {
@@ -176,7 +178,7 @@ func getIntFromAnnotation(ms *clusterv1.MachineSet, annotationKey string, logger
 	}
 	intValue, err := strconv.ParseInt(annotationValue, 10, 32)
 	if err != nil {
-		logger.V(2).Info("Cannot convert the value to integer", "annotationValue", annotationValue)
+		logger.V(2).Info(fmt.Sprintf("Cannot convert annotation %q with value %q to integer", annotationKey, annotationValue))
 		return int32(0), false
 	}
 	return int32(intValue), true
@@ -185,7 +187,7 @@ func getIntFromAnnotation(ms *clusterv1.MachineSet, annotationKey string, logger
 // SetNewMachineSetAnnotations sets new machine set's annotations appropriately by updating its revision and
 // copying required deployment annotations to it; it returns true if machine set's annotation is changed.
 func SetNewMachineSetAnnotations(deployment *clusterv1.MachineDeployment, newMS *clusterv1.MachineSet, newRevision string, exists bool, logger logr.Logger) bool {
-	logger = logger.WithValues("machineset", newMS.Name)
+	logger = logger.WithValues("MachineSet", klog.KObj(newMS))
 
 	// First, copy deployment's annotations (except for apply and revision annotations)
 	annotationChanged := copyDeploymentAnnotationsToMachineSet(deployment, newMS)
@@ -408,10 +410,10 @@ func FindNewMachineSet(deployment *clusterv1.MachineDeployment, msList []*cluste
 	return nil
 }
 
-// FindOldMachineSets returns the old machine sets targeted by the given Deployment, with the given slice of MSes.
+// FindOldMachineSets returns the old machine sets targeted by the given Deployment, within the given slice of MSes.
 // Returns two list of machine sets
-//  - the first contains all old machine sets with all non-zero replicas
-//  - the second contains all old machine sets
+//   - the first contains all old machine sets with non-zero replicas
+//   - the second contains all old machine sets
 func FindOldMachineSets(deployment *clusterv1.MachineDeployment, msList []*clusterv1.MachineSet) ([]*clusterv1.MachineSet, []*clusterv1.MachineSet) {
 	var requiredMSs []*clusterv1.MachineSet
 	allMSs := make([]*clusterv1.MachineSet, 0, len(msList))

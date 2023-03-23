@@ -36,7 +36,7 @@ func (r *rollout) ObjectPauser(proxy cluster.Proxy, ref corev1.ObjectReference) 
 			return errors.Wrapf(err, "failed to fetch %v/%v", ref.Kind, ref.Name)
 		}
 		if deployment.Spec.Paused {
-			return errors.Errorf("MachineDeploymet is already paused: %v/%v\n", ref.Kind, ref.Name)
+			return errors.Errorf("MachineDeploymet is already paused: %v/%v\n", ref.Kind, ref.Name) //nolint:revive // MachineDeployment is intentionally capitalized.
 		}
 		if err := pauseMachineDeployment(proxy, ref.Name, ref.Namespace); err != nil {
 			return err
@@ -50,5 +50,5 @@ func (r *rollout) ObjectPauser(proxy cluster.Proxy, ref corev1.ObjectReference) 
 // pauseMachineDeployment sets Paused to true in the MachineDeployment's spec.
 func pauseMachineDeployment(proxy cluster.Proxy, name, namespace string) error {
 	patch := client.RawPatch(types.MergePatchType, []byte(fmt.Sprintf("{\"spec\":{\"paused\":%t}}", true)))
-	return patchMachineDeployemt(proxy, name, namespace, patch)
+	return patchMachineDeployment(proxy, name, namespace, patch)
 }

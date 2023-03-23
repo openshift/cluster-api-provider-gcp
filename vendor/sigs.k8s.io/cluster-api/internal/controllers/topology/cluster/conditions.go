@@ -51,7 +51,24 @@ func (r *Reconciler) reconcileTopologyReconciledCondition(s *scope.Scope, cluste
 				clusterv1.TopologyReconciledCondition,
 				clusterv1.TopologyReconcileFailedReason,
 				clusterv1.ConditionSeverityError,
+				// TODO: Add a protection for messages continuously changing leading to Cluster object changes/reconcile.
 				reconcileErr.Error(),
+			),
+		)
+		return nil
+	}
+
+	// If any of the lifecycle hooks are blocking any part of the reconciliation then topology
+	// is not considered as fully reconciled.
+	if s.HookResponseTracker.AggregateRetryAfter() != 0 {
+		conditions.Set(
+			cluster,
+			conditions.FalseCondition(
+				clusterv1.TopologyReconciledCondition,
+				clusterv1.TopologyReconciledHookBlockingReason,
+				clusterv1.ConditionSeverityInfo,
+				// TODO: Add a protection for messages continuously changing leading to Cluster object changes/reconcile.
+				s.HookResponseTracker.AggregateMessage(),
 			),
 		)
 		return nil

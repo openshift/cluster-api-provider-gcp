@@ -127,12 +127,12 @@ func NewClient(apiReader client.Reader, objs []client.Object) *Client {
 // Get retrieves an object for the given object key from the internal object tracker.
 // If the object does not exist in the internal object tracker it tries to fetch the object
 // from the Kubernetes Cluster using the apiReader client (if apiReader is not nil).
-func (c *Client) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
-	if err := c.fakeClient.Get(ctx, key, obj); err != nil {
+func (c *Client) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	if err := c.fakeClient.Get(ctx, key, obj, opts...); err != nil {
 		// If the object is not found by the fake client, get the object
 		// using the apiReader.
 		if apierrors.IsNotFound(err) && c.apiReader != nil {
-			return c.apiReader.Get(ctx, key, obj)
+			return c.apiReader.Get(ctx, key, obj, opts...)
 		}
 		return err
 	}
@@ -248,7 +248,7 @@ func (c *Client) Delete(ctx context.Context, obj client.Object, opts ...client.D
 
 // Update updates the given obj in the internal object tracker.
 // NOTE: Topology reconciler does not use update, so we are skipping implementation for now.
-func (c *Client) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
+func (c *Client) Update(_ context.Context, _ client.Object, _ ...client.UpdateOption) error {
 	panic("Update method is not supported by the dryrun client")
 }
 
@@ -284,7 +284,7 @@ func (c *Client) Patch(ctx context.Context, obj client.Object, patch client.Patc
 
 // DeleteAllOf deletes all objects of the given type matching the given options.
 // NOTE: Topology reconciler does not use DeleteAllOf, so we are skipping implementation for now.
-func (c *Client) DeleteAllOf(ctx context.Context, obj client.Object, opts ...client.DeleteAllOfOption) error {
+func (c *Client) DeleteAllOf(_ context.Context, _ client.Object, _ ...client.DeleteAllOfOption) error {
 	panic("DeleteAllOf method is not supported by the dryrun client")
 }
 

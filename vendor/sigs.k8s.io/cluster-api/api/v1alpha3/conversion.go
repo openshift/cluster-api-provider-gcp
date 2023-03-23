@@ -97,7 +97,10 @@ func (src *Machine) ConvertTo(dstRaw conversion.Hub) error {
 		return err
 	}
 
+	dst.Spec.NodeDeletionTimeout = restored.Spec.NodeDeletionTimeout
+	dst.Spec.NodeVolumeDetachTimeout = restored.Spec.NodeVolumeDetachTimeout
 	dst.Status.NodeInfo = restored.Status.NodeInfo
+	dst.Status.CertificatesExpiryDate = restored.Status.CertificatesExpiryDate
 	return nil
 }
 
@@ -139,6 +142,8 @@ func (src *MachineSet) ConvertTo(dstRaw conversion.Hub) error {
 	if ok, err := utilconversion.UnmarshalData(src, restored); err != nil || !ok {
 		return err
 	}
+	dst.Spec.Template.Spec.NodeDeletionTimeout = restored.Spec.Template.Spec.NodeDeletionTimeout
+	dst.Spec.Template.Spec.NodeVolumeDetachTimeout = restored.Spec.Template.Spec.NodeVolumeDetachTimeout
 	dst.Status.Conditions = restored.Status.Conditions
 	return nil
 }
@@ -192,6 +197,8 @@ func (src *MachineDeployment) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.Strategy.RollingUpdate.DeletePolicy = restored.Spec.Strategy.RollingUpdate.DeletePolicy
 	}
 
+	dst.Spec.Template.Spec.NodeDeletionTimeout = restored.Spec.Template.Spec.NodeDeletionTimeout
+	dst.Spec.Template.Spec.NodeVolumeDetachTimeout = restored.Spec.Template.Spec.NodeVolumeDetachTimeout
 	dst.Status.Conditions = restored.Status.Conditions
 	return nil
 }
@@ -270,13 +277,13 @@ func (dst *MachineHealthCheckList) ConvertFrom(srcRaw conversion.Hub) error {
 	return Convert_v1beta1_MachineHealthCheckList_To_v1alpha3_MachineHealthCheckList(src, dst, nil)
 }
 
-func Convert_v1beta1_MachineSetStatus_To_v1alpha3_MachineSetStatus(in *clusterv1.MachineSetStatus, out *MachineSetStatus, s apiconversion.Scope) error {
+func Convert_v1beta1_MachineSetStatus_To_v1alpha3_MachineSetStatus(in *clusterv1.MachineSetStatus, out *MachineSetStatus, _ apiconversion.Scope) error {
 	// Status.Conditions was introduced in v1alpha4, thus requiring a custom conversion function; the values is going to be preserved in an annotation thus allowing roundtrip without loosing informations
 	return autoConvert_v1beta1_MachineSetStatus_To_v1alpha3_MachineSetStatus(in, out, nil)
 }
 
 func Convert_v1beta1_ClusterSpec_To_v1alpha3_ClusterSpec(in *clusterv1.ClusterSpec, out *ClusterSpec, s apiconversion.Scope) error {
-	// NOTE: custom conversion func is required because spec.Topology does not exists in v1alpha3
+	// NOTE: custom conversion func is required because spec.Topology does not exist in v1alpha3
 	return autoConvert_v1beta1_ClusterSpec_To_v1alpha3_ClusterSpec(in, out, s)
 }
 
@@ -302,6 +309,11 @@ func Convert_v1alpha3_ObjectMeta_To_v1beta1_ObjectMeta(in *ObjectMeta, out *clus
 
 func Convert_v1beta1_MachineStatus_To_v1alpha3_MachineStatus(in *clusterv1.MachineStatus, out *MachineStatus, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_MachineStatus_To_v1alpha3_MachineStatus(in, out, s)
+}
+
+func Convert_v1beta1_MachineSpec_To_v1alpha3_MachineSpec(in *clusterv1.MachineSpec, out *MachineSpec, s apiconversion.Scope) error {
+	// spec.nodeDeletionTimeout has been added with v1beta1.
+	return autoConvert_v1beta1_MachineSpec_To_v1alpha3_MachineSpec(in, out, s)
 }
 
 func Convert_v1beta1_MachineDeploymentStatus_To_v1alpha3_MachineDeploymentStatus(in *clusterv1.MachineDeploymentStatus, out *MachineDeploymentStatus, s apiconversion.Scope) error {

@@ -78,7 +78,7 @@ func (d *dockerRuntime) SaveContainerImage(ctx context.Context, image, dest stri
 	}
 	defer reader.Close()
 
-	tar, err := os.Create(dest)
+	tar, err := os.Create(dest) //nolint:gosec // No security issue: dest is safe.
 	if err != nil {
 		return fmt.Errorf("failed to create destination file %q: %v", dest, err)
 	}
@@ -96,19 +96,19 @@ func (d *dockerRuntime) SaveContainerImage(ctx context.Context, image, dest stri
 // already exist. This is important when we're using locally build images in CI which
 // do not exist remotely.
 func (d *dockerRuntime) PullContainerImageIfNotExists(ctx context.Context, image string) error {
-	filters := dockerfilters.NewArgs()
-	filters.Add("reference", image)
-	images, err := d.dockerClient.ImageList(ctx, types.ImageListOptions{
-		Filters: filters,
-	})
+	imageExistsLocally, err := d.ImageExistsLocally(ctx, image)
 	if err != nil {
-		return fmt.Errorf("failure listing container images: %v", err)
+		return errors.Wrapf(err, "failure determining if the image exists in local cache: %s", image)
 	}
-	// Nothing to do as the image already exists locally.
-	if len(images) > 0 {
+	if imageExistsLocally {
 		return nil
 	}
 
+	return d.PullContainerImage(ctx, image)
+}
+
+// PullContainerImage triggers the Docker engine to pull an image.
+func (d *dockerRuntime) PullContainerImage(ctx context.Context, image string) error {
 	pullResp, err := d.dockerClient.ImagePull(ctx, image, types.ImagePullOptions{})
 	if err != nil {
 		return fmt.Errorf("failure pulling container image: %v", err)
@@ -122,6 +122,22 @@ func (d *dockerRuntime) PullContainerImageIfNotExists(ctx context.Context, image
 	}
 
 	return nil
+}
+
+// ImageExistsLocally returns if the specified image exists in local container image cache.
+func (d *dockerRuntime) ImageExistsLocally(ctx context.Context, image string) (bool, error) {
+	filters := dockerfilters.NewArgs()
+	filters.Add("reference", image)
+	images, err := d.dockerClient.ImageList(ctx, types.ImageListOptions{
+		Filters: filters,
+	})
+	if err != nil {
+		return false, errors.Wrapf(err, "failure listing container image: %s", image)
+	}
+	if len(images) > 0 {
+		return true, nil
+	}
+	return false, nil
 }
 
 // GetHostPort looks up the host port bound for the port and protocol (e.g. "6443/tcp").
@@ -145,7 +161,7 @@ func (d *dockerRuntime) GetHostPort(ctx context.Context, containerName, portAndP
 }
 
 // ExecContainer executes a command in a running container and writes any output to the provided writer.
-func (d *dockerRuntime) ExecContainer(ctxd context.Context, containerName string, config *ExecContainerInput, command string, args ...string) error {
+func (d *dockerRuntime) ExecContainer(_ context.Context, containerName string, config *ExecContainerInput, command string, args ...string) error {
 	ctx := context.Background() // Let the command finish, even if it takes longer than the default timeout
 	execConfig := types.ExecConfig{
 		// Run with privileges so we can remount etc..
@@ -341,28 +357,6 @@ func dockerContainerToContainer(container *types.Container) Container {
 	}
 }
 
-// ownerAndGroup gets the user configuration for the container (user:group).
-func (crc *RunContainerInput) ownerAndGroup() string {
-	if crc.User != "" {
-		if crc.Group != "" {
-			return fmt.Sprintf("%s:%s", crc.User, crc.Group)
-		}
-
-		return crc.User
-	}
-
-	return ""
-}
-
-// environmentVariables gets the collection of environment variables for the container.
-func (crc *RunContainerInput) environmentVariables() []string {
-	envVars := []string{}
-	for key, val := range crc.EnvironmentVars {
-		envVars = append(envVars, fmt.Sprintf("%s=%s", key, val))
-	}
-	return envVars
-}
-
 // RunContainer will run a docker container with the given settings and arguments, returning any errors.
 func (d *dockerRuntime) RunContainer(ctx context.Context, runConfig *RunContainerInput, output io.Writer) error {
 	containerConfig := dockercontainer.Config{
@@ -378,6 +372,11 @@ func (d *dockerRuntime) RunContainer(ctx context.Context, runConfig *RunContaine
 		Volumes:      map[string]struct{}{},
 	}
 
+	restartPolicy := runConfig.RestartPolicy
+	if restartPolicy == "" {
+		restartPolicy = "unless-stopped"
+	}
+
 	hostConfig := dockercontainer.HostConfig{
 		// Running containers in a container requires privileges.
 		// NOTE: we could try to replicate this with --cap-add, and use less
@@ -389,7 +388,7 @@ func (d *dockerRuntime) RunContainer(ctx context.Context, runConfig *RunContaine
 		NetworkMode:   dockercontainer.NetworkMode(runConfig.Network),
 		Tmpfs:         runConfig.Tmpfs,
 		PortBindings:  nat.PortMap{},
-		RestartPolicy: dockercontainer.RestartPolicy{Name: "unless-stopped"},
+		RestartPolicy: dockercontainer.RestartPolicy{Name: restartPolicy},
 	}
 	networkConfig := network.NetworkingConfig{}
 

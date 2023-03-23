@@ -60,6 +60,11 @@ type KubeadmControlPlaneSpec struct {
 	Replicas *int32 `json:"replicas,omitempty"`
 
 	// Version defines the desired Kubernetes version.
+	// Please note that if kubeadmConfigSpec.ClusterConfiguration.imageRepository is not set
+	// we don't allow upgrades to versions >= v1.22.0 for which kubeadm uses the old registry (k8s.gcr.io).
+	// Please use a newer patch version with the new registry instead. The default registries of kubeadm are:
+	//   * registry.k8s.io (new registry): >= v1.22.17, >= v1.23.15, >= v1.24.9, >= v1.25.0
+	//   * k8s.gcr.io (old registry): all older versions
 	Version string `json:"version"`
 
 	// MachineTemplate contains information about how machines
@@ -70,10 +75,14 @@ type KubeadmControlPlaneSpec struct {
 	// to use for initializing and joining machines to the control plane.
 	KubeadmConfigSpec bootstrapv1.KubeadmConfigSpec `json:"kubeadmConfigSpec"`
 
+	// RolloutBefore is a field to indicate a rollout should be performed
+	// if the specified criteria is met.
+	// +optional
+	RolloutBefore *RolloutBefore `json:"rolloutBefore,omitempty"`
+
 	// RolloutAfter is a field to indicate a rollout should be performed
 	// after the specified time even if no changes have been made to the
 	// KubeadmControlPlane.
-	//
 	// +optional
 	RolloutAfter *metav1.Time `json:"rolloutAfter,omitempty"`
 
@@ -101,6 +110,25 @@ type KubeadmControlPlaneMachineTemplate struct {
 	// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`
 	// +optional
 	NodeDrainTimeout *metav1.Duration `json:"nodeDrainTimeout,omitempty"`
+
+	// NodeVolumeDetachTimeout is the total amount of time that the controller will spend on waiting for all volumes
+	// to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.
+	// +optional
+	NodeVolumeDetachTimeout *metav1.Duration `json:"nodeVolumeDetachTimeout,omitempty"`
+
+	// NodeDeletionTimeout defines how long the machine controller will attempt to delete the Node that the Machine
+	// hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
+	// If no value is provided, the default value for this property of the Machine resource will be used.
+	// +optional
+	NodeDeletionTimeout *metav1.Duration `json:"nodeDeletionTimeout,omitempty"`
+}
+
+// RolloutBefore describes when a rollout should be performed on the KCP machines.
+type RolloutBefore struct {
+	// CertificatesExpiryDays indicates a rollout needs to be performed if the
+	// certificates of the machine will expire within the specified days.
+	// +optional
+	CertificatesExpiryDays *int32 `json:"certificatesExpiryDays,omitempty"`
 }
 
 // RolloutStrategy describes how to replace existing machines
@@ -205,6 +233,7 @@ type KubeadmControlPlaneStatus struct {
 // +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels['cluster\\.x-k8s\\.io/cluster-name']",description="Cluster"
 // +kubebuilder:printcolumn:name="Initialized",type=boolean,JSONPath=".status.initialized",description="This denotes whether or not the control plane has the uploaded kubeadm-config configmap"
 // +kubebuilder:printcolumn:name="API Server Available",type=boolean,JSONPath=".status.ready",description="KubeadmControlPlane API Server is ready to receive requests"
+// +kubebuilder:printcolumn:name="Desired",type=integer,JSONPath=".spec.replicas",description="Total number of machines desired by this control plane",priority=10
 // +kubebuilder:printcolumn:name="Replicas",type=integer,JSONPath=".status.replicas",description="Total number of non-terminated machines targeted by this control plane"
 // +kubebuilder:printcolumn:name="Ready",type=integer,JSONPath=".status.readyReplicas",description="Total number of fully running and ready control plane machines"
 // +kubebuilder:printcolumn:name="Updated",type=integer,JSONPath=".status.updatedReplicas",description="Total number of non-terminated machines targeted by this control plane that have the desired template spec"

@@ -22,8 +22,7 @@ import (
 	"fmt"
 	"strings"
 
-	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/gobuffalo/flect"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -44,6 +43,7 @@ import (
 	"sigs.k8s.io/cluster-api/feature"
 	clustertopologycontroller "sigs.k8s.io/cluster-api/internal/controllers/topology/cluster"
 	"sigs.k8s.io/cluster-api/internal/webhooks"
+	"sigs.k8s.io/cluster-api/util/contract"
 )
 
 const (
@@ -257,9 +257,9 @@ func (t *topologyClient) validateInput(in *TopologyPlanInput) error {
 }
 
 // prepareInput does the following on the input objects:
-// - Set the target namespace on the objects if not set (this operation is generally done by kubectl)
-// - Prepare cluster objects so that the state of the cluster, if modified, correctly represents
-//   the expected changes.
+//   - Set the target namespace on the objects if not set (this operation is generally done by kubectl)
+//   - Prepare cluster objects so that the state of the cluster, if modified, correctly represents
+//     the expected changes.
 func (t *topologyClient) prepareInput(ctx context.Context, in *TopologyPlanInput, apiReader client.Reader) error {
 	if err := t.setMissingNamespaces(in.TargetNamespace, in.Objs); err != nil {
 		return errors.Wrap(err, "failed to set missing namespaces")
@@ -297,18 +297,20 @@ func (t *topologyClient) setMissingNamespaces(currentNamespace string, objs []*u
 }
 
 // prepareClusters does the following operations on each Cluster in the input.
-// - Check if the Cluster exists in the real apiserver.
-// - If the Cluster exists in the real apiserver we merge the object from the
-//   server with the object from the input. This final object correctly represents the
-//   modified cluster object.
-//   Note: We are using a simple 2-way merge to calculate the final object in this function
-//   to keep the function simple. In reality kubectl does a lot more. This function does not behave exactly
-//   the same way as kubectl does.
+//   - Check if the Cluster exists in the real apiserver.
+//   - If the Cluster exists in the real apiserver we merge the object from the
+//     server with the object from the input. This final object correctly represents the
+//     modified cluster object.
+//     Note: We are using a simple 2-way merge to calculate the final object in this function
+//     to keep the function simple. In reality kubectl does a lot more. This function does not behave exactly
+//     the same way as kubectl does.
+//
 // *Important note*: We do this above operation because the topology reconciler in a
-//   real run takes as input a cluster object from the apiserver that has merged spec of
-//   the changes in the input and the one stored in the server. For example: the cluster
-//   object in the input will not have cluster.spec.infrastructureRef and cluster.spec.controlPlaneRef
-//   but the merged object will have these fields set.
+//
+//	real run takes as input a cluster object from the apiserver that has merged spec of
+//	the changes in the input and the one stored in the server. For example: the cluster
+//	object in the input will not have cluster.spec.infrastructureRef and cluster.spec.controlPlaneRef
+//	but the merged object will have these fields set.
 func (t *topologyClient) prepareClusters(ctx context.Context, clusters []*unstructured.Unstructured, apiReader client.Reader) error {
 	if apiReader == nil {
 		// If there is no backing server there is nothing more to do here.
@@ -517,7 +519,7 @@ func (t *topologyClient) generateCRDs(objs []*unstructured.Unstructured) []*apie
 					Kind:       "CustomResourceDefinition",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Name: fmt.Sprintf("%s.%s", flect.Pluralize(strings.ToLower(gvk.Kind)), gvk.Group),
+					Name: contract.CalculateCRDName(gvk.Group, gvk.Kind),
 					Labels: map[string]string{
 						// Here we assume that all the versions are compatible with the Cluster API contract version.
 						clusterv1.GroupVersion.String(): gvk.Version,
@@ -629,9 +631,9 @@ func filterObjects(objs []*unstructured.Unstructured, gvks ...schema.GroupVersio
 
 type noOpRecorder struct{}
 
-func (nr *noOpRecorder) Event(_ runtime.Object, _, _, _ string)                       {}
-func (nr *noOpRecorder) Eventf(_ runtime.Object, _, _, _ string, args ...interface{}) {}
-func (nr *noOpRecorder) AnnotatedEventf(_ runtime.Object, _ map[string]string, _, _, _ string, args ...interface{}) {
+func (nr *noOpRecorder) Event(_ runtime.Object, _, _, _ string)                    {}
+func (nr *noOpRecorder) Eventf(_ runtime.Object, _, _, _ string, _ ...interface{}) {}
+func (nr *noOpRecorder) AnnotatedEventf(_ runtime.Object, _ map[string]string, _, _, _ string, _ ...interface{}) {
 }
 
 func objToRef(o *unstructured.Unstructured) *corev1.ObjectReference {

@@ -37,7 +37,7 @@ func (r *rollout) ObjectRestarter(proxy cluster.Proxy, ref corev1.ObjectReferenc
 			return errors.Wrapf(err, "failed to fetch %v/%v", ref.Kind, ref.Name)
 		}
 		if deployment.Spec.Paused {
-			return errors.Errorf("can't restart paused machinedeployment (run rollout resume first): %v/%v\n", ref.Kind, ref.Name)
+			return errors.Errorf("can't restart paused MachineDeployment (run rollout resume first): %v/%v", ref.Kind, ref.Name)
 		}
 		if err := setRestartedAtAnnotation(proxy, ref.Name, ref.Namespace); err != nil {
 			return err
@@ -51,5 +51,5 @@ func (r *rollout) ObjectRestarter(proxy cluster.Proxy, ref corev1.ObjectReferenc
 // setRestartedAtAnnotation sets the restartedAt annotation in the MachineDeployment's spec.template.objectmeta.
 func setRestartedAtAnnotation(proxy cluster.Proxy, name, namespace string) error {
 	patch := client.RawPatch(types.MergePatchType, []byte(fmt.Sprintf("{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"cluster.x-k8s.io/restartedAt\":\"%v\"}}}}}", time.Now().Format(time.RFC3339))))
-	return patchMachineDeployemt(proxy, name, namespace, patch)
+	return patchMachineDeployment(proxy, name, namespace, patch)
 }

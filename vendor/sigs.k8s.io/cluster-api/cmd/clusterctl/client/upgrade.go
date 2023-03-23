@@ -18,6 +18,7 @@ package client
 
 import (
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,17 +97,29 @@ type ApplyUpgradeOptions struct {
 	// a more granular control on upgrade, use CoreProvider, BootstrapProviders, ControlPlaneProviders, InfrastructureProviders.
 	Contract string
 
-	// CoreProvider instance and version (e.g. capi-system/cluster-api:v0.3.0) to upgrade to. This field can be used as alternative to Contract.
+	// CoreProvider instance and version (e.g. capi-system/cluster-api:v1.1.5) to upgrade to. This field can be used as alternative to Contract.
 	CoreProvider string
 
-	// BootstrapProviders instance and versions (e.g. capi-kubeadm-bootstrap-system/kubeadm:v0.3.0) to upgrade to. This field can be used as alternative to Contract.
+	// BootstrapProviders instance and versions (e.g. capi-kubeadm-bootstrap-system/kubeadm:v1.1.5) to upgrade to. This field can be used as alternative to Contract.
 	BootstrapProviders []string
 
-	// ControlPlaneProviders instance and versions (e.g. capi-kubeadm-control-plane-system/kubeadm:v0.3.0) to upgrade to. This field can be used as alternative to Contract.
+	// ControlPlaneProviders instance and versions (e.g. capi-kubeadm-control-plane-system/kubeadm:v1.1.5) to upgrade to. This field can be used as alternative to Contract.
 	ControlPlaneProviders []string
 
 	// InfrastructureProviders instance and versions (e.g. capa-system/aws:v0.5.0) to upgrade to. This field can be used as alternative to Contract.
 	InfrastructureProviders []string
+
+	// IPAMProviders instance and versions (e.g. ipam-system/infoblox:v0.0.1) to upgrade to. This field can be used as alternative to Contract.
+	IPAMProviders []string
+
+	// RuntimeExtensionProviders instance and versions (e.g. runtime-extension-system/test:v0.0.1) to upgrade to. This field can be used as alternative to Contract.
+	RuntimeExtensionProviders []string
+
+	// WaitProviders instructs the upgrade apply command to wait till the providers are successfully upgraded.
+	WaitProviders bool
+
+	// WaitProviderTimeout sets the timeout per provider upgrade.
+	WaitProviderTimeout time.Duration
 }
 
 func (c *clusterctlClient) ApplyUpgrade(options ApplyUpgradeOptions) error {
@@ -148,7 +161,14 @@ func (c *clusterctlClient) ApplyUpgrade(options ApplyUpgradeOptions) error {
 	isCustomUpgrade := options.CoreProvider != "" ||
 		len(options.BootstrapProviders) > 0 ||
 		len(options.ControlPlaneProviders) > 0 ||
-		len(options.InfrastructureProviders) > 0
+		len(options.InfrastructureProviders) > 0 ||
+		len(options.IPAMProviders) > 0 ||
+		len(options.RuntimeExtensionProviders) > 0
+
+	opts := cluster.UpgradeOptions{
+		WaitProviders:       options.WaitProviders,
+		WaitProviderTimeout: options.WaitProviderTimeout,
+	}
 
 	// If we are upgrading a specific set of providers only, process the providers and call ApplyCustomPlan.
 	if isCustomUpgrade {
@@ -173,13 +193,21 @@ func (c *clusterctlClient) ApplyUpgrade(options ApplyUpgradeOptions) error {
 		if err != nil {
 			return err
 		}
+		upgradeItems, err = addUpgradeItems(upgradeItems, clusterctlv1.IPAMProviderType, options.IPAMProviders...)
+		if err != nil {
+			return err
+		}
+		upgradeItems, err = addUpgradeItems(upgradeItems, clusterctlv1.RuntimeExtensionProviderType, options.RuntimeExtensionProviders...)
+		if err != nil {
+			return err
+		}
 
 		// Execute the upgrade using the custom upgrade items
-		return clusterClient.ProviderUpgrader().ApplyCustomPlan(upgradeItems...)
+		return clusterClient.ProviderUpgrader().ApplyCustomPlan(opts, upgradeItems...)
 	}
 
 	// Otherwise we are upgrading a whole management cluster according to a clusterctl generated upgrade plan.
-	return clusterClient.ProviderUpgrader().ApplyPlan(options.Contract)
+	return clusterClient.ProviderUpgrader().ApplyPlan(opts, options.Contract)
 }
 
 func addUpgradeItems(upgradeItems []cluster.UpgradeItem, providerType clusterctlv1.ProviderType, providers ...string) ([]cluster.UpgradeItem, error) {
