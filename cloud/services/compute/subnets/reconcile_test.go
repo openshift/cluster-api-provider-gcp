@@ -82,10 +82,13 @@ func TestService_Reconcile(t *testing.T) {
 		WithScheme(scheme.Scheme).
 		Build()
 
-	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+	clusterScope, err := scope.NewClusterScope(context.TODO(), scope.ClusterScopeParams{
 		Client:     fakec,
 		Cluster:    fakeCluster,
 		GCPCluster: fakeGCPCluster,
+		GCPServices: scope.GCPServices{
+			Compute: &compute.Service{},
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -176,10 +179,13 @@ func TestService_Delete(t *testing.T) {
 		WithScheme(scheme.Scheme).
 		Build()
 
-	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+	clusterScope, err := scope.NewClusterScope(context.TODO(), scope.ClusterScopeParams{
 		Client:     fakec,
 		Cluster:    fakeCluster,
 		GCPCluster: fakeGCPCluster,
+		GCPServices: scope.GCPServices{
+			Compute: &compute.Service{},
+		},
 	})
 	if err != nil {
 		t.Fatal(err)

@@ -414,6 +414,7 @@ func autoConvert_v1beta1_GCPClusterSpec_To_v1alpha3_GCPClusterSpec(in *v1beta1.G
 	}
 	out.FailureDomains = *(*[]string)(unsafe.Pointer(&in.FailureDomains))
 	out.AdditionalLabels = *(*Labels)(unsafe.Pointer(&in.AdditionalLabels))
+	// WARNING: in.CredentialsRef requires manual conversion: does not exist in peer-type
 	return nil
 }
 
@@ -572,6 +573,9 @@ func autoConvert_v1beta1_GCPMachineSpec_To_v1alpha3_GCPMachineSpec(in *v1beta1.G
 	out.ServiceAccount = (*ServiceAccount)(unsafe.Pointer(in.ServiceAccount))
 	out.Preemptible = in.Preemptible
 	// WARNING: in.IPForwarding requires manual conversion: does not exist in peer-type
+	// WARNING: in.ShieldedInstanceConfig requires manual conversion: does not exist in peer-type
+	// WARNING: in.OnHostMaintenance requires manual conversion: does not exist in peer-type
+	// WARNING: in.ConfidentialCompute requires manual conversion: does not exist in peer-type
 	return nil
 }
 
