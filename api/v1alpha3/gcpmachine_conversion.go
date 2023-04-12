@@ -18,10 +18,9 @@ package v1alpha3
 
 import (
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
+	v1beta1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
-
-	v1beta1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
 )
 
 // ConvertTo converts this GCPMachine to the Hub version (v1beta1).
@@ -40,6 +39,18 @@ func (src *GCPMachine) ConvertTo(dstRaw conversion.Hub) error { // nolint
 
 	if restored.Spec.IPForwarding != nil {
 		dst.Spec.IPForwarding = restored.Spec.IPForwarding
+	}
+
+	if restored.Spec.ShieldedInstanceConfig != nil {
+		dst.Spec.ShieldedInstanceConfig = restored.Spec.ShieldedInstanceConfig
+	}
+
+	if restored.Spec.OnHostMaintenance != nil {
+		dst.Spec.OnHostMaintenance = restored.Spec.OnHostMaintenance
+	}
+
+	if restored.Spec.ConfidentialCompute != nil {
+		dst.Spec.ConfidentialCompute = restored.Spec.ConfidentialCompute
 	}
 
 	return nil

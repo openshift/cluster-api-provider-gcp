@@ -18,10 +18,9 @@ package v1alpha3
 
 import (
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
-
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
 )
 
 // ConvertTo converts this GCPMachineTemplate to the Hub version (v1beta1).
@@ -40,6 +39,18 @@ func (src *GCPMachineTemplate) ConvertTo(dstRaw conversion.Hub) error { // nolin
 
 	if restored.Spec.Template.Spec.IPForwarding != nil {
 		dst.Spec.Template.Spec.IPForwarding = restored.Spec.Template.Spec.IPForwarding
+	}
+
+	if restored.Spec.Template.Spec.ShieldedInstanceConfig != nil {
+		dst.Spec.Template.Spec.ShieldedInstanceConfig = restored.Spec.Template.Spec.ShieldedInstanceConfig
+	}
+
+	if restored.Spec.Template.Spec.OnHostMaintenance != nil {
+		dst.Spec.Template.Spec.OnHostMaintenance = restored.Spec.Template.Spec.OnHostMaintenance
+	}
+
+	if restored.Spec.Template.Spec.ConfidentialCompute != nil {
+		dst.Spec.Template.Spec.ConfidentialCompute = restored.Spec.Template.Spec.ConfidentialCompute
 	}
 
 	return nil
