@@ -20,15 +20,17 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	. "sigs.k8s.io/cluster-api/test/framework/ginkgoextensions"
 	"sigs.k8s.io/cluster-api/test/framework/internal/log"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -47,17 +49,17 @@ func CreateMachineDeployment(ctx context.Context, input CreateMachineDeploymentI
 	By("creating a core MachineDeployment resource")
 	Eventually(func() error {
 		return input.Creator.Create(ctx, input.MachineDeployment)
-	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to create MachineDeployment %s", klog.KObj(input.MachineDeployment))
 
 	By("creating a BootstrapConfigTemplate resource")
 	Eventually(func() error {
 		return input.Creator.Create(ctx, input.BootstrapConfigTemplate)
-	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to create BootstrapConfigTemplate %s", klog.KObj(input.BootstrapConfigTemplate))
 
 	By("creating an InfrastructureMachineTemplate resource")
 	Eventually(func() error {
 		return input.Creator.Create(ctx, input.InfraMachineTemplate)
-	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to create InfrastructureMachineTemplate %s", klog.KObj(input.InfraMachineTemplate))
 }
 
 // GetMachineDeploymentsByClusterInput is the input for GetMachineDeploymentsByCluster.
@@ -74,7 +76,7 @@ func GetMachineDeploymentsByCluster(ctx context.Context, input GetMachineDeploym
 	deploymentList := &clusterv1.MachineDeploymentList{}
 	Eventually(func() error {
 		return input.Lister.List(ctx, deploymentList, byClusterOptions(input.ClusterName, input.Namespace)...)
-	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to list MachineDeployments object for Cluster %s/%s", input.Namespace, input.ClusterName)
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to list MachineDeployments object for Cluster %s", klog.KRef(input.Namespace, input.ClusterName))
 
 	deployments := make([]*clusterv1.MachineDeployment, len(deploymentList.Items))
 	for i := range deploymentList.Items {
@@ -126,7 +128,7 @@ func WaitForMachineDeploymentNodesToExist(ctx context.Context, input WaitForMach
 			}
 		}
 		return count, nil
-	}, intervals...).Should(Equal(int(*input.MachineDeployment.Spec.Replicas)))
+	}, intervals...).Should(Equal(int(*input.MachineDeployment.Spec.Replicas)), "Timed out waiting for %d nodes to be created for MachineDeployment %s", int(*input.MachineDeployment.Spec.Replicas), klog.KObj(input.MachineDeployment))
 }
 
 // AssertMachineDeploymentFailureDomainsInput is the input for AssertMachineDeploymentFailureDomains.
@@ -145,14 +147,14 @@ func AssertMachineDeploymentFailureDomains(ctx context.Context, input AssertMach
 
 	machineDeploymentFD := pointer.StringDeref(input.MachineDeployment.Spec.Template.Spec.FailureDomain, "<None>")
 
-	By(fmt.Sprintf("Checking all the machines controlled by %s are in the %q failure domain", input.MachineDeployment.Name, machineDeploymentFD))
+	Byf("Checking all the machines controlled by %s are in the %q failure domain", input.MachineDeployment.Name, machineDeploymentFD)
 	selectorMap, err := metav1.LabelSelectorAsMap(&input.MachineDeployment.Spec.Selector)
 	Expect(err).NotTo(HaveOccurred())
 
 	ms := &clusterv1.MachineSetList{}
 	Eventually(func() error {
 		return input.Lister.List(ctx, ms, client.InNamespace(input.Cluster.Namespace), client.MatchingLabels(selectorMap))
-	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to list MachineSets for Cluster %s", klog.KObj(input.Cluster))
 
 	for _, machineSet := range ms.Items {
 		machineSetFD := pointer.StringDeref(machineSet.Spec.Template.Spec.FailureDomain, "<None>")
@@ -164,7 +166,7 @@ func AssertMachineDeploymentFailureDomains(ctx context.Context, input AssertMach
 		machines := &clusterv1.MachineList{}
 		Eventually(func() error {
 			return input.Lister.List(ctx, machines, client.InNamespace(machineSet.Namespace), client.MatchingLabels(selectorMap))
-		}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
+		}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to list Machines for Cluster %s", klog.KObj(input.Cluster))
 
 		for _, machine := range machines.Items {
 			machineFD := pointer.StringDeref(machine.Spec.FailureDomain, "<None>")
@@ -227,7 +229,7 @@ func UpgradeMachineDeploymentsAndWait(ctx context.Context, input UpgradeMachineD
 	mgmtClient := input.ClusterProxy.GetClient()
 
 	for _, deployment := range input.MachineDeployments {
-		log.Logf("Patching the new kubernetes version to Machine Deployment %s/%s", deployment.Namespace, deployment.Name)
+		log.Logf("Patching the new kubernetes version to Machine Deployment %s", klog.KObj(deployment))
 		patchHelper, err := patch.NewHelper(deployment, mgmtClient)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -238,10 +240,10 @@ func UpgradeMachineDeploymentsAndWait(ctx context.Context, input UpgradeMachineD
 		}
 		Eventually(func() error {
 			return patchHelper.Patch(ctx, deployment)
-		}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
+		}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to patch Kubernetes version on MachineDeployment %s", klog.KObj(deployment))
 
-		log.Logf("Waiting for Kubernetes versions of machines in MachineDeployment %s/%s to be upgraded from %s to %s",
-			deployment.Namespace, deployment.Name, *oldVersion, input.UpgradeVersion)
+		log.Logf("Waiting for Kubernetes versions of machines in MachineDeployment %s to be upgraded from %s to %s",
+			klog.KObj(deployment), *oldVersion, input.UpgradeVersion)
 		WaitForMachineDeploymentMachinesToBeUpgraded(ctx, WaitForMachineDeploymentMachinesToBeUpgradedInput{
 			Lister:                   mgmtClient,
 			Cluster:                  input.Cluster,
@@ -310,7 +312,7 @@ func UpgradeMachineDeploymentInfrastructureRefAndWait(ctx context.Context, input
 	mgmtClient := input.ClusterProxy.GetClient()
 
 	for _, deployment := range input.MachineDeployments {
-		log.Logf("Patching the new infrastructure ref to Machine Deployment %s/%s", deployment.Namespace, deployment.Name)
+		log.Logf("Patching the new infrastructure ref to Machine Deployment %s", klog.KObj(deployment))
 		// Retrieve infra object
 		infraRef := deployment.Spec.Template.Spec.InfrastructureRef
 		infraObj := &unstructured.Unstructured{}
@@ -321,7 +323,7 @@ func UpgradeMachineDeploymentInfrastructureRefAndWait(ctx context.Context, input
 		}
 		Eventually(func() error {
 			return mgmtClient.Get(ctx, key, infraObj)
-		}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
+		}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to get infra object %s for MachineDeployment %s", klog.KRef(key.Namespace, key.Name), klog.KObj(deployment))
 
 		// Creates a new infra object
 		newInfraObj := infraObj
@@ -330,7 +332,7 @@ func UpgradeMachineDeploymentInfrastructureRefAndWait(ctx context.Context, input
 		newInfraObj.SetResourceVersion("")
 		Eventually(func() error {
 			return mgmtClient.Create(ctx, newInfraObj)
-		}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
+		}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to create new infrastructure object %s for MachineDeployment %s", klog.KObj(infraObj), klog.KObj(deployment))
 
 		// Patch the new infra object's ref to the machine deployment
 		patchHelper, err := patch.NewHelper(deployment, mgmtClient)
@@ -339,7 +341,7 @@ func UpgradeMachineDeploymentInfrastructureRefAndWait(ctx context.Context, input
 		deployment.Spec.Template.Spec.InfrastructureRef = infraRef
 		Eventually(func() error {
 			return patchHelper.Patch(ctx, deployment)
-		}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
+		}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to patch new infrastructure ref to MachineDeployment %s", klog.KObj(deployment))
 
 		log.Logf("Waiting for rolling upgrade to start.")
 		WaitForMachineDeploymentRollingUpgradeToStart(ctx, WaitForMachineDeploymentRollingUpgradeToStartInput{
@@ -377,13 +379,13 @@ func ScaleAndWaitMachineDeployment(ctx context.Context, input ScaleAndWaitMachin
 	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.ClusterProxy can't be nil when calling ScaleAndWaitMachineDeployment")
 	Expect(input.Cluster).ToNot(BeNil(), "Invalid argument. input.Cluster can't be nil when calling ScaleAndWaitMachineDeployment")
 
-	log.Logf("Scaling machine deployment %s/%s from %d to %d replicas", input.MachineDeployment.Namespace, input.MachineDeployment.Name, *input.MachineDeployment.Spec.Replicas, input.Replicas)
+	log.Logf("Scaling machine deployment %s from %d to %d replicas", klog.KObj(input.MachineDeployment), *input.MachineDeployment.Spec.Replicas, input.Replicas)
 	patchHelper, err := patch.NewHelper(input.MachineDeployment, input.ClusterProxy.GetClient())
 	Expect(err).ToNot(HaveOccurred())
-	input.MachineDeployment.Spec.Replicas = pointer.Int32Ptr(input.Replicas)
+	input.MachineDeployment.Spec.Replicas = pointer.Int32(input.Replicas)
 	Eventually(func() error {
 		return patchHelper.Patch(ctx, input.MachineDeployment)
-	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed())
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to scale machine deployment %s", klog.KObj(input.MachineDeployment))
 
 	log.Logf("Waiting for correct number of replicas to exist")
 	Eventually(func() (int, error) {
@@ -417,5 +419,80 @@ func ScaleAndWaitMachineDeployment(ctx context.Context, input ScaleAndWaitMachin
 			return -1, errors.New("Machine count does not match existing nodes count")
 		}
 		return nodeRefCount, nil
-	}, input.WaitForMachineDeployments...).Should(Equal(int(*input.MachineDeployment.Spec.Replicas)))
+	}, input.WaitForMachineDeployments...).Should(Equal(int(*input.MachineDeployment.Spec.Replicas)), "Timed out waiting for Machine Deployment %s to have %d replicas", klog.KObj(input.MachineDeployment), *input.MachineDeployment.Spec.Replicas)
+}
+
+// ScaleAndWaitMachineDeploymentTopologyInput is the input for ScaleAndWaitMachineDeployment.
+type ScaleAndWaitMachineDeploymentTopologyInput struct {
+	ClusterProxy              ClusterProxy
+	Cluster                   *clusterv1.Cluster
+	Replicas                  int32
+	WaitForMachineDeployments []interface{}
+}
+
+// ScaleAndWaitMachineDeploymentTopology scales MachineDeployment topology and waits until all machines have node ref and equal to Replicas.
+func ScaleAndWaitMachineDeploymentTopology(ctx context.Context, input ScaleAndWaitMachineDeploymentTopologyInput) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for ScaleAndWaitMachineDeployment")
+	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.ClusterProxy can't be nil when calling ScaleAndWaitMachineDeployment")
+	Expect(input.Cluster).ToNot(BeNil(), "Invalid argument. input.Cluster can't be nil when calling ScaleAndWaitMachineDeployment")
+	Expect(input.Cluster.Spec.Topology.Workers).ToNot(BeNil(), "Invalid argument. input.Cluster must have MachineDeployment topologies")
+	Expect(len(input.Cluster.Spec.Topology.Workers.MachineDeployments) >= 1).To(BeTrue(), "Invalid argument. input.Cluster must have at least one MachineDeployment topology")
+
+	mdTopology := input.Cluster.Spec.Topology.Workers.MachineDeployments[0]
+	log.Logf("Scaling machine deployment topology %s from %d to %d replicas", mdTopology.Name, *mdTopology.Replicas, input.Replicas)
+	patchHelper, err := patch.NewHelper(input.Cluster, input.ClusterProxy.GetClient())
+	Expect(err).ToNot(HaveOccurred())
+	mdTopology.Replicas = pointer.Int32(input.Replicas)
+	input.Cluster.Spec.Topology.Workers.MachineDeployments[0] = mdTopology
+	Eventually(func() error {
+		return patchHelper.Patch(ctx, input.Cluster)
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to scale machine deployment topology %s", mdTopology.Name)
+
+	log.Logf("Waiting for correct number of replicas to exist")
+	deploymentList := &clusterv1.MachineDeploymentList{}
+	Eventually(func() error {
+		return input.ClusterProxy.GetClient().List(ctx, deploymentList,
+			client.InNamespace(input.Cluster.Namespace),
+			client.MatchingLabels{
+				clusterv1.ClusterLabelName:                          input.Cluster.Name,
+				clusterv1.ClusterTopologyMachineDeploymentLabelName: mdTopology.Name,
+			},
+		)
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to list MachineDeployments object for Cluster %s", klog.KRef(input.Cluster.Namespace, input.Cluster.Name))
+
+	Expect(deploymentList.Items).To(HaveLen(1))
+	md := deploymentList.Items[0]
+
+	Eventually(func() (int, error) {
+		selectorMap, err := metav1.LabelSelectorAsMap(&md.Spec.Selector)
+		if err != nil {
+			return -1, err
+		}
+		ms := &clusterv1.MachineSetList{}
+		if err := input.ClusterProxy.GetClient().List(ctx, ms, client.InNamespace(input.Cluster.Namespace), client.MatchingLabels(selectorMap)); err != nil {
+			return -1, err
+		}
+		if len(ms.Items) == 0 {
+			return -1, errors.New("no machinesets were found")
+		}
+		machineSet := ms.Items[0]
+		selectorMap, err = metav1.LabelSelectorAsMap(&machineSet.Spec.Selector)
+		if err != nil {
+			return -1, err
+		}
+		machines := &clusterv1.MachineList{}
+		if err := input.ClusterProxy.GetClient().List(ctx, machines, client.InNamespace(machineSet.Namespace), client.MatchingLabels(selectorMap)); err != nil {
+			return -1, err
+		}
+		nodeRefCount := 0
+		for _, machine := range machines.Items {
+			if machine.Status.NodeRef != nil {
+				nodeRefCount++
+			}
+		}
+		if len(machines.Items) != nodeRefCount {
+			return -1, errors.New("Machine count does not match existing nodes count")
+		}
+		return nodeRefCount, nil
+	}, input.WaitForMachineDeployments...).Should(Equal(int(*md.Spec.Replicas)), "Timed out waiting for Machine Deployment %s to have %d replicas", klog.KObj(&md), *md.Spec.Replicas)
 }

@@ -43,8 +43,9 @@ const (
 
 	certManagerNamespace = "cert-manager"
 
-	// Deprecated: Use clusterctlv1.CertManagerVersionAnnotation instead.
 	// This is maintained only for supporting upgrades from cluster created with clusterctl v1alpha3.
+	//
+	// Deprecated: Use clusterctlv1.CertManagerVersionAnnotation instead.
 	// TODO: Remove once upgrades from v1alpha3 are no longer supported.
 	certManagerVersionAnnotation = "certmanager.clusterctl.cluster.x-k8s.io/version"
 )
@@ -531,7 +532,7 @@ func (cm *certManagerClient) deleteObj(obj unstructured.Unstructured) error {
 // 'create' operations will only be attempted once.
 func (cm *certManagerClient) waitForAPIReady(_ context.Context, retry bool) error {
 	log := logf.Log
-	// Waits for for the cert-manager to be available.
+	// Waits for the cert-manager to be available.
 	if retry {
 		log.Info("Waiting for cert-manager to be available...")
 	}

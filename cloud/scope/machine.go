@@ -24,6 +24,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/go-logr/logr"
+
 	"github.com/pkg/errors"
 	"golang.org/x/mod/semver"
 	"google.golang.org/api/compute/v1"
@@ -32,6 +34,7 @@ import (
 	"k8s.io/utils/pointer"
 	infrav1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-gcp/cloud"
+	"sigs.k8s.io/cluster-api-provider-gcp/cloud/providerid"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/controllers/noderefutil"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -167,8 +170,8 @@ func (m *MachineScope) GetProviderID() string {
 
 // SetProviderID sets the GCPMachine providerID in spec.
 func (m *MachineScope) SetProviderID() {
-	providerID := cloud.ProviderIDPrefix + path.Join(m.ClusterGetter.Project(), m.Zone(), m.Name())
-	m.GCPMachine.Spec.ProviderID = pointer.StringPtr(providerID)
+	providerID, _ := providerid.New(m.ClusterGetter.Project(), m.Zone(), m.Name())
+	m.GCPMachine.Spec.ProviderID = pointer.StringPtr(providerID.String())
 }
 
 // GetInstanceStatus returns the GCPMachine instance status.
@@ -254,7 +257,7 @@ func (m *MachineScope) InstanceAdditionalDiskSpec() []*compute.AttachedDisk {
 				DiskType:   path.Join("zones", m.Zone(), "diskTypes", string(*disk.DeviceType)),
 			},
 		}
-		if additionalDisk.InitializeParams.DiskType == string(infrav1.LocalSsdDiskType) {
+		if strings.HasSuffix(additionalDisk.InitializeParams.DiskType, string(infrav1.LocalSsdDiskType)) {
 			additionalDisk.Type = "SCRATCH" // Default is PERSISTENT.
 			// Override the Disk size
 			additionalDisk.InitializeParams.DiskSizeGb = 375
@@ -323,7 +326,7 @@ func (m *MachineScope) InstanceAdditionalMetadataSpec() *compute.Metadata {
 }
 
 // InstanceSpec returns instance spec.
-func (m *MachineScope) InstanceSpec() *compute.Instance {
+func (m *MachineScope) InstanceSpec(log logr.Logger) *compute.Instance {
 	instance := &compute.Instance{
 		Name:        m.Name(),
 		Zone:        m.Zone(),
@@ -350,6 +353,40 @@ func (m *MachineScope) InstanceSpec() *compute.Instance {
 	instance.CanIpForward = true
 	if m.GCPMachine.Spec.IPForwarding != nil && *m.GCPMachine.Spec.IPForwarding == infrav1.IPForwardingDisabled {
 		instance.CanIpForward = false
+	}
+	if m.GCPMachine.Spec.ShieldedInstanceConfig != nil {
+		instance.ShieldedInstanceConfig = &compute.ShieldedInstanceConfig{
+			EnableSecureBoot:          false,
+			EnableVtpm:                true,
+			EnableIntegrityMonitoring: true,
+		}
+		if m.GCPMachine.Spec.ShieldedInstanceConfig.SecureBoot == infrav1.SecureBootPolicyEnabled {
+			instance.ShieldedInstanceConfig.EnableSecureBoot = true
+		}
+		if m.GCPMachine.Spec.ShieldedInstanceConfig.VirtualizedTrustedPlatformModule == infrav1.VirtualizedTrustedPlatformModulePolicyDisabled {
+			instance.ShieldedInstanceConfig.EnableVtpm = false
+		}
+		if m.GCPMachine.Spec.ShieldedInstanceConfig.IntegrityMonitoring == infrav1.IntegrityMonitoringPolicyDisabled {
+			instance.ShieldedInstanceConfig.EnableIntegrityMonitoring = false
+		}
+	}
+	if m.GCPMachine.Spec.OnHostMaintenance != nil {
+		switch *m.GCPMachine.Spec.OnHostMaintenance {
+		case infrav1.HostMaintenancePolicyMigrate:
+			instance.Scheduling.OnHostMaintenance = "MIGRATE"
+		case infrav1.HostMaintenancePolicyTerminate:
+			instance.Scheduling.OnHostMaintenance = "TERMINATE"
+		default:
+			log.Error(errors.New("Invalid value"), "Unknown OnHostMaintenance value", "Spec.OnHostMaintenance", *m.GCPMachine.Spec.OnHostMaintenance)
+		}
+
+		instance.Scheduling.OnHostMaintenance = strings.ToUpper(string(*m.GCPMachine.Spec.OnHostMaintenance))
+	}
+	if m.GCPMachine.Spec.ConfidentialCompute != nil {
+		enabled := *m.GCPMachine.Spec.ConfidentialCompute == infrav1.ConfidentialComputePolicyEnabled
+		instance.ConfidentialInstanceConfig = &compute.ConfidentialInstanceConfig{
+			EnableConfidentialCompute: enabled,
+		}
 	}
 
 	instance.Disks = append(instance.Disks, m.InstanceImageSpec())

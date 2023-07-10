@@ -22,10 +22,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/google/go-github/v45/github"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
@@ -34,6 +37,8 @@ import (
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/client/config"
+	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
+	"sigs.k8s.io/cluster-api/internal/goproxy"
 )
 
 const (
@@ -68,6 +73,7 @@ type gitHubRepository struct {
 	rootPath                 string
 	componentsPath           string
 	injectClient             *github.Client
+	injectGoproxyClient      *goproxy.Client
 }
 
 var _ Repository = &gitHubRepository{}
@@ -80,6 +86,12 @@ func injectGithubClient(c *github.Client) githubRepositoryOption {
 	}
 }
 
+func injectGoproxyClient(c *goproxy.Client) githubRepositoryOption {
+	return func(g *gitHubRepository) {
+		g.injectGoproxyClient = c
+	}
+}
+
 // DefaultVersion returns defaultVersion field of gitHubRepository struct.
 func (g *gitHubRepository) DefaultVersion() string {
 	return g.defaultVersion
@@ -87,10 +99,45 @@ func (g *gitHubRepository) DefaultVersion() string {
 
 // GetVersions returns the list of versions that are available in a provider repository.
 func (g *gitHubRepository) GetVersions() ([]string, error) {
-	versions, err := g.getVersions()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get repository versions")
+	log := logf.Log
+
+	cacheID := fmt.Sprintf("%s/%s", g.owner, g.repository)
+	if versions, ok := cacheVersions[cacheID]; ok {
+		return versions, nil
 	}
+
+	goProxyClient, err := g.getGoproxyClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "get versions client")
+	}
+
+	var versions []string
+	if goProxyClient != nil {
+		// A goproxy is also able to handle the github repository path instead of the actual go module name.
+		gomodulePath := path.Join(githubDomain, g.owner, g.repository)
+
+		var parsedVersions semver.Versions
+		parsedVersions, err = goProxyClient.GetVersions(context.TODO(), gomodulePath)
+
+		// Log the error before fallback to github repository client happens.
+		if err != nil {
+			log.V(5).Info("error using Goproxy client to list versions for repository, falling back to github client", "owner", g.owner, "repository", g.repository, "error", err)
+		}
+
+		for _, v := range parsedVersions {
+			versions = append(versions, "v"+v.String())
+		}
+	}
+
+	// Fallback to github repository client if goProxyClient is nil or an error occurred.
+	if goProxyClient == nil || err != nil {
+		versions, err = g.getVersions()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get repository versions")
+		}
+	}
+
+	cacheVersions[cacheID] = versions
 	return versions, nil
 }
 
@@ -201,6 +248,24 @@ func (g *gitHubRepository) getClient() *github.Client {
 	return github.NewClient(g.authenticatingHTTPClient)
 }
 
+// getGoproxyClient returns a go proxy client.
+// It returns nil, nil if the environment variable is set to `direct` or `off`
+// to skip goproxy requests.
+func (g *gitHubRepository) getGoproxyClient() (*goproxy.Client, error) {
+	if g.injectGoproxyClient != nil {
+		return g.injectGoproxyClient, nil
+	}
+	scheme, host, err := goproxy.GetSchemeAndHost(os.Getenv("GOPROXY"))
+	if err != nil {
+		return nil, err
+	}
+	// Don't return a client if scheme and host is set to empty string.
+	if scheme == "" && host == "" {
+		return nil, nil
+	}
+	return goproxy.NewClient(scheme, host), nil
+}
+
 // setClientToken sets authenticatingHTTPClient field of gitHubRepository struct.
 func (g *gitHubRepository) setClientToken(token string) {
 	ts := oauth2.StaticTokenSource(
@@ -211,11 +276,6 @@ func (g *gitHubRepository) setClientToken(token string) {
 
 // getVersions returns all the release versions for a github repository.
 func (g *gitHubRepository) getVersions() ([]string, error) {
-	cacheID := fmt.Sprintf("%s/%s", g.owner, g.repository)
-	if versions, ok := cacheVersions[cacheID]; ok {
-		return versions, nil
-	}
-
 	client := g.getClient()
 
 	// get all the releases
@@ -253,7 +313,6 @@ func (g *gitHubRepository) getVersions() ([]string, error) {
 		versions = append(versions, tagName)
 	}
 
-	cacheVersions[cacheID] = versions
 	return versions, nil
 }
 

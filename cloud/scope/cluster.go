@@ -42,7 +42,7 @@ type ClusterScopeParams struct {
 
 // NewClusterScope creates a new Scope from the supplied parameters.
 // This is meant to be called for each reconcile iteration.
-func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
+func NewClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}
@@ -50,12 +50,12 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		return nil, errors.New("failed to generate new scope from nil GCPCluster")
 	}
 
-	computeSvc, err := compute.NewService(context.TODO())
-	if err != nil {
-		return nil, errors.Errorf("failed to create gcp compute client: %v", err)
-	}
-
 	if params.GCPServices.Compute == nil {
+		computeSvc, err := newComputeService(ctx, params.GCPCluster.Spec.CredentialsRef, params.Client)
+		if err != nil {
+			return nil, errors.Errorf("failed to create gcp compute client: %v", err)
+		}
+
 		params.GCPServices.Compute = computeSvc
 	}
 
@@ -133,7 +133,10 @@ func (s *ClusterScope) AdditionalLabels() infrav1.Labels {
 // ControlPlaneEndpoint returns the cluster control-plane endpoint.
 func (s *ClusterScope) ControlPlaneEndpoint() clusterv1.APIEndpoint {
 	endpoint := s.GCPCluster.Spec.ControlPlaneEndpoint
-	endpoint.Port = pointer.Int32Deref(s.Cluster.Spec.ClusterNetwork.APIServerPort, 443)
+	endpoint.Port = 443
+	if c := s.Cluster.Spec.ClusterNetwork; c != nil {
+		endpoint.Port = pointer.Int32Deref(c.APIServerPort, 443)
+	}
 	return endpoint
 }
 
@@ -294,7 +297,10 @@ func (s *ClusterScope) BackendServiceSpec() *compute.BackendService {
 
 // ForwardingRuleSpec returns google compute forwarding-rule spec.
 func (s *ClusterScope) ForwardingRuleSpec() *compute.ForwardingRule {
-	port := pointer.Int32Deref(s.Cluster.Spec.ClusterNetwork.APIServerPort, 443)
+	port := int32(443)
+	if c := s.Cluster.Spec.ClusterNetwork; c != nil {
+		port = pointer.Int32Deref(c.APIServerPort, 443)
+	}
 	portRange := fmt.Sprintf("%d-%d", port, port)
 	return &compute.ForwardingRule{
 		Name:                fmt.Sprintf("%s-%s", s.Name(), infrav1.APIServerRoleTagValue),

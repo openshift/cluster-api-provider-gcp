@@ -19,6 +19,7 @@ package webhooks
 import (
 	"context"
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/blang/semver"
@@ -143,7 +144,7 @@ func (webhook *Cluster) ValidateUpdate(ctx context.Context, oldObj, newObj runti
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (webhook *Cluster) ValidateDelete(_ context.Context, obj runtime.Object) error {
+func (webhook *Cluster) ValidateDelete(_ context.Context, _ runtime.Object) error {
 	return nil
 }
 
@@ -184,6 +185,19 @@ func (webhook *Cluster) validate(ctx context.Context, oldCluster, newCluster *cl
 			),
 		)
 	}
+	if newCluster.Spec.ClusterNetwork != nil {
+		// Ensure that the CIDR blocks defined under ClusterNetwork are valid.
+		if newCluster.Spec.ClusterNetwork.Pods != nil {
+			allErrs = append(allErrs, validateCIDRBlocks(specPath.Child("clusterNetwork", "pods", "cidrBlocks"),
+				newCluster.Spec.ClusterNetwork.Pods.CIDRBlocks)...)
+		}
+
+		if newCluster.Spec.ClusterNetwork.Services != nil {
+			allErrs = append(allErrs, validateCIDRBlocks(specPath.Child("clusterNetwork", "services", "cidrBlocks"),
+				newCluster.Spec.ClusterNetwork.Services.CIDRBlocks)...)
+		}
+	}
+
 	topologyPath := specPath.Child("topology")
 
 	// Validate the managed topology, if defined.
@@ -263,15 +277,15 @@ func (webhook *Cluster) validateTopology(ctx context.Context, oldCluster, newClu
 	allErrs = append(allErrs, variables.ValidateClusterVariables(newCluster.Spec.Topology.Variables, clusterClass.Spec.Variables,
 		fldPath.Child("variables"))...)
 
+	// validate the MachineHealthChecks defined in the cluster topology
+	allErrs = append(allErrs, validateMachineHealthChecks(newCluster, clusterClass)...)
+
 	if newCluster.Spec.Topology.Workers != nil {
 		for i, md := range newCluster.Spec.Topology.Workers.MachineDeployments {
 			// Continue if there are no variable overrides.
 			if md.Variables == nil || len(md.Variables.Overrides) == 0 {
 				continue
 			}
-
-			allErrs = append(allErrs, variables.ValidateTopLevelClusterVariablesExist(md.Variables.Overrides, newCluster.Spec.Topology.Variables,
-				fldPath.Child("workers", "machineDeployments").Index(i).Child("variables", "overrides"))...)
 
 			allErrs = append(allErrs, variables.ValidateMachineDeploymentVariables(md.Variables.Overrides, clusterClass.Spec.Variables,
 				fldPath.Child("workers", "machineDeployments").Index(i).Child("variables", "overrides"))...)
@@ -375,4 +389,99 @@ func (webhook *Cluster) getClusterClassForCluster(ctx context.Context, cluster *
 		return nil, err
 	}
 	return clusterClass, nil
+}
+
+func validateMachineHealthChecks(cluster *clusterv1.Cluster, clusterClass *clusterv1.ClusterClass) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if cluster.Spec.Topology.ControlPlane.MachineHealthCheck != nil {
+		fldPath := field.NewPath("spec", "topology", "controlPlane", "machineHealthCheck")
+
+		// Validate ControlPlane MachineHealthCheck if defined.
+		if !cluster.Spec.Topology.ControlPlane.MachineHealthCheck.MachineHealthCheckClass.IsZero() {
+			// Ensure ControlPlane does not define a MachineHealthCheck if the ClusterClass does not define MachineInfrastructure.
+			if clusterClass.Spec.ControlPlane.MachineInfrastructure == nil {
+				allErrs = append(allErrs, field.Forbidden(
+					fldPath,
+					"can be set only if spec.controlPlane.machineInfrastructure is set in ClusterClass",
+				))
+			}
+			allErrs = append(allErrs, validateMachineHealthCheckClass(fldPath, cluster.Namespace,
+				&cluster.Spec.Topology.ControlPlane.MachineHealthCheck.MachineHealthCheckClass)...)
+		}
+
+		// If MachineHealthCheck is explicitly enabled then make sure that a MachineHealthCheck definition is
+		// available either in the Cluster topology or in the ClusterClass.
+		// (One of these definitions will be used in the controller to create the MachineHealthCheck)
+
+		// Check if the machineHealthCheck is explicitly enabled in the ControlPlaneTopology.
+		if cluster.Spec.Topology.ControlPlane.MachineHealthCheck.Enable != nil && *cluster.Spec.Topology.ControlPlane.MachineHealthCheck.Enable {
+			// Ensure the MHC is defined in at least one of the ControlPlaneTopology of the Cluster or the ControlPlaneClass of the ClusterClass.
+			if cluster.Spec.Topology.ControlPlane.MachineHealthCheck.MachineHealthCheckClass.IsZero() && clusterClass.Spec.ControlPlane.MachineHealthCheck == nil {
+				allErrs = append(allErrs, field.Forbidden(
+					fldPath.Child("enable"),
+					fmt.Sprintf("cannot be set to %t as MachineHealthCheck definition is not available in the Cluster topology or the ClusterClass", *cluster.Spec.Topology.ControlPlane.MachineHealthCheck.Enable),
+				))
+			}
+		}
+	}
+
+	if cluster.Spec.Topology.Workers != nil {
+		for i, md := range cluster.Spec.Topology.Workers.MachineDeployments {
+			if md.MachineHealthCheck != nil {
+				fldPath := field.NewPath("spec", "topology", "workers", "machineDeployments", "machineHealthCheck").Index(i)
+
+				// Validate the MachineDeployment MachineHealthCheck if defined.
+				if !md.MachineHealthCheck.MachineHealthCheckClass.IsZero() {
+					allErrs = append(allErrs, validateMachineHealthCheckClass(fldPath, cluster.Namespace,
+						&md.MachineHealthCheck.MachineHealthCheckClass)...)
+				}
+
+				// If MachineHealthCheck is explicitly enabled then make sure that a MachineHealthCheck definition is
+				// available either in the Cluster topology or in the ClusterClass.
+				// (One of these definitions will be used in the controller to create the MachineHealthCheck)
+				mdClass := machineDeploymentClassOfName(clusterClass, md.Class)
+				if mdClass != nil { // Note: we skip handling the nil case here as it is already handled in previous validations.
+					// Check if the machineHealthCheck is explicitly enabled in the machineDeploymentTopology.
+					if md.MachineHealthCheck.Enable != nil && *md.MachineHealthCheck.Enable {
+						// Ensure the MHC is defined in at least one of the MachineDeploymentTopology of the Cluster or the MachineDeploymentClass of the ClusterClass.
+						if md.MachineHealthCheck.MachineHealthCheckClass.IsZero() && mdClass.MachineHealthCheck == nil {
+							allErrs = append(allErrs, field.Forbidden(
+								fldPath.Child("enable"),
+								fmt.Sprintf("cannot be set to %t as MachineHealthCheck definition is not available in the Cluster topology or the ClusterClass", *md.MachineHealthCheck.Enable),
+							))
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return allErrs
+}
+
+// machineDeploymentClassOfName find a MachineDeploymentClass of the given name in the provided ClusterClass.
+// Returns nil if it can not find one.
+// TODO: Check if there is already a helper function that can do this.
+func machineDeploymentClassOfName(clusterClass *clusterv1.ClusterClass, name string) *clusterv1.MachineDeploymentClass {
+	for _, mdClass := range clusterClass.Spec.Workers.MachineDeployments {
+		if mdClass.Class == name {
+			return &mdClass
+		}
+	}
+	return nil
+}
+
+// validateCIDRBlocks ensures the passed CIDR is valid.
+func validateCIDRBlocks(fldPath *field.Path, cidrs []string) field.ErrorList {
+	var allErrs field.ErrorList
+	for i, cidr := range cidrs {
+		if _, _, err := net.ParseCIDR(cidr); err != nil {
+			allErrs = append(allErrs, field.Invalid(
+				fldPath.Index(i),
+				cidr,
+				err.Error()))
+		}
+	}
+	return allErrs
 }
