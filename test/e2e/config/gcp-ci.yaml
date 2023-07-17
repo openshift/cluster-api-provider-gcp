@@ -15,73 +15,74 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: v1.3.5
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.3.5/core-components.yaml
-      type: url
-      files:
-      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-      replacements:
-      - old: "imagePullPolicy: Always"
-        new: "imagePullPolicy: IfNotPresent"
-      - old: "--leader-elect"
-        new: "--leader-elect=false"
+      - name: v1.4.4
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.4/core-components.yaml
+        type: url
+        files:
+          - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "--leader-elect"
+            new: "--leader-elect=false"
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: v1.3.5
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.3.5/bootstrap-components.yaml
-      type: url
-      files:
-      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-      replacements:
-      - old: "imagePullPolicy: Always"
-        new: "imagePullPolicy: IfNotPresent"
-      - old: "--leader-elect"
-        new: "--leader-elect=false"
+      - name: v1.4.4
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.4/bootstrap-components.yaml
+        type: url
+        files:
+          - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "--leader-elect"
+            new: "--leader-elect=false"
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-    - name: v1.3.5
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.3.5/control-plane-components.yaml
-      type: url
-      files:
-      - sourcePath: "../data/shared/v1beta1/metadata.yaml"
-      replacements:
-      - old: "imagePullPolicy: Always"
-        new: "imagePullPolicy: IfNotPresent"
-      - old: "--leader-elect"
-        new: "--leader-elect=false"
+      - name: v1.4.4
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.4/control-plane-components.yaml
+        type: url
+        files:
+          - sourcePath: "../data/shared/v1beta1/metadata.yaml"
+        replacements:
+          - old: "imagePullPolicy: Always"
+            new: "imagePullPolicy: IfNotPresent"
+          - old: "--leader-elect"
+            new: "--leader-elect=false"
   - name: gcp
     type: InfrastructureProvider
     versions:
-    - name: v1.3.99 # next; use manifest from source files
-      value: "${PWD}/config/default"
+      - name: v1.4.99 # next; use manifest from source files
+        value: "${PWD}/config/default"
     files:
-    - sourcePath: "${PWD}/metadata.yaml"
-      targetName: "metadata.yaml"
-    - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-ci.yaml"
-      targetName: "cluster-template.yaml"
-    - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-prow-ci-version.yaml"
-      targetName: "cluster-template-conformance-ci-artifacts.yaml"
-    - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-upgrades.yaml"
-    - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-md-remediation.yaml"
-    - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-kcp-remediation.yaml"
-    - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-topology.yaml"
-    - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/clusterclass-quick-start.yaml"
-    - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-ci-with-creds.yaml"
-    - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-ci-gke.yaml"
-    - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-ci-gke-autopilot.yaml"
+      - sourcePath: "${PWD}/metadata.yaml"
+        targetName: "metadata.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-ci.yaml"
+        targetName: "cluster-template.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-prow-ci-version.yaml"
+        targetName: "cluster-template-conformance-ci-artifacts.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-upgrades.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-md-remediation.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-kcp-remediation.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-topology.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/clusterclass-quick-start.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-ci-with-creds.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-ci-gke.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-ci-gke-autopilot.yaml"
 
 variables:
-  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.25.5}"
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.25.7}"
+  KUBERNETES_VERSION_MANAGEMENT: "v1.27.3"
   ETCD_VERSION_UPGRADE_TO: "3.5.1-0"
   COREDNS_VERSION_UPGRADE_TO: "v1.8.6"
-  KUBERNETES_IMAGE_UPGRADE_FROM: "projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-2004-v1-24-9-nightly"
-  KUBERNETES_IMAGE_UPGRADE_TO: "projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-2004-v1-25-5-nightly"
+  KUBERNETES_IMAGE_UPGRADE_FROM: "projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-2004-v1-24-11-nightly"
+  KUBERNETES_IMAGE_UPGRADE_TO: "projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-2004-v1-25-7-nightly"
   CONTROL_PLANE_MACHINE_TEMPLATE_UPGRADE_TO: "cp-k8s-upgrade-and-conformance"
   WORKERS_MACHINE_TEMPLATE_UPGRADE_TO: "worker-k8s-upgrade-and-conformance"
-  KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.25.5}"
-  KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.24.9}"
+  KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.25.7}"
+  KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.24.11}"
   EXP_CLUSTER_RESOURCE_SET: "true"
   CLUSTER_TOPOLOGY: "true"
   # Cluster Addons
