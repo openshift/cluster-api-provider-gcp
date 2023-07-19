@@ -59,7 +59,7 @@ CONVERSION_VERIFIER:= $(TOOLS_BIN_DIR)/conversion-verifier
 # Binaries.
 CLUSTERCTL := $(BIN_DIR)/clusterctl
 
-CONTROLLER_GEN_VER := v0.8.0
+CONTROLLER_GEN_VER := v0.11.3
 CONTROLLER_GEN_BIN := controller-gen
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER)
 
@@ -67,15 +67,15 @@ CONVERSION_GEN_VER := v0.22.2
 CONVERSION_GEN_BIN := conversion-gen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/$(CONVERSION_GEN_BIN)-$(CONVERSION_GEN_VER)
 
-ENVSUBST_VER := v1.2.0
+ENVSUBST_VER := v1.4.2
 ENVSUBST_BIN := envsubst
 ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)
 
-GOLANGCI_LINT_VER := v1.50.1
+GOLANGCI_LINT_VER := v1.52.1
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
-KIND_VER := v0.17.0
+KIND_VER := v0.20.0
 KIND_BIN := kind
 KIND := $(TOOLS_BIN_DIR)/$(KIND_BIN)-$(KIND_VER)
 
@@ -87,12 +87,12 @@ RELEASE_NOTES_VER := v0.11.0
 RELEASE_NOTES_BIN := release-notes
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
 
-GINKGO_VER := v2.9.1
+GINKGO_VER := v2.11.0
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
 
-KUBECTL_VER := v1.25.5
+KUBECTL_VER := v1.25.10
 KUBECTL_BIN := kubectl
 KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
 
@@ -102,7 +102,7 @@ SETUP_ENVTEST_VER := v0.0.0-20211110210527-619e6b92dab9
 SETUP_ENVTEST_BIN := setup-envtest
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)
 
-GO_APIDIFF_VER := v0.4.0
+GO_APIDIFF_VER := v0.6.0
 GO_APIDIFF_BIN := go-apidiff
 GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)
 
@@ -140,7 +140,7 @@ endif
 # Build time versioning details.
 LDFLAGS := $(shell hack/version.sh)
 
-GOLANG_VERSION := 1.19.6
+GOLANG_VERSION := 1.19.10
 
 # CI
 CAPG_WORKER_CLUSTER_KUBECONFIG ?= "/tmp/kubeconfig"
@@ -473,7 +473,7 @@ create-management-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KIND) $(KUBECTL)
 	./hack/install-cert-manager.sh
 
 	# Deploy CAPI
-	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.3.5/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
+	curl --retry $(CURL_RETRIES) -sSL https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.4.4/cluster-api-components.yaml | $(ENVSUBST) | $(KUBECTL) apply -f -
 
 	# Deploy CAPG
 	$(KIND) load docker-image $(CONTROLLER_IMG)-$(ARCH):$(TAG) --name=clusterapi
@@ -503,7 +503,7 @@ create-workload-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL)
 	${TIMEOUT} 15m bash -c "while ! kubectl --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) get nodes | grep master; do sleep 1; done"
 
 	# Deploy calico
-	$(KUBECTL) --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) apply -f https://docs.projectcalico.org/manifests/calico.yaml
+	$(KUBECTL) --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
 
 	@echo 'run "$(KUBECTL) --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) ..." to work with the new target cluster'
 

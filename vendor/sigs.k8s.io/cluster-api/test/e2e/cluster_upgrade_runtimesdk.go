@@ -169,6 +169,30 @@ func clusterUpgradeWithRuntimeSDKSpec(ctx context.Context, inputGetter func() cl
 					clusterRef,
 					input.E2EConfig.GetIntervals(specName, "wait-cluster"))
 			},
+			PostMachinesProvisioned: func() {
+				Eventually(func() error {
+					// Before running the BeforeClusterUpgrade hook, the topology controller
+					// checks if the ControlPlane `IsScaling()` and for MachineDeployments if
+					// `IsAnyRollingOut()`.
+					// This PostMachineProvisioned function ensures that the clusters machines
+					// are healthy by checking the MachineNodeHealthyCondition, so the upgrade
+					// below does not get delayed or runs into timeouts before even reaching
+					// the BeforeClusterUpgrade hook.
+					machineList := &clusterv1.MachineList{}
+					if err := input.BootstrapClusterProxy.GetClient().List(ctx, machineList, client.InNamespace(namespace.Name)); err != nil {
+						return errors.Wrap(err, "list machines")
+					}
+
+					for i := range machineList.Items {
+						machine := &machineList.Items[i]
+						if !conditions.IsTrue(machine, clusterv1.MachineNodeHealthyCondition) {
+							return errors.Errorf("machine %q does not have %q condition set to true", machine.GetName(), clusterv1.MachineNodeHealthyCondition)
+						}
+					}
+
+					return nil
+				}, 5*time.Minute, 15*time.Second).Should(Succeed(), "Waiting for rollouts to finish")
+			},
 			WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-cluster"),
 			WaitForControlPlaneIntervals: input.E2EConfig.GetIntervals(specName, "wait-control-plane"),
 			WaitForMachineDeployments:    input.E2EConfig.GetIntervals(specName, "wait-worker-nodes"),
@@ -289,6 +313,13 @@ func extensionConfig(name, namespace string) *runtimev1.ExtensionConfig {
 						Values:   []string{namespace},
 					},
 				},
+			},
+			Settings: map[string]string{
+				// In the E2E test we are defaulting all handlers to blocking because cluster_upgrade_runtimesdk_test
+				// expects the handlers to block the cluster lifecycle by default.
+				// Setting this value to true enforces that the test-extension automatically creates the ConfigMap with
+				// blocking preloaded responses.
+				"defaultAllHandlersToBlocking": "true",
 			},
 		},
 	}
