@@ -17,7 +17,7 @@ ifndef PROVIDER_VERSION
 endif
 
 .PHONY: ocp-manifests
-ocp-manifests: $(RELEASE_DIR) $(KUSTOMIZE) check-env ## Builds openshift specific manifests.
+ocp-manifests: $(RELEASE_DIR) $(KUSTOMIZE) check-env ## Builds openshift specific manifests
 	# Build core-components.
 	$(KUSTOMIZE) build ../config/default > infrastructure-components.yaml
 	# Generate provider manifests.
