@@ -15,8 +15,8 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-      - name: v1.5.3
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.5.3/core-components.yaml
+      - name: v1.6.2
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.2/core-components.yaml
         type: url
         files:
           - sourcePath: "../data/shared/v1beta1/metadata.yaml"
@@ -28,8 +28,8 @@ providers:
   - name: kubeadm
     type: BootstrapProvider
     versions:
-      - name: v1.5.3
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.5.3/bootstrap-components.yaml
+      - name: v1.6.2
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.2/bootstrap-components.yaml
         type: url
         files:
           - sourcePath: "../data/shared/v1beta1/metadata.yaml"
@@ -41,8 +41,8 @@ providers:
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-      - name: v1.5.3
-        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.5.3/control-plane-components.yaml
+      - name: v1.6.2
+        value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.2/control-plane-components.yaml
         type: url
         files:
           - sourcePath: "../data/shared/v1beta1/metadata.yaml"
@@ -54,7 +54,7 @@ providers:
   - name: gcp
     type: InfrastructureProvider
     versions:
-      - name: v1.5.99 # next; use manifest from source files
+      - name: v1.6.99 # next; use manifest from source files
         value: "${PWD}/config/default"
     files:
       - sourcePath: "${PWD}/metadata.yaml"
@@ -73,16 +73,16 @@ providers:
       - sourcePath: "${PWD}/test/e2e/data/infrastructure-gcp/cluster-template-ci-gke-autopilot.yaml"
 
 variables:
-  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.27.3}"
-  KUBERNETES_VERSION_MANAGEMENT: "v1.27.3"
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.28.3}"
+  KUBERNETES_VERSION_MANAGEMENT: "v1.28.0"
   ETCD_VERSION_UPGRADE_TO: "3.5.1-0"
   COREDNS_VERSION_UPGRADE_TO: "v1.8.6"
-  KUBERNETES_IMAGE_UPGRADE_FROM: "projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-2204-v1-26-6-nightly"
-  KUBERNETES_IMAGE_UPGRADE_TO: "projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-2204-v1-27-3-nightly"
+  KUBERNETES_IMAGE_UPGRADE_FROM: "projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-2204-v1-27-3-nightly"
+  KUBERNETES_IMAGE_UPGRADE_TO: "projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-2204-v1-28-3-nightly"
   CONTROL_PLANE_MACHINE_TEMPLATE_UPGRADE_TO: "cp-k8s-upgrade-and-conformance"
   WORKERS_MACHINE_TEMPLATE_UPGRADE_TO: "worker-k8s-upgrade-and-conformance"
-  KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.27.3}"
-  KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.26.6}"
+  KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-v1.28.3}"
+  KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-v1.27.3}"
   EXP_CLUSTER_RESOURCE_SET: "true"
   CLUSTER_TOPOLOGY: "true"
   # Cluster Addons
@@ -104,15 +104,22 @@ variables:
   CAPG_LOGLEVEL: "4"
 
 intervals:
-  default/wait-controllers: ["3m", "10s"]
+  default/wait-controllers: ["5m", "10s"]
   default/wait-cluster: ["20m", "10s"]
-  default/wait-control-plane: ["30m", "10s"]
-  default/wait-worker-nodes: ["30m", "10s"]
-  default/wait-worker-machine-pools: ["30m", "10s"]
-  default/wait-delete-cluster: ["20m", "10s"]
-  default/wait-machine-upgrade: ["50m", "10s"]
+  default/wait-private-cluster: ["30m", "10s"]
+  default/wait-control-plane: ["20m", "10s"]
+  default/wait-control-plane-ha: ["30m", "10s"]
+  default/wait-worker-nodes: ["25m", "10s"]
+  default/wait-gpu-nodes: ["30m", "10s"]
+  default/wait-delete-cluster: ["30m", "10s"]
+  default/wait-machine-upgrade: ["60m", "10s"]
+  default/wait-machine-pool-upgrade: ["60m", "10s"]
   default/wait-machine-remediation: ["30m", "10s"]
-  default/wait-deployment: ["5m", "10s"]
+  default/wait-deployment: ["15m", "10s"]
+  default/wait-daemonset: ["15m", "10s"]
+  default/wait-deployment-available: ["15m", "10s"]
   default/wait-job: ["5m", "10s"]
-  default/wait-service: ["3m", "10s"]
+  default/wait-service: ["15m", "10s"]
+  default/wait-machine-pool-nodes: ["30m", "10s"]
+  default/wait-nsg-update: ["20m", "10s"]
   node-drain/wait-machine-deleted: ["10m", "10s"]

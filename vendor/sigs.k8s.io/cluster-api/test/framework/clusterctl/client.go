@@ -18,6 +18,7 @@ package clusterctl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,6 +26,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -61,8 +63,8 @@ type InitInput struct {
 }
 
 // Init calls clusterctl init with the list of providers defined in the local repository.
-func Init(_ context.Context, input InitInput) {
-	args := calculateClusterCtlInitArgs(input)
+func Init(ctx context.Context, input InitInput) {
+	args := calculateClusterCtlInitArgs(input, "")
 	log.Logf("clusterctl %s", strings.Join(args, " "))
 
 	initOpt := clusterctlclient.InitOptions{
@@ -81,16 +83,16 @@ func Init(_ context.Context, input InitInput) {
 		WaitProviders:             true,
 	}
 
-	clusterctlClient, log := getClusterctlClientWithLogger(input.ClusterctlConfigPath, "clusterctl-init.log", input.LogFolder)
+	clusterctlClient, log := getClusterctlClientWithLogger(ctx, input.ClusterctlConfigPath, "clusterctl-init.log", input.LogFolder)
 	defer log.Close()
 
-	_, err := clusterctlClient.Init(initOpt)
+	_, err := clusterctlClient.Init(ctx, initOpt)
 	Expect(err).ToNot(HaveOccurred(), "failed to run clusterctl init")
 }
 
 // InitWithBinary uses clusterctl binary to run init with the list of providers defined in the local repository.
 func InitWithBinary(_ context.Context, binary string, input InitInput) {
-	args := calculateClusterCtlInitArgs(input)
+	args := calculateClusterCtlInitArgs(input, binary)
 	log.Logf("clusterctl %s", strings.Join(args, " "))
 
 	cmd := exec.Command(binary, args...) //nolint:gosec // We don't care about command injection here.
@@ -99,15 +101,28 @@ func InitWithBinary(_ context.Context, binary string, input InitInput) {
 	_ = os.WriteFile(filepath.Join(input.LogFolder, "clusterctl-init.log"), out, 0644) //nolint:gosec // this is a log file to be shared via prow artifacts
 	var stdErr string
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			stdErr = string(exitErr.Stderr)
 		}
 	}
 	Expect(err).ToNot(HaveOccurred(), "failed to run clusterctl init:\nstdout:\n%s\nstderr:\n%s", string(out), stdErr)
 }
 
-func calculateClusterCtlInitArgs(input InitInput) []string {
+func calculateClusterCtlInitArgs(input InitInput, clusterctlBinaryPath string) []string {
 	args := []string{"init", "--config", input.ClusterctlConfigPath, "--kubeconfig", input.KubeconfigPath}
+
+	// If we use the clusterctl binary, only set --wait-providers for clusterctl >= v0.4.0.
+	if clusterctlBinaryPath != "" {
+		version, err := getClusterCtlVersion(clusterctlBinaryPath)
+		Expect(err).ToNot(HaveOccurred())
+		if version.GTE(semver.MustParse("0.4.0")) {
+			args = append(args, "--wait-providers")
+		}
+	} else {
+		args = append(args, "--wait-providers")
+	}
+
 	if input.CoreProvider != "" {
 		args = append(args, "--core", input.CoreProvider)
 	}
@@ -161,37 +176,8 @@ func Upgrade(ctx context.Context, input UpgradeInput) {
 		input.ClusterctlConfigPath = outputPath
 	}
 
-	// Check if the user want a custom upgrade
-	isCustomUpgrade := input.CoreProvider != "" ||
-		len(input.BootstrapProviders) > 0 ||
-		len(input.ControlPlaneProviders) > 0 ||
-		len(input.InfrastructureProviders) > 0 ||
-		len(input.IPAMProviders) > 0 ||
-		len(input.RuntimeExtensionProviders) > 0 ||
-		len(input.AddonProviders) > 0
-
-	Expect((input.Contract != "" && !isCustomUpgrade) || (input.Contract == "" && isCustomUpgrade)).To(BeTrue(), `Invalid arguments. Either the input.Contract parameter or at least one of the following providers has to be set:
-		input.CoreProvider, input.BootstrapProviders, input.ControlPlaneProviders, input.InfrastructureProviders, input.IPAMProviders, input.RuntimeExtensionProviders, input.AddonProviders`)
-
-	if isCustomUpgrade {
-		log.Logf("clusterctl upgrade apply --core %s --bootstrap %s --control-plane %s --infrastructure %s --ipam %s --runtime-extension %s --addon %s --config %s --kubeconfig %s",
-			input.CoreProvider,
-			strings.Join(input.BootstrapProviders, ","),
-			strings.Join(input.ControlPlaneProviders, ","),
-			strings.Join(input.InfrastructureProviders, ","),
-			strings.Join(input.IPAMProviders, ","),
-			strings.Join(input.RuntimeExtensionProviders, ","),
-			strings.Join(input.AddonProviders, ","),
-			input.ClusterctlConfigPath,
-			input.KubeconfigPath,
-		)
-	} else {
-		log.Logf("clusterctl upgrade apply --contract %s --config %s --kubeconfig %s",
-			input.Contract,
-			input.ClusterctlConfigPath,
-			input.KubeconfigPath,
-		)
-	}
+	args := calculateClusterCtlUpgradeArgs(input)
+	log.Logf("clusterctl %s", strings.Join(args, " "))
 
 	upgradeOpt := clusterctlclient.ApplyUpgradeOptions{
 		Kubeconfig: clusterctlclient.Kubeconfig{
@@ -209,11 +195,84 @@ func Upgrade(ctx context.Context, input UpgradeInput) {
 		WaitProviders:             true,
 	}
 
-	clusterctlClient, log := getClusterctlClientWithLogger(input.ClusterctlConfigPath, "clusterctl-upgrade.log", input.LogFolder)
+	clusterctlClient, log := getClusterctlClientWithLogger(ctx, input.ClusterctlConfigPath, "clusterctl-upgrade.log", input.LogFolder)
 	defer log.Close()
 
-	err := clusterctlClient.ApplyUpgrade(upgradeOpt)
+	err := clusterctlClient.ApplyUpgrade(ctx, upgradeOpt)
 	Expect(err).ToNot(HaveOccurred(), "failed to run clusterctl upgrade")
+}
+
+// UpgradeWithBinary calls clusterctl upgrade apply with the list of providers defined in the local repository.
+func UpgradeWithBinary(ctx context.Context, binary string, input UpgradeInput) {
+	if len(input.ClusterctlVariables) > 0 {
+		outputPath := filepath.Join(filepath.Dir(input.ClusterctlConfigPath), fmt.Sprintf("clusterctl-upgrade-config-%s.yaml", input.ClusterName))
+		copyAndAmendClusterctlConfig(ctx, copyAndAmendClusterctlConfigInput{
+			ClusterctlConfigPath: input.ClusterctlConfigPath,
+			OutputPath:           outputPath,
+			Variables:            input.ClusterctlVariables,
+		})
+		input.ClusterctlConfigPath = outputPath
+	}
+
+	args := calculateClusterCtlUpgradeArgs(input)
+	log.Logf("clusterctl %s", strings.Join(args, " "))
+
+	cmd := exec.Command(binary, args...) //nolint:gosec // We don't care about command injection here.
+
+	out, err := cmd.CombinedOutput()
+	_ = os.WriteFile(filepath.Join(input.LogFolder, "clusterctl-upgrade.log"), out, 0644) //nolint:gosec // this is a log file to be shared via prow artifacts
+	var stdErr string
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			stdErr = string(exitErr.Stderr)
+		}
+	}
+	Expect(err).ToNot(HaveOccurred(), "failed to run clusterctl upgrade apply:\nstdout:\n%s\nstderr:\n%s", string(out), stdErr)
+}
+
+func calculateClusterCtlUpgradeArgs(input UpgradeInput) []string {
+	args := []string{"upgrade", "apply", "--config", input.ClusterctlConfigPath, "--kubeconfig", input.KubeconfigPath, "--wait-providers"}
+
+	// Check if the user want a custom upgrade
+	isCustomUpgrade := input.CoreProvider != "" ||
+		len(input.BootstrapProviders) > 0 ||
+		len(input.ControlPlaneProviders) > 0 ||
+		len(input.InfrastructureProviders) > 0 ||
+		len(input.IPAMProviders) > 0 ||
+		len(input.RuntimeExtensionProviders) > 0 ||
+		len(input.AddonProviders) > 0
+
+	Expect((input.Contract != "" && !isCustomUpgrade) || (input.Contract == "" && isCustomUpgrade)).To(BeTrue(), `Invalid arguments. Either the input.Contract parameter or at least one of the following providers has to be set:
+		input.CoreProvider, input.BootstrapProviders, input.ControlPlaneProviders, input.InfrastructureProviders, input.IPAMProviders, input.RuntimeExtensionProviders, input.AddonProviders`)
+
+	if isCustomUpgrade {
+		if input.CoreProvider != "" {
+			args = append(args, "--core", input.CoreProvider)
+		}
+		if len(input.BootstrapProviders) > 0 {
+			args = append(args, "--bootstrap", strings.Join(input.BootstrapProviders, ","))
+		}
+		if len(input.ControlPlaneProviders) > 0 {
+			args = append(args, "--control-plane", strings.Join(input.ControlPlaneProviders, ","))
+		}
+		if len(input.InfrastructureProviders) > 0 {
+			args = append(args, "--infrastructure", strings.Join(input.InfrastructureProviders, ","))
+		}
+		if len(input.IPAMProviders) > 0 {
+			args = append(args, "--ipam", strings.Join(input.IPAMProviders, ","))
+		}
+		if len(input.RuntimeExtensionProviders) > 0 {
+			args = append(args, "--runtime-extension", strings.Join(input.RuntimeExtensionProviders, ","))
+		}
+		if len(input.AddonProviders) > 0 {
+			args = append(args, "--addon", strings.Join(input.AddonProviders, ","))
+		}
+	} else {
+		args = append(args, "--contract", input.Contract)
+	}
+
+	return args
 }
 
 // DeleteInput is the input for Delete.
@@ -224,7 +283,7 @@ type DeleteInput struct {
 }
 
 // Delete calls clusterctl delete --all.
-func Delete(_ context.Context, input DeleteInput) {
+func Delete(ctx context.Context, input DeleteInput) {
 	log.Logf("clusterctl delete --all")
 
 	deleteOpts := clusterctlclient.DeleteOptions{
@@ -235,10 +294,10 @@ func Delete(_ context.Context, input DeleteInput) {
 		DeleteAll: true,
 	}
 
-	clusterctlClient, log := getClusterctlClientWithLogger(input.ClusterctlConfigPath, "clusterctl-delete.log", input.LogFolder)
+	clusterctlClient, log := getClusterctlClientWithLogger(ctx, input.ClusterctlConfigPath, "clusterctl-delete.log", input.LogFolder)
 	defer log.Close()
 
-	err := clusterctlClient.Delete(deleteOpts)
+	err := clusterctlClient.Delete(ctx, deleteOpts)
 	Expect(err).ToNot(HaveOccurred(), "failed to run clusterctl upgrade")
 }
 
@@ -294,10 +353,10 @@ func ConfigCluster(ctx context.Context, input ConfigClusterInput) []byte {
 		input.ClusterctlConfigPath = outputPath
 	}
 
-	clusterctlClient, log := getClusterctlClientWithLogger(input.ClusterctlConfigPath, fmt.Sprintf("%s-cluster-template.yaml", input.ClusterName), input.LogFolder)
+	clusterctlClient, log := getClusterctlClientWithLogger(ctx, input.ClusterctlConfigPath, fmt.Sprintf("%s-cluster-template.yaml", input.ClusterName), input.LogFolder)
 	defer log.Close()
 
-	template, err := clusterctlClient.GetClusterTemplate(templateOptions)
+	template, err := clusterctlClient.GetClusterTemplate(ctx, templateOptions)
 	Expect(err).ToNot(HaveOccurred(), "Failed to run clusterctl config cluster")
 
 	yaml, err := template.Yaml()
@@ -310,17 +369,10 @@ func ConfigCluster(ctx context.Context, input ConfigClusterInput) []byte {
 // ConfigClusterWithBinary uses clusterctl binary to run config cluster or generate cluster.
 // NOTE: This func detects the clusterctl version and uses config cluster or generate cluster
 // accordingly. We can drop the detection when we don't have to support clusterctl v0.3.x anymore.
-// TODO: (killianmuldoon) remove this detection.
 func ConfigClusterWithBinary(_ context.Context, clusterctlBinaryPath string, input ConfigClusterInput) []byte {
-	log.Logf("Detect clusterctl version via: clusterctl version")
-
-	out, err := exec.Command(clusterctlBinaryPath, "version").Output()
-	Expect(err).ToNot(HaveOccurred(), "error running clusterctl version")
-	var clusterctlSupportsGenerateCluster bool
-	if strings.Contains(string(out), "Major:\"1\"") {
-		log.Logf("Detected clusterctl v1.x")
-		clusterctlSupportsGenerateCluster = true
-	}
+	version, err := getClusterCtlVersion(clusterctlBinaryPath)
+	Expect(err).ToNot(HaveOccurred())
+	clusterctlSupportsGenerateCluster := version.GTE(semver.MustParse("1.0.0"))
 
 	var cmd *exec.Cmd
 	if clusterctlSupportsGenerateCluster {
@@ -365,11 +417,12 @@ func ConfigClusterWithBinary(_ context.Context, clusterctlBinaryPath string, inp
 		)
 	}
 
-	out, err = cmd.Output()
+	out, err := cmd.Output()
 	_ = os.WriteFile(filepath.Join(input.LogFolder, fmt.Sprintf("%s-cluster-template.yaml", input.ClusterName)), out, 0644) //nolint:gosec // this is a log file to be shared via prow artifacts
 	var stdErr string
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			stdErr = string(exitErr.Stderr)
 		}
 	}
@@ -403,7 +456,7 @@ func Move(ctx context.Context, input MoveInput) {
 		input.Namespace,
 	)
 
-	clusterctlClient, log := getClusterctlClientWithLogger(input.ClusterctlConfigPath, "clusterctl-move.log", logDir)
+	clusterctlClient, log := getClusterctlClientWithLogger(ctx, input.ClusterctlConfigPath, "clusterctl-move.log", logDir)
 	defer log.Close()
 	options := clusterctlclient.MoveOptions{
 		FromKubeconfig: clusterctlclient.Kubeconfig{Path: input.FromKubeconfigPath, Context: ""},
@@ -411,17 +464,17 @@ func Move(ctx context.Context, input MoveInput) {
 		Namespace:      input.Namespace,
 	}
 
-	Expect(clusterctlClient.Move(options)).To(Succeed(), "Failed to run clusterctl move")
+	Expect(clusterctlClient.Move(ctx, options)).To(Succeed(), "Failed to run clusterctl move")
 }
 
-func getClusterctlClientWithLogger(configPath, logName, logFolder string) (clusterctlclient.Client, *logger.LogFile) {
+func getClusterctlClientWithLogger(ctx context.Context, configPath, logName, logFolder string) (clusterctlclient.Client, *logger.LogFile) {
 	log := logger.OpenLogFile(logger.OpenLogFileInput{
 		LogFolder: logFolder,
 		Name:      logName,
 	})
 	clusterctllog.SetLogger(log.Logger())
 
-	c, err := clusterctlclient.New(configPath)
+	c, err := clusterctlclient.New(ctx, configPath)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create the clusterctl client library")
 	return c, log
 }

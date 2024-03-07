@@ -20,13 +20,13 @@ import (
 	"reflect"
 
 	appsv1 "k8s.io/api/apps/v1"
+	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	clusterv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	bootstrapv1 "sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1"
 	clusterctlv1 "sigs.k8s.io/cluster-api/cmd/clusterctl/api/v1alpha3"
@@ -61,9 +61,6 @@ func TryAddDefaultSchemes(scheme *runtime.Scheme) {
 	// Add the CAPI clusterctl scheme.
 	_ = clusterctlv1.AddToScheme(scheme)
 
-	// Add the core CAPI v1alpha3 scheme.
-	_ = clusterv1alpha3.AddToScheme(scheme)
-
 	// Add the kubeadm bootstrapper scheme.
 	_ = bootstrapv1.AddToScheme(scheme)
 
@@ -79,6 +76,10 @@ func TryAddDefaultSchemes(scheme *runtime.Scheme) {
 
 	// Add rbac to the scheme.
 	_ = rbacv1.AddToScheme(scheme)
+
+	// Add coordination to the schema
+	// Note: This is e.g. used to trigger kube-controller-manager restarts by stealing its lease.
+	_ = coordinationv1.AddToScheme(scheme)
 }
 
 // ObjectToKind returns the Kind without the package prefix. Pass in a pointer to a struct
