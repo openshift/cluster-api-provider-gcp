@@ -2914,6 +2914,7 @@ data:
           containers:
           - args:
             - --leader-elect
+            - --feature-gates=GKE=${EXP_CAPG_GKE:=false}
             - --diagnostics-address=${CAPG_DIAGNOSTICS_ADDRESS:=:8443}
             - --insecure-diagnostics=${CAPG_INSECURE_DIAGNOSTICS:=false}
             - --v=${CAPG_LOGLEVEL:=0}
@@ -2969,6 +2970,7 @@ data:
               privileged: false
               runAsGroup: 65532
               runAsUser: 65532
+            terminationMessagePolicy: FallbackToLogsOnError
             volumeMounts:
             - mountPath: /tmp/k8s-webhook-server/serving-certs
               name: cert
