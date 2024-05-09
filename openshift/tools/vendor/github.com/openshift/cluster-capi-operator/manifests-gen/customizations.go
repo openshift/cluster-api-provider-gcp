@@ -18,11 +18,8 @@ import (
 type resourceKey string
 
 const (
-	crdKey        resourceKey = "crds"
-	otherKey      resourceKey = "other"
-	rbacKey       resourceKey = "rbac"
-	deploymentKey resourceKey = "deployment"
-	serviceKey    resourceKey = "service"
+	crdKey   resourceKey = "crds"
+	otherKey resourceKey = "other"
 )
 
 var (
@@ -40,17 +37,16 @@ var (
 		"target.workload.openshift.io/management": `{"effect": "PreferredDuringScheduling"}`,
 	}
 
-	techPreviewAnnotation      = "release.openshift.io/feature-set"
-	techPreviewAnnotationValue = "TechPreviewNoUpgrade"
+	// featureSetAnnotationValue is a multiple-feature-sets annotation value
+	// adhering to the: %s,%s,... notation defined in the openshift/library-go/pkg/manifest parser.
+	featureSetAnnotationValue = "CustomNoUpgrade,TechPreviewNoUpgrade"
+	featureSetAnnotationKey   = "release.openshift.io/feature-set"
 )
 
 func processObjects(objs []unstructured.Unstructured, providerName string) map[resourceKey][]unstructured.Unstructured {
 	resourceMap := map[resourceKey][]unstructured.Unstructured{}
-	finalObjs := []unstructured.Unstructured{}
-	rbacObjs := []unstructured.Unstructured{}
+	providerConfigMapObjs := []unstructured.Unstructured{}
 	crdObjs := []unstructured.Unstructured{}
-	deploymentObjs := []unstructured.Unstructured{}
-	serviceObjs := []unstructured.Unstructured{}
 
 	serviceSecretNames := findWebhookServiceSecretName(objs)
 
@@ -59,10 +55,8 @@ func processObjects(objs []unstructured.Unstructured, providerName string) map[r
 		switch obj.GetKind() {
 		case "ClusterRole", "Role", "ClusterRoleBinding", "RoleBinding", "ServiceAccount":
 			setOpenShiftAnnotations(obj, false)
-			setTechPreviewAnnotation(obj)
-			rbacObjs = append(rbacObjs, obj)
-
-			finalObjs = append(finalObjs, obj)
+			setNoUpgradeAnnotations(obj)
+			providerConfigMapObjs = append(providerConfigMapObjs, obj)
 		case "MutatingWebhookConfiguration":
 			// Explicitly remove defaulting webhooks for the cluster-api provider.
 			// We don't need CAPI to set any default to the cluster object because
@@ -70,41 +64,42 @@ func processObjects(objs []unstructured.Unstructured, providerName string) map[r
 			// For more information: https://issues.redhat.com/browse/OCPCLOUD-1506
 			removeClusterDefaultingWebhooks(&obj)
 			replaceCertManagerAnnotations(&obj)
-			finalObjs = append(finalObjs, obj)
+			providerConfigMapObjs = append(providerConfigMapObjs, obj)
 		case "ValidatingWebhookConfiguration":
 			removeClusterValidatingWebhooks(&obj)
 			replaceCertManagerAnnotations(&obj)
-			finalObjs = append(finalObjs, obj)
+			providerConfigMapObjs = append(providerConfigMapObjs, obj)
 		case "CustomResourceDefinition":
 			replaceCertManagerAnnotations(&obj)
 			removeConversionWebhook(&obj)
 			setOpenShiftAnnotations(obj, true)
-			setTechPreviewAnnotation(obj)
-			crdObjs = append(crdObjs, obj)
-			finalObjs = append(finalObjs, obj)
+			setNoUpgradeAnnotations(obj)
+			// Store Core CAPI CRDs in their own manifest to get them applied by CVO directly.
+			// We want these to be installed independently from whether the cluster-capi-operator is enabled,
+			// as other Openshift components rely on them.
+			if providerName == coreCAPIProvider {
+				crdObjs = append(crdObjs, obj)
+			} else {
+				providerConfigMapObjs = append(providerConfigMapObjs, obj)
+			}
 		case "Service":
 			replaceCertMangerServiceSecret(&obj, serviceSecretNames)
 			setOpenShiftAnnotations(obj, true)
-			setTechPreviewAnnotation(obj)
-			serviceObjs = append(serviceObjs, obj)
-			finalObjs = append(finalObjs, obj)
+			setNoUpgradeAnnotations(obj)
+			providerConfigMapObjs = append(providerConfigMapObjs, obj)
 		case "Deployment":
 			customizeDeployments(&obj)
 			if providerName == "operator" {
 				setOpenShiftAnnotations(obj, false)
-				setTechPreviewAnnotation(obj)
+				setNoUpgradeAnnotations(obj)
 			}
-			deploymentObjs = append(deploymentObjs, obj)
-			finalObjs = append(finalObjs, obj)
+			providerConfigMapObjs = append(providerConfigMapObjs, obj)
 		case "Certificate", "Issuer", "Namespace", "Secret": // skip
 		}
 	}
 
-	resourceMap[rbacKey] = rbacObjs
 	resourceMap[crdKey] = crdObjs
-	resourceMap[deploymentKey] = deploymentObjs
-	resourceMap[serviceKey] = serviceObjs
-	resourceMap[otherKey] = finalObjs
+	resourceMap[otherKey] = providerConfigMapObjs
 
 	return resourceMap
 }
@@ -125,13 +120,13 @@ func setOpenShiftAnnotations(obj unstructured.Unstructured, merge bool) {
 	obj.SetAnnotations(anno)
 }
 
-func setTechPreviewAnnotation(obj unstructured.Unstructured) {
+func setNoUpgradeAnnotations(obj unstructured.Unstructured) {
 	anno := obj.GetAnnotations()
 	if anno == nil {
 		anno = map[string]string{}
 	}
 
-	anno[techPreviewAnnotation] = techPreviewAnnotationValue
+	anno[featureSetAnnotationKey] = featureSetAnnotationValue
 	obj.SetAnnotations(anno)
 }
 

@@ -2,7 +2,7 @@ module tools
 
 go 1.18
 
-require github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20231129212918-dcb7a56ab14c
+require github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20240411095436-0e5dbd062fd6
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
@@ -64,12 +64,12 @@ require (
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.11.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/term v0.17.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
