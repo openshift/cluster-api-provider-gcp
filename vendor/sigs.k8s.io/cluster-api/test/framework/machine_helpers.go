@@ -127,13 +127,7 @@ func GetControlPlaneMachinesByCluster(ctx context.Context, input GetControlPlane
 	Expect(input.ClusterName).ToNot(BeEmpty(), "Invalid argument. input.ClusterName can't be empty when calling GetControlPlaneMachinesByCluster")
 	Expect(input.Namespace).ToNot(BeEmpty(), "Invalid argument. input.Namespace can't be empty when calling GetControlPlaneMachinesByCluster")
 
-	options := []client.ListOption{
-		client.InNamespace(input.Namespace),
-		client.MatchingLabels{
-			clusterv1.ClusterNameLabel:         input.ClusterName,
-			clusterv1.MachineControlPlaneLabel: "",
-		},
-	}
+	options := append(byClusterOptions(input.ClusterName, input.Namespace), controlPlaneMachineOptions()...)
 
 	machineList := &clusterv1.MachineList{}
 	Eventually(func() error {

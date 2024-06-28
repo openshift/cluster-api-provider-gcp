@@ -21,7 +21,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type patchType string
@@ -48,9 +47,7 @@ func unstructuredHasStatus(u *unstructured.Unstructured) bool {
 	return ok
 }
 
-// toUnstructured converts an object to Unstructured.
-// We have to pass in a gvk as we can't rely on GVK being set in a runtime.Object.
-func toUnstructured(obj runtime.Object, gvk schema.GroupVersionKind) (*unstructured.Unstructured, error) {
+func toUnstructured(obj runtime.Object) (*unstructured.Unstructured, error) {
 	// If the incoming object is already unstructured, perform a deep copy first
 	// otherwise DefaultUnstructuredConverter ends up returning the inner map without
 	// making a copy.
@@ -61,10 +58,7 @@ func toUnstructured(obj runtime.Object, gvk schema.GroupVersionKind) (*unstructu
 	if err != nil {
 		return nil, err
 	}
-	u := &unstructured.Unstructured{Object: rawMap}
-	u.SetGroupVersionKind(gvk)
-
-	return u, nil
+	return &unstructured.Unstructured{Object: rawMap}, nil
 }
 
 // unsafeUnstructuredCopy returns a shallow copy of the unstructured object given as input.

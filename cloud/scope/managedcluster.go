@@ -93,11 +93,6 @@ func (s *ManagedClusterScope) Cloud() cloud.Cloud {
 	return newCloud(s.Project(), s.GCPServices)
 }
 
-// NetworkCloud returns initialized cloud.
-func (s *ManagedClusterScope) NetworkCloud() cloud.Cloud {
-	return newCloud(s.NetworkProject(), s.GCPServices)
-}
-
 // Project returns the current project name.
 func (s *ManagedClusterScope) Project() string {
 	return s.GCPManagedCluster.Spec.Project
@@ -123,20 +118,9 @@ func (s *ManagedClusterScope) NetworkName() string {
 	return ptr.Deref(s.GCPManagedCluster.Spec.Network.Name, "default")
 }
 
-// NetworkProject returns the project name where network resources should exist.
-// The network project defaults to the Project when one is not supplied.
-func (s *ManagedClusterScope) NetworkProject() string {
-	return ptr.Deref(s.GCPManagedCluster.Spec.Network.HostProject, s.Project())
-}
-
-// IsSharedVpc returns true If sharedVPC used else , returns false.
-func (s *ManagedClusterScope) IsSharedVpc() bool {
-	return s.NetworkProject() != s.Project()
-}
-
 // NetworkLink returns the partial URL for the network.
 func (s *ManagedClusterScope) NetworkLink() string {
-	return fmt.Sprintf("projects/%s/global/networks/%s", s.NetworkProject(), s.NetworkName())
+	return fmt.Sprintf("projects/%s/global/networks/%s", s.Project(), s.NetworkName())
 }
 
 // Network returns the cluster network object.
@@ -147,11 +131,6 @@ func (s *ManagedClusterScope) Network() *infrav1.Network {
 // AdditionalLabels returns the cluster additional labels.
 func (s *ManagedClusterScope) AdditionalLabels() infrav1.Labels {
 	return s.GCPManagedCluster.Spec.AdditionalLabels
-}
-
-// LoadBalancer returns the LoadBalancer configuration.
-func (s *ManagedClusterScope) LoadBalancer() infrav1.LoadBalancerSpec {
-	return s.GCPManagedCluster.Spec.LoadBalancer
 }
 
 // ResourceManagerTags returns ResourceManagerTags from cluster. The returned value will never be nil.
@@ -275,7 +254,7 @@ func (s *ManagedClusterScope) FirewallRulesSpec() []*compute.Firewall {
 				"130.211.0.0/22",
 			},
 			TargetTags: []string{
-				s.Name() + "-control-plane",
+				fmt.Sprintf("%s-control-plane", s.Name()),
 			},
 		},
 		{
@@ -288,12 +267,12 @@ func (s *ManagedClusterScope) FirewallRulesSpec() []*compute.Firewall {
 			},
 			Direction: "INGRESS",
 			SourceTags: []string{
-				s.Name() + "-control-plane",
-				s.Name() + "-node",
+				fmt.Sprintf("%s-control-plane", s.Name()),
+				fmt.Sprintf("%s-node", s.Name()),
 			},
 			TargetTags: []string{
-				s.Name() + "-control-plane",
-				s.Name() + "-node",
+				fmt.Sprintf("%s-control-plane", s.Name()),
+				fmt.Sprintf("%s-node", s.Name()),
 			},
 		},
 	}

@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/blang/semver/v4"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -95,16 +94,6 @@ func InitManagementClusterAndWatchControllerLogs(ctx context.Context, input Init
 
 		if input.ClusterctlBinaryPath != "" {
 			InitWithBinary(ctx, input.ClusterctlBinaryPath, initInput)
-			// Old versions of clusterctl may deploy CRDs, Mutating- and/or ValidatingWebhookConfigurations
-			// before creating the new Certificate objects. This check ensures the CA's are up to date before
-			// continuing.
-			clusterctlVersion, err := getClusterCtlVersion(input.ClusterctlBinaryPath)
-			Expect(err).ToNot(HaveOccurred())
-			if clusterctlVersion.LT(semver.MustParse("1.7.2")) {
-				Eventually(func() error {
-					return verifyCAInjection(ctx, client)
-				}, time.Minute*5, time.Second*10).Should(Succeed(), "Failed to verify CA injection")
-			}
 		} else {
 			Init(ctx, initInput)
 		}
@@ -193,32 +182,18 @@ func UpgradeManagementClusterAndWait(ctx context.Context, input UpgradeManagemen
 		LogFolder:                 input.LogFolder,
 	}
 
-	client := input.ClusterProxy.GetClient()
-
 	if input.ClusterctlBinaryPath != "" {
 		UpgradeWithBinary(ctx, input.ClusterctlBinaryPath, upgradeInput)
-		// Old versions of clusterctl may deploy CRDs, Mutating- and/or ValidatingWebhookConfigurations
-		// before creating the new Certificate objects. This check ensures the CA's are up to date before
-		// continuing.
-		clusterctlVersion, err := getClusterCtlVersion(input.ClusterctlBinaryPath)
-		Expect(err).ToNot(HaveOccurred())
-		if clusterctlVersion.LT(semver.MustParse("1.7.2")) {
-			Eventually(func() error {
-				return verifyCAInjection(ctx, client)
-			}, time.Minute*5, time.Second*10).Should(Succeed(), "Failed to verify CA injection")
-		}
 	} else {
 		Upgrade(ctx, upgradeInput)
 	}
 
+	client := input.ClusterProxy.GetClient()
+
 	log.Logf("Waiting for provider controllers to be running")
 	controllersDeployments := framework.GetControllerDeployments(ctx, framework.GetControllerDeploymentsInput{
-		Lister: client,
-		// This namespace has been dropped in v0.4.x.
-		// We have to exclude this namespace here as after an upgrade from v0.3x there won't
-		// be a controller in this namespace anymore and if we wait for it to come up the test would fail.
-		// Note: We can drop this as soon as we don't have a test upgrading from v0.3.x anymore.
-		ExcludeNamespaces: []string{"capi-webhook-system"},
+		Lister:            client,
+		ExcludeNamespaces: []string{"capi-webhook-system"}, // this namespace has been dropped in v1alpha4; this ensures we are not waiting for deployments being deleted as part of the upgrade process
 	})
 	Expect(controllersDeployments).ToNot(BeEmpty(), "The list of controller deployments should not be empty")
 	for _, deployment := range controllersDeployments {

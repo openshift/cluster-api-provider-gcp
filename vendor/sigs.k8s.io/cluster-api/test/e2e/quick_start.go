@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -39,10 +39,6 @@ type QuickStartSpecInput struct {
 	BootstrapClusterProxy framework.ClusterProxy
 	ArtifactFolder        string
 	SkipCleanup           bool
-
-	// Cluster name allows to specify a deterministic clusterName.
-	// If not set, a random one will be generated.
-	ClusterName *string
 
 	// InfrastructureProvider allows to specify the infrastructure provider to be used when looking for
 	// cluster templates.
@@ -65,10 +61,6 @@ type QuickStartSpecInput struct {
 	// Allows to inject functions to be run while waiting for the control plane to be initialized,
 	// which unblocks CNI installation, and for the control plane machines to be ready (after CNI installation).
 	ControlPlaneWaiters clusterctl.ControlPlaneWaiters
-
-	// Allows to inject a function to be run after test namespace is created.
-	// If not specified, this is a no-op.
-	PostNamespaceCreated func(managementClusterProxy framework.ClusterProxy, workloadClusterNamespace string)
 
 	// Allows to inject a function to be run after machines are provisioned.
 	// If not specified, this is a no-op.
@@ -99,7 +91,7 @@ func QuickStartSpec(ctx context.Context, inputGetter func() QuickStartSpecInput)
 		Expect(input.E2EConfig.Variables).To(HaveKey(KubernetesVersion))
 
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
-		namespace, cancelWatches = framework.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, input.PostNamespaceCreated)
+		namespace, cancelWatches = setupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
 		clusterResources = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 	})
 
@@ -116,20 +108,17 @@ func QuickStartSpec(ctx context.Context, inputGetter func() QuickStartSpecInput)
 			flavor = *input.Flavor
 		}
 
-		controlPlaneMachineCount := ptr.To[int64](1)
+		controlPlaneMachineCount := pointer.Int64(1)
 		if input.ControlPlaneMachineCount != nil {
 			controlPlaneMachineCount = input.ControlPlaneMachineCount
 		}
 
-		workerMachineCount := ptr.To[int64](1)
+		workerMachineCount := pointer.Int64(1)
 		if input.WorkerMachineCount != nil {
 			workerMachineCount = input.WorkerMachineCount
 		}
 
 		clusterName := fmt.Sprintf("%s-%s", specName, util.RandomString(6))
-		if input.ClusterName != nil {
-			clusterName = *input.ClusterName
-		}
 		clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
 			ClusterProxy: input.BootstrapClusterProxy,
 			ConfigCluster: clusterctl.ConfigClusterInput{
@@ -159,6 +148,6 @@ func QuickStartSpec(ctx context.Context, inputGetter func() QuickStartSpecInput)
 
 	AfterEach(func() {
 		// Dumps all the resources in the spec namespace, then cleanups the cluster object and the spec namespace itself.
-		framework.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, namespace, cancelWatches, clusterResources.Cluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
+		dumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, namespace, cancelWatches, clusterResources.Cluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
 }

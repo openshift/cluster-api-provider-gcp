@@ -147,7 +147,7 @@ func newInstanceGroupManagerClient(ctx context.Context, credentialsRef *infrav1.
 
 func newTagBindingsClient(ctx context.Context, credentialsRef *infrav1.ObjectReference, crClient client.Client, location string) (*resourcemanager.TagBindingsClient, error) {
 	opts, err := defaultClientOptions(ctx, credentialsRef, crClient)
-	endpoint := location + "-cloudresourcemanager.googleapis.com:443"
+	endpoint := fmt.Sprintf("%s-cloudresourcemanager.googleapis.com:443", location)
 	opts = append(opts, option.WithEndpoint(endpoint))
 	if err != nil {
 		return nil, fmt.Errorf("getting default gcp client options: %w", err)

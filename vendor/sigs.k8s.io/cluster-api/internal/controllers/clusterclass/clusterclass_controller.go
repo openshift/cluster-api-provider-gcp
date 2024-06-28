@@ -58,7 +58,8 @@ import (
 
 // Reconciler reconciles the ClusterClass object.
 type Reconciler struct {
-	Client client.Client
+	Client    client.Client
+	APIReader client.Reader
 
 	// WatchFilterValue is the label value used to filter events prior to reconciliation.
 	WatchFilterValue string
@@ -113,7 +114,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Re
 
 	patchHelper, err := patch.NewHelper(clusterClass, r.Client)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, errors.Wrapf(err, "failed to create patch helper for %s", tlog.KObj{Obj: clusterClass})
 	}
 
 	defer func() {
@@ -123,7 +124,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Re
 			patchOpts = append(patchOpts, patch.WithStatusObservedGeneration{})
 		}
 		if err := patchHelper.Patch(ctx, clusterClass, patchOpts...); err != nil {
-			reterr = kerrors.NewAggregate([]error{reterr, err})
+			reterr = kerrors.NewAggregate([]error{reterr, errors.Wrapf(err, "failed to patch %s", tlog.KObj{Obj: clusterClass})})
 			return
 		}
 	}()
@@ -324,7 +325,6 @@ func addNewStatusVariable(variable clusterv1.ClusterClassVariable, from string) 
 			{
 				From:     from,
 				Required: variable.Required,
-				Metadata: variable.Metadata,
 				Schema:   variable.Schema,
 			},
 		}}
@@ -335,7 +335,6 @@ func addDefinitionToExistingStatusVariable(variable clusterv1.ClusterClassVariab
 	newVariableDefinition := clusterv1.ClusterClassStatusVariableDefinition{
 		From:     from,
 		Required: variable.Required,
-		Metadata: variable.Metadata,
 		Schema:   variable.Schema,
 	}
 	combinedVariable.Definitions = append(existingVariable.Definitions, newVariableDefinition)
@@ -344,7 +343,7 @@ func addDefinitionToExistingStatusVariable(variable clusterv1.ClusterClassVariab
 	// If definitions already conflict, no need to check.
 	if !combinedVariable.DefinitionsConflict {
 		currentDefinition := combinedVariable.Definitions[0]
-		if !(currentDefinition.Required == newVariableDefinition.Required && reflect.DeepEqual(currentDefinition.Schema, newVariableDefinition.Schema) && reflect.DeepEqual(currentDefinition.Metadata, newVariableDefinition.Metadata)) {
+		if !(currentDefinition.Required == newVariableDefinition.Required && reflect.DeepEqual(currentDefinition.Schema, newVariableDefinition.Schema)) {
 			combinedVariable.DefinitionsConflict = true
 		}
 	}
@@ -375,7 +374,7 @@ func (r *Reconciler) reconcileExternal(ctx context.Context, clusterClass *cluste
 	// Initialize the patch helper.
 	patchHelper, err := patch.NewHelper(obj, r.Client)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to create patch helper for %s", tlog.KObj{Obj: obj})
 	}
 
 	// Set external object ControllerReference to the ClusterClass.
@@ -384,7 +383,11 @@ func (r *Reconciler) reconcileExternal(ctx context.Context, clusterClass *cluste
 	}
 
 	// Patch the external object.
-	return patchHelper.Patch(ctx, obj)
+	if err := patchHelper.Patch(ctx, obj); err != nil {
+		return errors.Wrapf(err, "failed to patch object %s", tlog.KObj{Obj: obj})
+	}
+
+	return nil
 }
 
 func uniqueObjectRefKey(ref *corev1.ObjectReference) string {

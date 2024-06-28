@@ -24,7 +24,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -57,12 +56,10 @@ func newRequestItemBuilder(template *unstructured.Unstructured) *requestItemBuil
 }
 
 // WithHolder adds holder to the requestItemBuilder.
-// Note: We pass in gvk explicitly as we can't rely on GVK being set on all objects
-// (only on Unstructured).
-func (t *requestItemBuilder) WithHolder(object client.Object, gvk schema.GroupVersionKind, fieldPath string) *requestItemBuilder {
+func (t *requestItemBuilder) WithHolder(object client.Object, fieldPath string) *requestItemBuilder {
 	t.holder = runtimehooksv1.HolderReference{
-		APIVersion: gvk.GroupVersion().String(),
-		Kind:       gvk.Kind,
+		APIVersion: object.GetObjectKind().GroupVersionKind().GroupVersion().String(),
+		Kind:       object.GetObjectKind().GroupVersionKind().Kind,
 		Namespace:  object.GetNamespace(),
 		Name:       object.GetName(),
 		FieldPath:  fieldPath,

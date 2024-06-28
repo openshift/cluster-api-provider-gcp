@@ -14,7 +14,6 @@ use (
 	./apigeeregistry
 	./apikeys
 	./appengine
-	./apphub
 	./apps
 	./area120
 	./artifactregistry
@@ -23,7 +22,6 @@ use (
 	./auth
 	./auth/oauth2adapt
 	./automl
-	./backupdr
 	./baremetalsolution
 	./batch
 	./beyondcorp
@@ -33,9 +31,7 @@ use (
 	./binaryauthorization
 	./certificatemanager
 	./channel
-	./chat
 	./cloudbuild
-	./cloudcontrolspartner
 	./clouddms
 	./cloudprofiler
 	./cloudquotas
@@ -80,7 +76,6 @@ use (
 	./gsuiteaddons
 	./iam
 	./iap
-	./identitytoolkit
 	./ids
 	./internal/actions
 	./internal/aliasfix
@@ -92,7 +87,6 @@ use (
 	./internal/generated/snippets
 	./internal/godocfx
 	./internal/postprocessor
-	./internal/protoveneer
 	./iot
 	./kms
 	./language
@@ -116,7 +110,6 @@ use (
 	./orgpolicy
 	./osconfig
 	./oslogin
-	./parallelstore
 	./phishingprotection
 	./policysimulator
 	./policytroubleshooter
@@ -139,22 +132,18 @@ use (
 	./security
 	./securitycenter
 	./securitycentermanagement
-	./securityposture
 	./servicecontrol
 	./servicedirectory
-	./servicehealth
 	./servicemanagement
 	./serviceusage
 	./shell
 	./shopping
 	./spanner
-	./spanner/test/opentelemetry/test
 	./speech
 	./storage
 	./storage/internal/benchmarks
 	./storageinsights
 	./storagetransfer
-	./streetview
 	./support
 	./talent
 	./telcoautomation
@@ -166,7 +155,6 @@ use (
 	./video
 	./videointelligence
 	./vision
-	./visionai
 	./vmmigration
 	./vmwareengine
 	./vpcaccess

@@ -24,6 +24,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -64,13 +65,13 @@ var KubeadmControlPlaneFinalizersAssertion = map[string][]string{
 }
 
 // ValidateFinalizersResilience checks that expected finalizers are in place, deletes them, and verifies that expected finalizers are properly added again.
-func ValidateFinalizersResilience(ctx context.Context, proxy ClusterProxy, namespace, clusterName string, ownerGraphFilterFunction clusterctlcluster.GetOwnerGraphFilterFunction, finalizerAssertions ...map[string][]string) {
+func ValidateFinalizersResilience(ctx context.Context, proxy ClusterProxy, namespace, clusterName string, finalizerAssertions ...map[string][]string) {
 	clusterKey := client.ObjectKey{Namespace: namespace, Name: clusterName}
 	allFinalizerAssertions, err := concatenateFinalizerAssertions(finalizerAssertions...)
 	Expect(err).ToNot(HaveOccurred())
 
 	// Collect all objects where finalizers were initially set
-	objectsWithFinalizers := getObjectsWithFinalizers(ctx, proxy, namespace, allFinalizerAssertions, ownerGraphFilterFunction)
+	objectsWithFinalizers := getObjectsWithFinalizers(ctx, proxy, namespace, allFinalizerAssertions)
 
 	// Setting the paused property on the Cluster resource will pause reconciliations, thereby having no effect on Finalizers.
 	// This also makes debugging easier.
@@ -79,18 +80,22 @@ func ValidateFinalizersResilience(ctx context.Context, proxy ClusterProxy, names
 	// We are testing the worst-case scenario, i.e. all finalizers are deleted.
 	// Once all Clusters are paused remove all the Finalizers from all objects in the graph.
 	// The reconciliation loop should be able to recover from this, by adding the required Finalizers back.
-	removeFinalizers(ctx, proxy, namespace, ownerGraphFilterFunction)
+	removeFinalizers(ctx, proxy, namespace)
 
 	// Unpause the cluster.
 	setClusterPause(ctx, proxy.GetClient(), clusterKey, false)
 
+	// Annotate the MachineDeployment  to speed up reconciliation. This ensures MachineDeployment topology Finalizers are re-reconciled.
+	// TODO: Remove this as part of https://github.com/kubernetes-sigs/cluster-api/issues/9532
+	forceMachineDeploymentTopologyReconcile(ctx, proxy.GetClient(), clusterKey)
+
 	// Check that the Finalizers are as expected after further reconciliations.
-	assertFinalizersExist(ctx, proxy, namespace, objectsWithFinalizers, allFinalizerAssertions, ownerGraphFilterFunction)
+	assertFinalizersExist(ctx, proxy, namespace, objectsWithFinalizers, allFinalizerAssertions)
 }
 
 // removeFinalizers removes all Finalizers from objects in the owner graph.
-func removeFinalizers(ctx context.Context, proxy ClusterProxy, namespace string, ownerGraphFilterFunction clusterctlcluster.GetOwnerGraphFilterFunction) {
-	graph, err := clusterctlcluster.GetOwnerGraph(ctx, namespace, proxy.GetKubeconfigPath(), ownerGraphFilterFunction)
+func removeFinalizers(ctx context.Context, proxy ClusterProxy, namespace string) {
+	graph, err := clusterctlcluster.GetOwnerGraph(ctx, namespace, proxy.GetKubeconfigPath())
 	Expect(err).ToNot(HaveOccurred())
 	for _, object := range graph {
 		ref := object.Object
@@ -107,8 +112,8 @@ func removeFinalizers(ctx context.Context, proxy ClusterProxy, namespace string,
 	}
 }
 
-func getObjectsWithFinalizers(ctx context.Context, proxy ClusterProxy, namespace string, allFinalizerAssertions map[string][]string, ownerGraphFilterFunction clusterctlcluster.GetOwnerGraphFilterFunction) map[string]*unstructured.Unstructured {
-	graph, err := clusterctlcluster.GetOwnerGraph(ctx, namespace, proxy.GetKubeconfigPath(), ownerGraphFilterFunction)
+func getObjectsWithFinalizers(ctx context.Context, proxy ClusterProxy, namespace string, allFinalizerAssertions map[string][]string) map[string]*unstructured.Unstructured {
+	graph, err := clusterctlcluster.GetOwnerGraph(ctx, namespace, proxy.GetKubeconfigPath())
 	Expect(err).ToNot(HaveOccurred())
 
 	objsWithFinalizers := map[string]*unstructured.Unstructured{}
@@ -134,10 +139,10 @@ func getObjectsWithFinalizers(ctx context.Context, proxy ClusterProxy, namespace
 }
 
 // assertFinalizersExist ensures that current Finalizers match those in the initialObjectsWithFinalizers.
-func assertFinalizersExist(ctx context.Context, proxy ClusterProxy, namespace string, initialObjsWithFinalizers map[string]*unstructured.Unstructured, allFinalizerAssertions map[string][]string, ownerGraphFilterFunction clusterctlcluster.GetOwnerGraphFilterFunction) {
+func assertFinalizersExist(ctx context.Context, proxy ClusterProxy, namespace string, initialObjsWithFinalizers map[string]*unstructured.Unstructured, allFinalizerAssertions map[string][]string) {
 	Eventually(func() error {
 		var allErrs []error
-		finalObjsWithFinalizers := getObjectsWithFinalizers(ctx, proxy, namespace, allFinalizerAssertions, ownerGraphFilterFunction)
+		finalObjsWithFinalizers := getObjectsWithFinalizers(ctx, proxy, namespace, allFinalizerAssertions)
 
 		for objKindNamespacedName, obj := range initialObjsWithFinalizers {
 			// verify if finalizers for this resource were set on reconcile
@@ -183,4 +188,20 @@ func concatenateFinalizerAssertions(finalizerAssertions ...map[string][]string) 
 	}
 
 	return allFinalizerAssertions, kerrors.NewAggregate(allErrs)
+}
+
+// forceMachineDeploymentTopologyReconcile forces reconciliation of the MachineDeployment.
+func forceMachineDeploymentTopologyReconcile(ctx context.Context, cli client.Client, clusterKey types.NamespacedName) {
+	mdList := &clusterv1.MachineDeploymentList{}
+	clientOptions := (&client.ListOptions{}).ApplyOptions([]client.ListOption{
+		client.MatchingLabels{clusterv1.ClusterNameLabel: clusterKey.Name},
+	})
+	Expect(cli.List(ctx, mdList, clientOptions)).To(Succeed())
+
+	for i := range mdList.Items {
+		if _, ok := mdList.Items[i].GetLabels()[clusterv1.ClusterTopologyOwnedLabel]; ok {
+			annotationPatch := client.RawPatch(types.MergePatchType, []byte(fmt.Sprintf("{\"metadata\":{\"annotations\":{\"cluster.x-k8s.io/modifiedAt\":\"%v\"}}}", time.Now().Format(time.RFC3339))))
+			Expect(cli.Patch(ctx, &mdList.Items[i], annotationPatch)).To(Succeed())
+		}
+	}
 }

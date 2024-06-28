@@ -207,13 +207,13 @@ func (s *Service) updateCAPIKubeconfigSecret(ctx context.Context, configSecret *
 func (s *Service) getKubeConfigContextName(isUser bool) string {
 	contextName := fmt.Sprintf("gke_%s_%s_%s", s.scope.GCPManagedControlPlane.Spec.Project, s.scope.GCPManagedControlPlane.Spec.Location, s.scope.ClusterName())
 	if isUser {
-		contextName += "-user"
+		contextName = fmt.Sprintf("%s-user", contextName)
 	}
 	return contextName
 }
 
 func (s *Service) createBaseKubeConfig(contextName string, cluster *containerpb.Cluster) (*api.Config, error) {
-	certData, err := base64.StdEncoding.DecodeString(cluster.GetMasterAuth().GetClusterCaCertificate())
+	certData, err := base64.StdEncoding.DecodeString(cluster.MasterAuth.ClusterCaCertificate)
 	if err != nil {
 		return nil, fmt.Errorf("decoding cluster CA cert: %w", err)
 	}
@@ -221,7 +221,7 @@ func (s *Service) createBaseKubeConfig(contextName string, cluster *containerpb.
 		APIVersion: api.SchemeGroupVersion.Version,
 		Clusters: map[string]*api.Cluster{
 			contextName: {
-				Server:                   "https://" + cluster.GetEndpoint(),
+				Server:                   fmt.Sprintf("https://%s", cluster.Endpoint),
 				CertificateAuthorityData: certData,
 			},
 		},
@@ -239,7 +239,7 @@ func (s *Service) createBaseKubeConfig(contextName string, cluster *containerpb.
 
 func (s *Service) generateToken(ctx context.Context) (string, error) {
 	req := &credentialspb.GenerateAccessTokenRequest{
-		Name: "projects/-/serviceAccounts/" + s.scope.GetCredential().ClientEmail,
+		Name: fmt.Sprintf("projects/-/serviceAccounts/%s", s.scope.GetCredential().ClientEmail),
 		Scope: []string{
 			GkeScope,
 		},
@@ -248,6 +248,5 @@ func (s *Service) generateToken(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", errors.Errorf("error generating access token: %v", err)
 	}
-
-	return resp.GetAccessToken(), nil
+	return resp.AccessToken, nil
 }

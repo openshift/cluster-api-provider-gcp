@@ -119,8 +119,8 @@ func (c *ClusterResourceSetBinding) DeleteBinding(clusterResourceSet *ClusterRes
 		}
 	}
 	c.OwnerReferences = removeOwnerRef(c.GetOwnerReferences(), metav1.OwnerReference{
-		APIVersion: GroupVersion.String(),
-		Kind:       "ClusterResourceSet",
+		APIVersion: clusterResourceSet.APIVersion,
+		Kind:       clusterResourceSet.Kind,
 		Name:       clusterResourceSet.Name,
 	})
 }

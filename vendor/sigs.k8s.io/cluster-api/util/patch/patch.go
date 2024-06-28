@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
@@ -54,20 +53,20 @@ type Helper struct {
 func NewHelper(obj client.Object, crClient client.Client) (*Helper, error) {
 	// Return early if the object is nil.
 	if util.IsNil(obj) {
-		return nil, errors.New("failed to create patch helper: object is nil")
+		return nil, errors.New("helper could not be created: object is nil")
 	}
 
 	// Get the GroupVersionKind of the object,
 	// used to validate against later on.
 	gvk, err := apiutil.GVKForObject(obj, crClient.Scheme())
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create patch helper for object %s", klog.KObj(obj))
+		return nil, err
 	}
 
 	// Convert the object to unstructured to compare against our before copy.
-	unstructuredObj, err := toUnstructured(obj, gvk)
+	unstructuredObj, err := toUnstructured(obj)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create patch helper for %s %s: failed to convert object to Unstructured", gvk.Kind, klog.KObj(obj))
+		return nil, err
 	}
 
 	// Check if the object satisfies the Cluster API conditions contract.
@@ -86,16 +85,16 @@ func NewHelper(obj client.Object, crClient client.Client) (*Helper, error) {
 func (h *Helper) Patch(ctx context.Context, obj client.Object, opts ...Option) error {
 	// Return early if the object is nil.
 	if util.IsNil(obj) {
-		return errors.Errorf("failed to patch %s %s: modified object is nil", h.gvk.Kind, klog.KObj(h.beforeObject))
+		return errors.New("Patch could not be completed: object is nil")
 	}
 
 	// Get the GroupVersionKind of the object that we want to patch.
 	gvk, err := apiutil.GVKForObject(obj, h.client.Scheme())
 	if err != nil {
-		return errors.Wrapf(err, "failed to patch %s %s", h.gvk.Kind, klog.KObj(h.beforeObject))
+		return err
 	}
 	if gvk != h.gvk {
-		return errors.Errorf("failed to patch %s %s: unmatched GroupVersionKind, expected %q got %q", h.gvk.Kind, klog.KObj(h.beforeObject), h.gvk, gvk)
+		return errors.Errorf("unmatched GroupVersionKind, expected %q got %q", h.gvk, gvk)
 	}
 
 	// Calculate the options.
@@ -105,9 +104,9 @@ func (h *Helper) Patch(ctx context.Context, obj client.Object, opts ...Option) e
 	}
 
 	// Convert the object to unstructured to compare against our before copy.
-	h.after, err = toUnstructured(obj, gvk)
+	h.after, err = toUnstructured(obj)
 	if err != nil {
-		return errors.Wrapf(err, "failed to patch %s %s: failed to convert object to Unstructured", h.gvk.Kind, klog.KObj(h.beforeObject))
+		return err
 	}
 
 	// Determine if the object has status.
@@ -115,12 +114,12 @@ func (h *Helper) Patch(ctx context.Context, obj client.Object, opts ...Option) e
 		if options.IncludeStatusObservedGeneration {
 			// Set status.observedGeneration if we're asked to do so.
 			if err := unstructured.SetNestedField(h.after.Object, h.after.GetGeneration(), "status", "observedGeneration"); err != nil {
-				return errors.Wrapf(err, "failed to patch %s %s: failed to set .status.observedGeneration", h.gvk.Kind, klog.KObj(h.beforeObject))
+				return err
 			}
 
 			// Restore the changes back to the original object.
 			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(h.after.Object, obj); err != nil {
-				return errors.Wrapf(err, "failed to patch %s %s: failed to converted object from Unstructured", h.gvk.Kind, klog.KObj(h.beforeObject))
+				return err
 			}
 		}
 	}
@@ -128,31 +127,22 @@ func (h *Helper) Patch(ctx context.Context, obj client.Object, opts ...Option) e
 	// Calculate and store the top-level field changes (e.g. "metadata", "spec", "status") we have before/after.
 	h.changes, err = h.calculateChanges(obj)
 	if err != nil {
-		return errors.Wrapf(err, "failed to patch %s %s", h.gvk.Kind, klog.KObj(h.beforeObject))
+		return err
 	}
 
 	// Issue patches and return errors in an aggregate.
-	var errs []error
-	// Patch the conditions first.
-	//
-	// Given that we pass in metadata.resourceVersion to perform a 3-way-merge conflict resolution,
-	// patching conditions first avoids an extra loop if spec or status patch succeeds first
-	// given that causes the resourceVersion to mutate.
-	if err := h.patchStatusConditions(ctx, obj, options.ForceOverwriteConditions, options.OwnedConditions); err != nil {
-		errs = append(errs, err)
-	}
-	// Then proceed to patch the rest of the object.
-	if err := h.patch(ctx, obj); err != nil {
-		errs = append(errs, err)
-	}
-	if err := h.patchStatus(ctx, obj); err != nil {
-		errs = append(errs, err)
-	}
+	return kerrors.NewAggregate([]error{
+		// Patch the conditions first.
+		//
+		// Given that we pass in metadata.resourceVersion to perform a 3-way-merge conflict resolution,
+		// patching conditions first avoids an extra loop if spec or status patch succeeds first
+		// given that causes the resourceVersion to mutate.
+		h.patchStatusConditions(ctx, obj, options.ForceOverwriteConditions, options.OwnedConditions),
 
-	if len(errs) > 0 {
-		return errors.Wrapf(kerrors.NewAggregate(errs), "failed to patch %s %s", h.gvk.Kind, klog.KObj(h.beforeObject))
-	}
-	return nil
+		// Then proceed to patch the rest of the object.
+		h.patch(ctx, obj),
+		h.patchStatus(ctx, obj),
+	})
 }
 
 // patch issues a patch for metadata and spec.

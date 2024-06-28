@@ -772,6 +772,8 @@ github.com/opencontainers/runc v0.0.0-20190115041553-12f6a991201f/go.mod h1:qT5X
 github.com/opencontainers/runc v0.1.1/go.mod h1:qT5XzbpPznkRYVz/mWwUaVBUv2rmF59PVA73FjuZG0U=
 github.com/opencontainers/runtime-spec v0.1.2-0.20190507144316-5b71a03e2700/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/opencontainers/runtime-spec v1.0.2/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
+github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20240304144039-3218c094afd5 h1:GRM6NyGEQ3lBCk2zr89z6SWRF5jj9VeT0y6Kj/oTQXA=
+github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20240304144039-3218c094afd5/go.mod h1:fEXzPOnusmda/9L2GJdI/MG0c/dbpzKtMXis096fsRU=
 github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20240502112228-a24f1aeb106b h1:b61ReGGIAZ83fdElH/Q3DWo9OIFHDR4I2Aubgztife0=
 github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20240502112228-a24f1aeb106b/go.mod h1:fEXzPOnusmda/9L2GJdI/MG0c/dbpzKtMXis096fsRU=
 github.com/opentracing-contrib/go-observer v0.0.0-20170622124052-a52f23424492/go.mod h1:Ngi6UdF0k5OKD5t5wlmGhe/EDKPoUM3BXZSSfIuJbis=

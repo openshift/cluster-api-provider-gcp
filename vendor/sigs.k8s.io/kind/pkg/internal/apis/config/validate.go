@@ -52,11 +52,6 @@ func (c *Cluster) Validate() error {
 		}
 	}
 
-	// ipFamily should be ipv4, ipv6, or dual
-	if c.Networking.IPFamily != IPv4Family && c.Networking.IPFamily != IPv6Family && c.Networking.IPFamily != DualStackFamily {
-		errs = append(errs, errors.Errorf("invalid ipFamily: %s", c.Networking.IPFamily))
-	}
-
 	// podSubnet should be a valid CIDR
 	if err := validateSubnets(c.Networking.PodSubnet, c.Networking.IPFamily); err != nil {
 		errs = append(errs, errors.Errorf("invalid pod subnet %v", err))
@@ -69,7 +64,7 @@ func (c *Cluster) Validate() error {
 
 	// KubeProxyMode should be iptables or ipvs
 	if c.Networking.KubeProxyMode != IPTablesProxyMode && c.Networking.KubeProxyMode != IPVSProxyMode &&
-		c.Networking.KubeProxyMode != NoneProxyMode && c.Networking.KubeProxyMode != NFTablesProxyMode {
+		c.Networking.KubeProxyMode != NoneProxyMode {
 		errs = append(errs, errors.Errorf("invalid kubeProxyMode: %s", c.Networking.KubeProxyMode))
 	}
 
@@ -157,11 +152,6 @@ func validatePortMappings(portMappings []PortMapping) error {
 	}
 
 	for _, portMapping := range portMappings {
-		if portMapping.HostPort == -1 || portMapping.HostPort == 0 {
-			// Port -1 and 0 cause a random port to be selected, thus duplicates are allowed
-			continue
-		}
-
 		addr := net.ParseIP(portMapping.ListenAddress)
 		addrString := addr.String()
 

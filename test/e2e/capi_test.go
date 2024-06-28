@@ -30,7 +30,9 @@ import (
 )
 
 var _ = Describe("Running the Cluster API E2E tests", func() {
-	ctx := context.TODO()
+	var (
+		ctx = context.TODO()
+	)
 
 	BeforeEach(func() {
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.CNIPath))
@@ -109,4 +111,5 @@ var _ = Describe("Running the Cluster API E2E tests", func() {
 			}
 		})
 	})
+
 })

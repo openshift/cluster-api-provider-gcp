@@ -75,7 +75,6 @@ type UpgradeClusterTopologyAndWaitForUpgradeInput struct {
 	WaitForEtcdUpgrade                 []interface{}
 	PreWaitForControlPlaneToBeUpgraded func()
 	PreWaitForWorkersToBeUpgraded      func()
-	SkipKubeProxyCheck                 bool
 }
 
 // UpgradeClusterTopologyAndWaitForUpgrade upgrades a Cluster topology and waits for it to be upgraded.
@@ -124,16 +123,13 @@ func UpgradeClusterTopologyAndWaitForUpgrade(ctx context.Context, input UpgradeC
 		KubernetesUpgradeVersion: input.KubernetesUpgradeVersion,
 	}, input.WaitForMachinesToBeUpgraded...)
 
+	log.Logf("Waiting for kube-proxy to have the upgraded Kubernetes version")
 	workloadCluster := input.ClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name)
 	workloadClient := workloadCluster.GetClient()
-
-	if !input.SkipKubeProxyCheck {
-		log.Logf("Waiting for kube-proxy to have the upgraded Kubernetes version")
-		WaitForKubeProxyUpgrade(ctx, WaitForKubeProxyUpgradeInput{
-			Getter:            workloadClient,
-			KubernetesVersion: input.KubernetesUpgradeVersion,
-		}, input.WaitForKubeProxyUpgrade...)
-	}
+	WaitForKubeProxyUpgrade(ctx, WaitForKubeProxyUpgradeInput{
+		Getter:            workloadClient,
+		KubernetesVersion: input.KubernetesUpgradeVersion,
+	}, input.WaitForKubeProxyUpgrade...)
 
 	// Wait for the CoreDNS upgrade if the DNSImageTag is set.
 	if input.DNSImageTag != "" {

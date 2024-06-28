@@ -141,7 +141,7 @@ func CreateRepository(ctx context.Context, input CreateRepositoryInput) string {
 	for key := range input.E2EConfig.Variables {
 		clusterctlConfigFile.Values[key] = input.E2EConfig.GetVariable(key)
 	}
-	Expect(clusterctlConfigFile.write()).To(Succeed(), "Failed to write clusterctlConfigFile")
+	clusterctlConfigFile.write()
 
 	// creates a clusterctl config file to be used for working with such repository with only the providers supported in clusterctl < v1.3
 	clusterctlConfigFileV1_2 := &clusterctlConfig{
@@ -154,28 +154,26 @@ func CreateRepository(ctx context.Context, input CreateRepositoryInput) string {
 	for key := range input.E2EConfig.Variables {
 		clusterctlConfigFileV1_2.Values[key] = input.E2EConfig.GetVariable(key)
 	}
-	Expect(clusterctlConfigFileV1_2.write()).To(Succeed(), "Failed to write v1.2 clusterctlConfigFile")
+	clusterctlConfigFileV1_2.write()
 
 	return clusterctlConfigFile.Path
 }
 
-// CopyAndAmendClusterctlConfigInput is the input for copyAndAmendClusterctlConfig.
-type CopyAndAmendClusterctlConfigInput struct {
+// copyAndAmendClusterctlConfigInput is the input for copyAndAmendClusterctlConfig.
+type copyAndAmendClusterctlConfigInput struct {
 	ClusterctlConfigPath string
 	OutputPath           string
 	Variables            map[string]string
 }
 
-// CopyAndAmendClusterctlConfig copies the clusterctl-config from ClusterctlConfigPath to
+// copyAndAmendClusterctlConfig copies the clusterctl-config from ClusterctlConfigPath to
 // OutputPath and adds the given Variables.
-func CopyAndAmendClusterctlConfig(_ context.Context, input CopyAndAmendClusterctlConfigInput) error {
+func copyAndAmendClusterctlConfig(_ context.Context, input copyAndAmendClusterctlConfigInput) {
 	// Read clusterctl config from ClusterctlConfigPath.
 	clusterctlConfigFile := &clusterctlConfig{
 		Path: input.ClusterctlConfigPath,
 	}
-	if err := clusterctlConfigFile.read(); err != nil {
-		return err
-	}
+	clusterctlConfigFile.read()
 
 	// Overwrite variables.
 	if clusterctlConfigFile.Values == nil {
@@ -187,7 +185,7 @@ func CopyAndAmendClusterctlConfig(_ context.Context, input CopyAndAmendClusterct
 
 	// Write clusterctl config to OutputPath.
 	clusterctlConfigFile.Path = input.OutputPath
-	return clusterctlConfigFile.write()
+	clusterctlConfigFile.write()
 }
 
 // AdjustConfigPathForBinary adjusts the clusterctlConfigPath in case the clusterctl version v1.3.

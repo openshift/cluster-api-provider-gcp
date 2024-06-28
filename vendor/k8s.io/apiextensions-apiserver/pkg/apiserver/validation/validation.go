@@ -24,7 +24,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apiextensions-apiserver/pkg/features"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/apiserver/pkg/cel/common"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	openapierrors "k8s.io/kube-openapi/pkg/validation/errors"
 	"k8s.io/kube-openapi/pkg/validation/spec"
@@ -34,60 +33,22 @@ import (
 
 type SchemaValidator interface {
 	SchemaCreateValidator
-	ValidateUpdate(new, old interface{}, options ...ValidationOption) *validate.Result
+	ValidateUpdate(new, old interface{}) *validate.Result
 }
 
 type SchemaCreateValidator interface {
-	Validate(value interface{}, options ...ValidationOption) *validate.Result
-}
-
-type ValidationOptions struct {
-	// Whether errors from unchanged portions of the schema should be ratcheted
-	// This field is ignored for Validate
-	Ratcheting bool
-
-	// Correlation between old and new arguments.
-	// If set, this is expected to be the correlation between the `new` and
-	// `old` arguments to ValidateUpdate, and values for `new` and `old` will
-	// be taken from the correlation.
-	//
-	// This field is ignored for Validate
-	//
-	// Used for ratcheting, but left as a separate field since it may be used
-	// for other purposes in the future.
-	CorrelatedObject *common.CorrelatedObject
-}
-
-type ValidationOption func(*ValidationOptions)
-
-func NewValidationOptions(opts ...ValidationOption) ValidationOptions {
-	options := ValidationOptions{}
-	for _, opt := range opts {
-		opt(&options)
-	}
-	return options
-}
-
-func WithRatcheting(correlation *common.CorrelatedObject) ValidationOption {
-	return func(options *ValidationOptions) {
-		options.Ratcheting = true
-		options.CorrelatedObject = correlation
-	}
+	Validate(value interface{}) *validate.Result
 }
 
 // basicSchemaValidator wraps a kube-openapi SchemaCreateValidator to
 // support ValidateUpdate. It implements ValidateUpdate by simply validating
-// the new value via kube-openapi, ignoring the old value
+// the new value via kube-openapi, ignoring the old value.
 type basicSchemaValidator struct {
 	*validate.SchemaValidator
 }
 
-func (s basicSchemaValidator) Validate(new interface{}, options ...ValidationOption) *validate.Result {
-	return s.SchemaValidator.Validate(new)
-}
-
-func (s basicSchemaValidator) ValidateUpdate(new, old interface{}, options ...ValidationOption) *validate.Result {
-	return s.Validate(new, options...)
+func (s basicSchemaValidator) ValidateUpdate(new, old interface{}) *validate.Result {
+	return s.Validate(new)
 }
 
 // NewSchemaValidator creates an openapi schema validator for the given CRD validation.
@@ -106,15 +67,11 @@ func NewSchemaValidator(customResourceValidation *apiextensions.JSONSchemaProps)
 			return nil, nil, err
 		}
 	}
-	return NewSchemaValidatorFromOpenAPI(openapiSchema), openapiSchema, nil
-}
 
-func NewSchemaValidatorFromOpenAPI(openapiSchema *spec.Schema) SchemaValidator {
 	if utilfeature.DefaultFeatureGate.Enabled(features.CRDValidationRatcheting) {
-		return NewRatchetingSchemaValidator(openapiSchema, nil, "", strfmt.Default)
+		return NewRatchetingSchemaValidator(openapiSchema, nil, "", strfmt.Default), openapiSchema, nil
 	}
-	return basicSchemaValidator{validate.NewSchemaValidator(openapiSchema, nil, "", strfmt.Default)}
-
+	return basicSchemaValidator{validate.NewSchemaValidator(openapiSchema, nil, "", strfmt.Default)}, openapiSchema, nil
 }
 
 // ValidateCustomResourceUpdate validates the transition of Custom Resource from
@@ -123,7 +80,7 @@ func NewSchemaValidatorFromOpenAPI(openapiSchema *spec.Schema) SchemaValidator {
 //
 // If feature `CRDValidationRatcheting` is disabled, this behaves identically to
 // ValidateCustomResource(customResource).
-func ValidateCustomResourceUpdate(fldPath *field.Path, customResource, old interface{}, validator SchemaValidator, options ...ValidationOption) field.ErrorList {
+func ValidateCustomResourceUpdate(fldPath *field.Path, customResource, old interface{}, validator SchemaValidator) field.ErrorList {
 	// Additional feature gate check for sanity
 	if !utilfeature.DefaultFeatureGate.Enabled(features.CRDValidationRatcheting) {
 		return ValidateCustomResource(nil, customResource, validator)
@@ -131,7 +88,7 @@ func ValidateCustomResourceUpdate(fldPath *field.Path, customResource, old inter
 		return nil
 	}
 
-	result := validator.ValidateUpdate(customResource, old, options...)
+	result := validator.ValidateUpdate(customResource, old)
 	if result.IsValid() {
 		return nil
 	}
@@ -141,12 +98,12 @@ func ValidateCustomResourceUpdate(fldPath *field.Path, customResource, old inter
 
 // ValidateCustomResource validates the Custom Resource against the schema in the CustomResourceDefinition.
 // CustomResource is a JSON data structure.
-func ValidateCustomResource(fldPath *field.Path, customResource interface{}, validator SchemaCreateValidator, options ...ValidationOption) field.ErrorList {
+func ValidateCustomResource(fldPath *field.Path, customResource interface{}, validator SchemaCreateValidator) field.ErrorList {
 	if validator == nil {
 		return nil
 	}
 
-	result := validator.Validate(customResource, options...)
+	result := validator.Validate(customResource)
 	if result.IsValid() {
 		return nil
 	}

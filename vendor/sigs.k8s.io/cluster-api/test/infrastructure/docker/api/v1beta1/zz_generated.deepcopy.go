@@ -22,7 +22,6 @@ package v1beta1
 
 import (
 	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	apiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
@@ -342,11 +341,6 @@ func (in *DockerMachineSpec) DeepCopyInto(out *DockerMachineSpec) {
 		in, out := &in.ExtraMounts, &out.ExtraMounts
 		*out = make([]Mount, len(*in))
 		copy(*out, *in)
-	}
-	if in.BootstrapTimeout != nil {
-		in, out := &in.BootstrapTimeout, &out.BootstrapTimeout
-		*out = new(metav1.Duration)
-		**out = **in
 	}
 }
 

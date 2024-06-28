@@ -26,7 +26,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
+	"k8s.io/utils/pointer"
 
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -51,10 +51,6 @@ type K8SConformanceSpecInput struct {
 
 	Flavor              string
 	ControlPlaneWaiters clusterctl.ControlPlaneWaiters
-
-	// Allows to inject a function to be run after test namespace is created.
-	// If not specified, this is a no-op.
-	PostNamespaceCreated func(managementClusterProxy framework.ClusterProxy, workloadClusterNamespace string)
 }
 
 // K8SConformanceSpec implements a spec that creates a cluster and runs Kubernetes conformance suite.
@@ -87,7 +83,7 @@ func K8SConformanceSpec(ctx context.Context, inputGetter func() K8SConformanceSp
 		Expect(kubetestConfigFilePath).To(BeAnExistingFile(), "%s should be a valid kubetest config file")
 
 		// Setup a Namespace where to host objects for this spec and create a watcher for the namespace events.
-		namespace, cancelWatches = framework.SetupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, input.PostNamespaceCreated)
+		namespace, cancelWatches = setupSpecNamespace(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder)
 		clusterResources = new(clusterctl.ApplyClusterTemplateAndWaitResult)
 	})
 
@@ -114,8 +110,8 @@ func K8SConformanceSpec(ctx context.Context, inputGetter func() K8SConformanceSp
 				Namespace:                namespace.Name,
 				ClusterName:              fmt.Sprintf("%s-%s", specName, util.RandomString(6)),
 				KubernetesVersion:        input.E2EConfig.GetVariable(KubernetesVersion),
-				ControlPlaneMachineCount: ptr.To[int64](1),
-				WorkerMachineCount:       ptr.To[int64](workerMachineCount),
+				ControlPlaneMachineCount: pointer.Int64(1),
+				WorkerMachineCount:       pointer.Int64(workerMachineCount),
 			},
 			ControlPlaneWaiters:          input.ControlPlaneWaiters,
 			WaitForClusterIntervals:      input.E2EConfig.GetIntervals(specName, "wait-cluster"),
@@ -148,7 +144,6 @@ func K8SConformanceSpec(ctx context.Context, inputGetter func() K8SConformanceSp
 				ArtifactsDirectory: input.ArtifactFolder,
 				ConfigFilePath:     kubetestConfigFilePath,
 				GinkgoNodes:        ginkgoNodes,
-				ClusterName:        clusterResources.Cluster.GetName(),
 			},
 		)
 		Expect(err).ToNot(HaveOccurred(), "Failed to run Kubernetes conformance")
@@ -158,6 +153,6 @@ func K8SConformanceSpec(ctx context.Context, inputGetter func() K8SConformanceSp
 
 	AfterEach(func() {
 		// Dumps all the resources in the spec namespace, then cleanups the cluster object and the spec namespace itself.
-		framework.DumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, namespace, cancelWatches, clusterResources.Cluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
+		dumpSpecResourcesAndCleanup(ctx, specName, input.BootstrapClusterProxy, input.ArtifactFolder, namespace, cancelWatches, clusterResources.Cluster, input.E2EConfig.GetIntervals, input.SkipCleanup)
 	})
 }

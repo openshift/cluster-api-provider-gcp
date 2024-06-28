@@ -35,11 +35,6 @@ import (
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 )
 
-// CRDMigrator interface defines methods for migrating CRs to the storage version of new CRDs.
-type CRDMigrator interface {
-	Run(ctx context.Context, objs []unstructured.Unstructured) error
-}
-
 // crdMigrator migrates CRs to the storage version of new CRDs.
 // This is necessary when the new CRD drops a version which
 // was previously used as a storage version.
@@ -47,8 +42,8 @@ type crdMigrator struct {
 	Client client.Client
 }
 
-// NewCRDMigrator creates a new CRD migrator.
-func NewCRDMigrator(client client.Client) CRDMigrator {
+// newCRDMigrator creates a new CRD migrator.
+func newCRDMigrator(client client.Client) *crdMigrator {
 	return &crdMigrator{
 		Client: client,
 	}

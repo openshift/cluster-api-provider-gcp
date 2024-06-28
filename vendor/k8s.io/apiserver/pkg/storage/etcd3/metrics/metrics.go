@@ -69,7 +69,7 @@ var (
 	objectCounts = compbasemetrics.NewGaugeVec(
 		&compbasemetrics.GaugeOpts{
 			Name:           "apiserver_storage_objects",
-			Help:           "Number of stored objects at the time of last check split by kind. In case of a fetching error, the value will be -1.",
+			Help:           "Number of stored objects at the time of last check split by kind.",
 			StabilityLevel: compbasemetrics.STABLE,
 		},
 		[]string{"resource"},
@@ -84,7 +84,7 @@ var (
 		},
 		[]string{"endpoint"},
 	)
-	storageSizeDescription   = compbasemetrics.NewDesc("apiserver_storage_size_bytes", "Size of the storage database file physically allocated in bytes.", []string{"storage_cluster_id"}, nil, compbasemetrics.ALPHA, "")
+	storageSizeDescription   = compbasemetrics.NewDesc("apiserver_storage_size_bytes", "Size of the storage database file physically allocated in bytes.", []string{"cluster"}, nil, compbasemetrics.ALPHA, "")
 	storageMonitor           = &monitorCollector{monitorGetter: func() ([]Monitor, error) { return nil, nil }}
 	etcdEventsReceivedCounts = compbasemetrics.NewCounterVec(
 		&compbasemetrics.CounterOpts{
@@ -228,7 +228,7 @@ func UpdateEtcdDbSize(ep string, size int64) {
 
 // SetStorageMonitorGetter sets monitor getter to allow monitoring etcd stats.
 func SetStorageMonitorGetter(getter func() ([]Monitor, error)) {
-	storageMonitor.setGetter(getter)
+	storageMonitor.monitorGetter = getter
 }
 
 // UpdateLeaseObjectCount sets the etcd_lease_object_counts metric.
@@ -258,20 +258,7 @@ type StorageMetrics struct {
 type monitorCollector struct {
 	compbasemetrics.BaseStableCollector
 
-	mutex         sync.Mutex
 	monitorGetter func() ([]Monitor, error)
-}
-
-func (m *monitorCollector) setGetter(monitorGetter func() ([]Monitor, error)) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	m.monitorGetter = monitorGetter
-}
-
-func (m *monitorCollector) getGetter() func() ([]Monitor, error) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	return m.monitorGetter
 }
 
 // DescribeWithStability implements compbasemetrics.StableColletor
@@ -281,27 +268,27 @@ func (c *monitorCollector) DescribeWithStability(ch chan<- *compbasemetrics.Desc
 
 // CollectWithStability implements compbasemetrics.StableColletor
 func (c *monitorCollector) CollectWithStability(ch chan<- compbasemetrics.Metric) {
-	monitors, err := c.getGetter()()
+	monitors, err := c.monitorGetter()
 	if err != nil {
 		return
 	}
 
 	for i, m := range monitors {
-		storageClusterID := fmt.Sprintf("etcd-%d", i)
+		cluster := fmt.Sprintf("etcd-%d", i)
 
-		klog.V(4).InfoS("Start collecting storage metrics", "storage_cluster_id", storageClusterID)
+		klog.V(4).InfoS("Start collecting storage metrics", "cluster", cluster)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		metrics, err := m.Monitor(ctx)
 		cancel()
 		m.Close()
 		if err != nil {
-			klog.InfoS("Failed to get storage metrics", "storage_cluster_id", storageClusterID, "err", err)
+			klog.InfoS("Failed to get storage metrics", "cluster", cluster, "err", err)
 			continue
 		}
 
-		metric, err := compbasemetrics.NewConstMetric(storageSizeDescription, compbasemetrics.GaugeValue, float64(metrics.Size), storageClusterID)
+		metric, err := compbasemetrics.NewConstMetric(storageSizeDescription, compbasemetrics.GaugeValue, float64(metrics.Size), cluster)
 		if err != nil {
-			klog.ErrorS(err, "Failed to create metric", "storage_cluster_id", storageClusterID)
+			klog.ErrorS(err, "Failed to create metric", "cluster", cluster)
 		}
 		ch <- metric
 	}

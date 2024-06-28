@@ -386,12 +386,9 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		}
 
 		// get a random port if necessary (port = 0)
-		hostPort, releaseHostPortFn, err := common.PortOrGetFreePort(pm.HostPort, pm.ListenAddress)
+		hostPort, err := common.PortOrGetFreePort(pm.HostPort, pm.ListenAddress)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get random host port for port mapping")
-		}
-		if releaseHostPortFn != nil {
-			defer releaseHostPortFn()
 		}
 
 		// generate the actual mapping arg
@@ -403,7 +400,10 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 }
 
 func createContainer(name string, args []string) error {
-	return exec.Command("docker", append([]string{"run", "--name", name}, args...)...).Run()
+	if err := exec.Command("docker", append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func createContainerWithWaitUntilSystemdReachesMultiUserSystem(name string, args []string) error {

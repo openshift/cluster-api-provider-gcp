@@ -84,7 +84,7 @@ func (t *templateClient) GetFromConfigMap(ctx context.Context, configMapNamespac
 		return nil, errors.New("invalid GetFromConfigMap operation: missing configMapName value")
 	}
 
-	c, err := t.proxy.NewClient(ctx)
+	c, err := t.proxy.NewClient()
 	if err != nil {
 		return nil, err
 	}
