@@ -249,6 +249,7 @@ func (m *MachineScope) InstanceImageSpec() *compute.AttachedDisk {
 			DiskType:            path.Join("zones", m.Zone(), "diskTypes", string(diskType)),
 			ResourceManagerTags: shared.ResourceTagConvert(context.TODO(), m.GCPMachine.Spec.ResourceManagerTags),
 			SourceImage:         sourceImage,
+			Labels:              m.ClusterGetter.AdditionalLabels().AddLabels(m.GCPMachine.Spec.AdditionalLabels),
 		},
 	}
 
@@ -400,6 +401,16 @@ func (m *MachineScope) InstanceSpec(log logr.Logger) *compute.Instance {
 		Scheduling: &compute.Scheduling{
 			Preemptible: m.GCPMachine.Spec.Preemptible,
 		},
+	}
+	if m.GCPMachine.Spec.ProvisioningModel != nil {
+		switch *m.GCPMachine.Spec.ProvisioningModel {
+		case infrav1.ProvisioningModelSpot:
+			instance.Scheduling.ProvisioningModel = "SPOT"
+		case infrav1.ProvisioningModelStandard:
+			instance.Scheduling.ProvisioningModel = "STANDARD"
+		default:
+			log.Error(errors.New("Invalid value"), "Unknown ProvisioningModel value", "Spec.ProvisioningModel", *m.GCPMachine.Spec.ProvisioningModel)
+		}
 	}
 
 	instance.CanIpForward = true
