@@ -5,7 +5,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.14.0
+        controller-gen.kubebuilder.io/version: v0.16.3
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -86,6 +86,8 @@ data:
                             1. "pd-standard" - Standard (HDD) persistent disk
                             2. "pd-ssd" - SSD persistent disk
                             3. "local-ssd" - Local SSD disk (https://cloud.google.com/compute/docs/disks/local-ssd).
+                            4. "pd-balanced" - Balanced Persistent Disk
+                            5. "hyperdisk-balanced" - Hyperdisk Balanced
                             Default is "pd-standard".
                           type: string
                         encryptionKey:
@@ -122,6 +124,8 @@ data:
                                   maxLength: 160
                                   pattern: projects\/[-_[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
                                   type: string
+                              required:
+                              - kmsKeyName
                               type: object
                             suppliedKey:
                               description: SuppliedKey provides the key used to create
@@ -245,6 +249,15 @@ data:
                     description: ProviderID is the unique identifier as specified by the
                       cloud provider.
                     type: string
+                  provisioningModel:
+                    description: |-
+                      ProvisioningModel defines if instance is spot.
+                      If set to "Standard" while preemptible is true, then the VM will be of type "Preemptible".
+                      If "Spot", VM type is "Spot". When unspecified, defaults to "Standard".
+                    enum:
+                    - Standard
+                    - Spot
+                    type: string
                   publicIP:
                     description: |-
                       PublicIP specifies whether the instance should get a public IP.
@@ -309,6 +322,8 @@ data:
                       Supported types of root volumes:
                       1. "pd-standard" - Standard (HDD) persistent disk
                       2. "pd-ssd" - SSD persistent disk
+                      3. "pd-balanced" - Balanced Persistent Disk
+                      4. "hyperdisk-balanced" - Hyperdisk Balanced
                       Default is "pd-standard".
                     type: string
                   rootDiskEncryptionKey:
@@ -344,6 +359,8 @@ data:
                             maxLength: 160
                             pattern: projects\/[-_[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
                             type: string
+                        required:
+                        - kmsKeyName
                         type: object
                       suppliedKey:
                         description: SuppliedKey provides the key used to create or manage
@@ -459,7 +476,6 @@ data:
                       reconciling the Machine and will contain a more verbose string suitable
                       for logging and human consumption.
 
-
                       This field should not be set for transitive errors that a controller
                       faces that are expected to be fixed automatically over
                       time (like service outages), but instead indicate that something is
@@ -468,7 +484,6 @@ data:
                       of terminal errors would be invalid combinations of settings in the
                       spec, values that are unsupported by the controller, or the
                       responsible controller itself being critically misconfigured.
-
 
                       Any transient errors that occur during the reconciliation of Machines
                       can be added as events to the Machine object and/or logged in the
@@ -480,7 +495,6 @@ data:
                       reconciling the Machine and will contain a succinct value suitable
                       for machine interpretation.
 
-
                       This field should not be set for transitive errors that a controller
                       faces that are expected to be fixed automatically over
                       time (like service outages), but instead indicate that something is
@@ -489,7 +503,6 @@ data:
                       of terminal errors would be invalid combinations of settings in the
                       spec, values that are unsupported by the controller, or the
                       responsible controller itself being critically misconfigured.
-
 
                       Any transient errors that occur during the reconciliation of Machines
                       can be added as events to the Machine object and/or logged in the
@@ -519,7 +532,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.14.0
+        controller-gen.kubebuilder.io/version: v0.16.3
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -677,11 +690,9 @@ data:
                           in "auto" mode. When set to false, the VPC network is created in
                           "custom" mode.
 
-
                           An auto mode VPC network starts with one subnet per region. Each
                           subnet has a predetermined range as described in Auto mode VPC
                           network IP ranges.
-
 
                           Defaults to true.
                         type: boolean
@@ -693,6 +704,18 @@ data:
                         description: Allow for configuration of load balancer backend
                           (useful for changing apiserver port)
                         format: int32
+                        type: integer
+                      mtu:
+                        default: 1460
+                        description: |-
+                          Mtu: Maximum Transmission Unit in bytes. The minimum value for this field is
+                          1300 and the maximum value is 8896. The suggested value is 1500, which is
+                          the default MTU used on the Internet, or 8896 if you want to use Jumbo
+                          frames. If unspecified, the value defaults to 1460.
+                          More info: https://pkg.go.dev/google.golang.org/api/compute/v1#Network
+                        format: int64
+                        maximum: 8896
+                        minimum: 1300
                         type: integer
                       name:
                         description: Name is the name of the network to be used.
@@ -735,7 +758,6 @@ data:
                                 Purpose: The purpose of the resource.
                                 If unspecified, the purpose defaults to PRIVATE_RFC_1918.
                                 The enableFlowLogs field isn't supported with the purpose field set to INTERNAL_HTTPS_LOAD_BALANCER.
-
 
                                 Possible values:
                                   "INTERNAL_HTTPS_LOAD_BALANCER" - Subnet reserved for Internal
@@ -941,7 +963,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.14.0
+        controller-gen.kubebuilder.io/version: v0.16.3
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -1035,6 +1057,8 @@ data:
                                     1. "pd-standard" - Standard (HDD) persistent disk
                                     2. "pd-ssd" - SSD persistent disk
                                     3. "local-ssd" - Local SSD disk (https://cloud.google.com/compute/docs/disks/local-ssd).
+                                    4. "pd-balanced" - Balanced Persistent Disk
+                                    5. "hyperdisk-balanced" - Hyperdisk Balanced
                                     Default is "pd-standard".
                                   type: string
                                 encryptionKey:
@@ -1071,6 +1095,8 @@ data:
                                           maxLength: 160
                                           pattern: projects\/[-_[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
                                           type: string
+                                      required:
+                                      - kmsKeyName
                                       type: object
                                     suppliedKey:
                                       description: SuppliedKey provides the key used to
@@ -1196,6 +1222,15 @@ data:
                             description: ProviderID is the unique identifier as specified
                               by the cloud provider.
                             type: string
+                          provisioningModel:
+                            description: |-
+                              ProvisioningModel defines if instance is spot.
+                              If set to "Standard" while preemptible is true, then the VM will be of type "Preemptible".
+                              If "Spot", VM type is "Spot". When unspecified, defaults to "Standard".
+                            enum:
+                            - Standard
+                            - Spot
+                            type: string
                           publicIP:
                             description: |-
                               PublicIP specifies whether the instance should get a public IP.
@@ -1260,6 +1295,8 @@ data:
                               Supported types of root volumes:
                               1. "pd-standard" - Standard (HDD) persistent disk
                               2. "pd-ssd" - SSD persistent disk
+                              3. "pd-balanced" - Balanced Persistent Disk
+                              4. "hyperdisk-balanced" - Hyperdisk Balanced
                               Default is "pd-standard".
                             type: string
                           rootDiskEncryptionKey:
@@ -1296,6 +1333,8 @@ data:
                                     maxLength: 160
                                     pattern: projects\/[-_[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
                                     type: string
+                                required:
+                                - kmsKeyName
                                 type: object
                               suppliedKey:
                                 description: SuppliedKey provides the key used to create
@@ -1406,7 +1445,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.14.0
+        controller-gen.kubebuilder.io/version: v0.16.3
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -1581,11 +1620,9 @@ data:
                                   in "auto" mode. When set to false, the VPC network is created in
                                   "custom" mode.
 
-
                                   An auto mode VPC network starts with one subnet per region. Each
                                   subnet has a predetermined range as described in Auto mode VPC
                                   network IP ranges.
-
 
                                   Defaults to true.
                                 type: boolean
@@ -1597,6 +1634,18 @@ data:
                                 description: Allow for configuration of load balancer
                                   backend (useful for changing apiserver port)
                                 format: int32
+                                type: integer
+                              mtu:
+                                default: 1460
+                                description: |-
+                                  Mtu: Maximum Transmission Unit in bytes. The minimum value for this field is
+                                  1300 and the maximum value is 8896. The suggested value is 1500, which is
+                                  the default MTU used on the Internet, or 8896 if you want to use Jumbo
+                                  frames. If unspecified, the value defaults to 1460.
+                                  More info: https://pkg.go.dev/google.golang.org/api/compute/v1#Network
+                                format: int64
+                                maximum: 8896
+                                minimum: 1300
                                 type: integer
                               name:
                                 description: Name is the name of the network to be used.
@@ -1639,7 +1688,6 @@ data:
                                         Purpose: The purpose of the resource.
                                         If unspecified, the purpose defaults to PRIVATE_RFC_1918.
                                         The enableFlowLogs field isn't supported with the purpose field set to INTERNAL_HTTPS_LOAD_BALANCER.
-
 
                                         Possible values:
                                           "INTERNAL_HTTPS_LOAD_BALANCER" - Subnet reserved for Internal
@@ -1750,7 +1798,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.14.0
+        controller-gen.kubebuilder.io/version: v0.16.3
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -1903,11 +1951,9 @@ data:
                           in "auto" mode. When set to false, the VPC network is created in
                           "custom" mode.
 
-
                           An auto mode VPC network starts with one subnet per region. Each
                           subnet has a predetermined range as described in Auto mode VPC
                           network IP ranges.
-
 
                           Defaults to true.
                         type: boolean
@@ -1919,6 +1965,18 @@ data:
                         description: Allow for configuration of load balancer backend
                           (useful for changing apiserver port)
                         format: int32
+                        type: integer
+                      mtu:
+                        default: 1460
+                        description: |-
+                          Mtu: Maximum Transmission Unit in bytes. The minimum value for this field is
+                          1300 and the maximum value is 8896. The suggested value is 1500, which is
+                          the default MTU used on the Internet, or 8896 if you want to use Jumbo
+                          frames. If unspecified, the value defaults to 1460.
+                          More info: https://pkg.go.dev/google.golang.org/api/compute/v1#Network
+                        format: int64
+                        maximum: 8896
+                        minimum: 1300
                         type: integer
                       name:
                         description: Name is the name of the network to be used.
@@ -1961,7 +2019,6 @@ data:
                                 Purpose: The purpose of the resource.
                                 If unspecified, the purpose defaults to PRIVATE_RFC_1918.
                                 The enableFlowLogs field isn't supported with the purpose field set to INTERNAL_HTTPS_LOAD_BALANCER.
-
 
                                 Possible values:
                                   "INTERNAL_HTTPS_LOAD_BALANCER" - Subnet reserved for Internal
@@ -2212,7 +2269,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.14.0
+        controller-gen.kubebuilder.io/version: v0.16.3
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -2286,11 +2343,74 @@ data:
                       If you don't specify a name then a default name will be created
                       based on the namespace and name of the managed control plane.
                     type: string
+                  clusterNetwork:
+                    description: ClusterNetwork define the cluster network.
+                    properties:
+                      pod:
+                        description: Pod defines the range of CIDRBlock list from where
+                          it gets the IP address.
+                        properties:
+                          cidrBlock:
+                            description: |-
+                              CidrBlock is where all pods in the cluster are assigned an IP address from this range. Enter a range
+                              (in CIDR notation) within a network range, a mask, or leave this field blank to use a default range.
+                              This setting is permanent.
+                            type: string
+                        type: object
+                      privateCluster:
+                        description: PrivateCluster defines the private cluster spec.
+                        properties:
+                          controlPlaneCidrBlock:
+                            description: |-
+                              ControlPlaneCidrBlock is the IP range in CIDR notation to use for the hosted master network. This range must not
+                              overlap with any other ranges in use within the cluster's network. Honored when enabled is true.
+                            type: string
+                          controlPlaneGlobalAccess:
+                            description: ControlPlaneGlobalAccess is whenever master is
+                              accessible globally or not. Honored when enabled is true.
+                            type: boolean
+                          disableDefaultSNAT:
+                            description: DisableDefaultSNAT disables cluster default sNAT
+                              rules. Honored when enabled is true.
+                            type: boolean
+                          enablePrivateEndpoint:
+                            description: |-
+                              EnablePrivateEndpoint: Whether the master's internal IP
+                              address is used as the cluster endpoint.
+                            type: boolean
+                          enablePrivateNodes:
+                            description: |-
+                              EnablePrivateNodes: Whether nodes have internal IP
+                              addresses only. If enabled, all nodes are given only RFC
+                              1918 private addresses and communicate with the master via
+                              private networking.
+                            type: boolean
+                        type: object
+                      service:
+                        description: Service defines the range of CIDRBlock list from
+                          where it gets the IP address.
+                        properties:
+                          cidrBlock:
+                            description: |-
+                              CidrBlock is where cluster services will be assigned an IP address from this IP address range. Enter a range
+                              (in CIDR notation) within a network range, a mask, or leave this field blank to use a default range.
+                              This setting is permanent.
+                            type: string
+                        type: object
+                      useIPAliases:
+                        description: |-
+                          UseIPAliases is whether alias IPs will be used for pod IPs in the cluster. If false, routes will be used for
+                          pod IPs in the cluster.
+                        type: boolean
+                    type: object
                   controlPlaneVersion:
                     description: |-
                       ControlPlaneVersion represents the control plane version of the GKE cluster.
                       If not specified, the default version currently supported by GKE will be
                       used.
+                    type: string
+                  description:
+                    description: Description describe the cluster.
                     type: string
                   enableAutopilot:
                     description: EnableAutopilot indicates whether to enable autopilot
@@ -2444,7 +2564,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.14.0
+        controller-gen.kubebuilder.io/version: v0.16.3
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -2862,22 +2982,8 @@ data:
       resources:
       - clusters
       - clusters/status
-      verbs:
-      - get
-      - list
-      - watch
-    - apiGroups:
-      - cluster.x-k8s.io
-      resources:
       - machinepools
       - machinepools/status
-      verbs:
-      - get
-      - list
-      - watch
-    - apiGroups:
-      - cluster.x-k8s.io
-      resources:
       - machines
       - machines/status
       verbs:
@@ -2888,97 +2994,9 @@ data:
       - infrastructure.cluster.x-k8s.io
       resources:
       - gcpclusters
-      verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-    - apiGroups:
-      - infrastructure.cluster.x-k8s.io
-      resources:
-      - gcpclusters/status
-      verbs:
-      - get
-      - patch
-      - update
-    - apiGroups:
-      - infrastructure.cluster.x-k8s.io
-      resources:
       - gcpmachines
-      verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-    - apiGroups:
-      - infrastructure.cluster.x-k8s.io
-      resources:
-      - gcpmachines/status
-      verbs:
-      - get
-      - patch
-      - update
-    - apiGroups:
-      - infrastructure.cluster.x-k8s.io
-      resources:
       - gcpmanagedclusters
-      verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-    - apiGroups:
-      - infrastructure.cluster.x-k8s.io
-      resources:
-      - gcpmanagedclusters/finalizers
-      verbs:
-      - update
-    - apiGroups:
-      - infrastructure.cluster.x-k8s.io
-      resources:
-      - gcpmanagedclusters/status
-      verbs:
-      - get
-      - patch
-      - update
-    - apiGroups:
-      - infrastructure.cluster.x-k8s.io
-      resources:
       - gcpmanagedcontrolplanes
-      verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-    - apiGroups:
-      - infrastructure.cluster.x-k8s.io
-      resources:
-      - gcpmanagedcontrolplanes/finalizers
-      verbs:
-      - update
-    - apiGroups:
-      - infrastructure.cluster.x-k8s.io
-      resources:
-      - gcpmanagedcontrolplanes/status
-      verbs:
-      - get
-      - patch
-      - update
-    - apiGroups:
-      - infrastructure.cluster.x-k8s.io
-      resources:
       - gcpmanagedmachinepools
       verbs:
       - create
@@ -2991,16 +3009,22 @@ data:
     - apiGroups:
       - infrastructure.cluster.x-k8s.io
       resources:
-      - gcpmanagedmachinepools/finalizers
-      verbs:
-      - update
-    - apiGroups:
-      - infrastructure.cluster.x-k8s.io
-      resources:
+      - gcpclusters/status
+      - gcpmachines/status
+      - gcpmanagedclusters/status
+      - gcpmanagedcontrolplanes/status
       - gcpmanagedmachinepools/status
       verbs:
       - get
       - patch
+      - update
+    - apiGroups:
+      - infrastructure.cluster.x-k8s.io
+      resources:
+      - gcpmanagedclusters/finalizers
+      - gcpmanagedcontrolplanes/finalizers
+      - gcpmanagedmachinepools/finalizers
+      verbs:
       - update
     ---
     apiVersion: rbac.authorization.k8s.io/v1
@@ -3552,6 +3576,9 @@ data:
       - major: 1
         minor: 7
         contract: v1beta1
+      - major: 1
+        minor: 8
+        contract: v1beta1
 kind: ConfigMap
 metadata:
   annotations:
@@ -3563,6 +3590,6 @@ metadata:
   labels:
     provider.cluster.x-k8s.io/name: gcp
     provider.cluster.x-k8s.io/type: infrastructure
-    provider.cluster.x-k8s.io/version: v1.7.0
+    provider.cluster.x-k8s.io/version: 1.8.0
   name: gcp
   namespace: openshift-cluster-api
