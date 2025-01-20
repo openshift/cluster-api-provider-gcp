@@ -27,6 +27,8 @@ func TestGCPMachineTemplate_ValidateCreate(t *testing.T) {
 	confidentialComputeEnabled := ConfidentialComputePolicyEnabled
 	onHostMaintenanceTerminate := HostMaintenancePolicyTerminate
 	onHostMaintenanceMigrate := HostMaintenancePolicyMigrate
+	confidentialInstanceTypeSEV := ConfidentialVMTechSEV
+	confidentialInstanceTypeSEVSNP := ConfidentialVMTechSEVSNP
 	tests := []struct {
 		name     string
 		template *GCPMachineTemplate
@@ -104,6 +106,66 @@ func TestGCPMachineTemplate_ValidateCreate(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "GCPMachine with explicit ConfidentialInstanceType and OnHostMaintenance Migrate - invalid",
+			template: &GCPMachineTemplate{
+				Spec: GCPMachineTemplateSpec{
+					Template: GCPMachineTemplateResource{
+						Spec: GCPMachineSpec{
+							InstanceType:             "n2d-standard-4",
+							ConfidentialInstanceType: &confidentialInstanceTypeSEVSNP,
+							OnHostMaintenance:        &onHostMaintenanceMigrate,
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "GCPMachine with SEVSNP ConfidentialInstanceType and unsupported machine type - invalid",
+			template: &GCPMachineTemplate{
+				Spec: GCPMachineTemplateSpec{
+					Template: GCPMachineTemplateResource{
+						Spec: GCPMachineSpec{
+							InstanceType:             "c3d-standard-4",
+							ConfidentialInstanceType: &confidentialInstanceTypeSEVSNP,
+							OnHostMaintenance:        &onHostMaintenanceTerminate,
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "GCPMachine with SEVSNP ConfidentialInstanceType and supported machine type - valid",
+			template: &GCPMachineTemplate{
+				Spec: GCPMachineTemplateSpec{
+					Template: GCPMachineTemplateResource{
+						Spec: GCPMachineSpec{
+							InstanceType:             "n2d-standard-4",
+							ConfidentialInstanceType: &confidentialInstanceTypeSEVSNP,
+							OnHostMaintenance:        &onHostMaintenanceTerminate,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "GCPMachine with explicit SEV ConfidentialInstanceType and supported machine type - valid",
+			template: &GCPMachineTemplate{
+				Spec: GCPMachineTemplateSpec{
+					Template: GCPMachineTemplateResource{
+						Spec: GCPMachineSpec{
+							InstanceType:             "c3d-standard-4",
+							ConfidentialInstanceType: &confidentialInstanceTypeSEV,
+							OnHostMaintenance:        &onHostMaintenanceTerminate,
+						},
+					},
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, test := range tests {

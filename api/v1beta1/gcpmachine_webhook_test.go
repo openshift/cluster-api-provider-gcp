@@ -27,6 +27,8 @@ func TestGCPMachine_ValidateCreate(t *testing.T) {
 	confidentialComputeEnabled := ConfidentialComputePolicyEnabled
 	onHostMaintenanceTerminate := HostMaintenancePolicyTerminate
 	onHostMaintenanceMigrate := HostMaintenancePolicyMigrate
+	confidentialInstanceTypeSEV := ConfidentialVMTechSEV
+	confidentialInstanceTypeSEVSNP := ConfidentialVMTechSEVSNP
 	tests := []struct {
 		name string
 		*GCPMachine
@@ -84,6 +86,50 @@ func TestGCPMachine_ValidateCreate(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "GCPMachine with explicit ConfidentialInstanceType and OnHostMaintenance Migrate - invalid",
+			GCPMachine: &GCPMachine{
+				Spec: GCPMachineSpec{
+					InstanceType:             "n2d-standard-4",
+					ConfidentialInstanceType: &confidentialInstanceTypeSEVSNP,
+					OnHostMaintenance:        &onHostMaintenanceMigrate,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "GCPMachine with SEVSNP ConfidentialInstanceType and unsupported machine type - invalid",
+			GCPMachine: &GCPMachine{
+				Spec: GCPMachineSpec{
+					InstanceType:             "c2d-standard-4",
+					ConfidentialInstanceType: &confidentialInstanceTypeSEVSNP,
+					OnHostMaintenance:        &onHostMaintenanceTerminate,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "GCPMachine with SEVSNP ConfidentialInstanceType and supported machine type - valid",
+			GCPMachine: &GCPMachine{
+				Spec: GCPMachineSpec{
+					InstanceType:             "n2d-standard-4",
+					ConfidentialInstanceType: &confidentialInstanceTypeSEVSNP,
+					OnHostMaintenance:        &onHostMaintenanceTerminate,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "GCPMachine with explicit SEV ConfidentialInstanceType and supported machine type - valid",
+			GCPMachine: &GCPMachine{
+				Spec: GCPMachineSpec{
+					InstanceType:             "c3d-standard-4",
+					ConfidentialInstanceType: &confidentialInstanceTypeSEV,
+					OnHostMaintenance:        &onHostMaintenanceTerminate,
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name: "GCPMachine with RootDiskEncryptionKey KeyType Managed and Managed field set",
