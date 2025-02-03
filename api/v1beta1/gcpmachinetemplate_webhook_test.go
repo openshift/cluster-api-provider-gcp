@@ -30,6 +30,7 @@ func TestGCPMachineTemplate_ValidateCreate(t *testing.T) {
 	onHostMaintenanceMigrate := HostMaintenancePolicyMigrate
 	confidentialInstanceTypeSEV := ConfidentialVMTechnologySEV
 	confidentialInstanceTypeSEVSNP := ConfidentialVMTechnologySEVSNP
+	confidentialInstanceTypeTDX := ConfidentialVMTechnologyTDX
 	tests := []struct {
 		name     string
 		template *GCPMachineTemplate
@@ -197,6 +198,38 @@ func TestGCPMachineTemplate_ValidateCreate(t *testing.T) {
 							InstanceType:             "c3-standard-4",
 							ConfidentialCompute:      &confidentialComputeEnabled,
 							ConfidentialInstanceType: &confidentialInstanceTypeSEV,
+							OnHostMaintenance:        &onHostMaintenanceTerminate,
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "GCPMachine with explicit TDX ConfidentialInstanceType and supported machine type - valid",
+			template: &GCPMachineTemplate{
+				Spec: GCPMachineTemplateSpec{
+					Template: GCPMachineTemplateResource{
+						Spec: GCPMachineSpec{
+							InstanceType:             "c3-standard-4",
+							ConfidentialCompute:      &confidentialComputeEnabled,
+							ConfidentialInstanceType: &confidentialInstanceTypeTDX,
+							OnHostMaintenance:        &onHostMaintenanceTerminate,
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "GCPMachine with explicit TDX ConfidentialInstanceType and unsupported machine type - invalid",
+			template: &GCPMachineTemplate{
+				Spec: GCPMachineTemplateSpec{
+					Template: GCPMachineTemplateResource{
+						Spec: GCPMachineSpec{
+							InstanceType:             "c3d-standard-4",
+							ConfidentialCompute:      &confidentialComputeEnabled,
+							ConfidentialInstanceType: &confidentialInstanceTypeTDX,
 							OnHostMaintenance:        &onHostMaintenanceTerminate,
 						},
 					},
