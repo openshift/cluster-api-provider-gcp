@@ -787,6 +787,25 @@ data:
                                 SecondaryCidrBlocks defines secondary CIDR ranges,
                                 from which secondary IP ranges of a VM may be allocated
                               type: object
+                            stackType:
+                              default: IPV4_ONLY
+                              description: |-
+                                StackType: The stack type for the subnet. If set to IPV4_ONLY, new VMs in
+                                the subnet are assigned IPv4 addresses only. If set to IPV4_IPV6, new VMs in
+                                the subnet can be assigned both IPv4 and IPv6 addresses. If not specified,
+                                IPV4_ONLY is used. This field can be both set at resource creation time and
+                                updated using patch.
+
+                                Possible values:
+                                  "IPV4_IPV6" - New VMs in this subnet can have both IPv4 and IPv6
+                                addresses.
+                                  "IPV4_ONLY" - New VMs in this subnet will only be assigned IPv4 addresses.
+                                  "IPV6_ONLY" - New VMs in this subnet will only be assigned IPv6 addresses.
+                              enum:
+                              - IPV4_ONLY
+                              - IPV4_IPV6
+                              - IPV6_ONLY
+                              type: string
                           type: object
                         type: array
                     type: object
@@ -1717,6 +1736,25 @@ data:
                                         SecondaryCidrBlocks defines secondary CIDR ranges,
                                         from which secondary IP ranges of a VM may be allocated
                                       type: object
+                                    stackType:
+                                      default: IPV4_ONLY
+                                      description: |-
+                                        StackType: The stack type for the subnet. If set to IPV4_ONLY, new VMs in
+                                        the subnet are assigned IPv4 addresses only. If set to IPV4_IPV6, new VMs in
+                                        the subnet can be assigned both IPv4 and IPv6 addresses. If not specified,
+                                        IPV4_ONLY is used. This field can be both set at resource creation time and
+                                        updated using patch.
+
+                                        Possible values:
+                                          "IPV4_IPV6" - New VMs in this subnet can have both IPv4 and IPv6
+                                        addresses.
+                                          "IPV4_ONLY" - New VMs in this subnet will only be assigned IPv4 addresses.
+                                          "IPV6_ONLY" - New VMs in this subnet will only be assigned IPv6 addresses.
+                                      enum:
+                                      - IPV4_ONLY
+                                      - IPV4_IPV6
+                                      - IPV6_ONLY
+                                      type: string
                                   type: object
                                 type: array
                             type: object
@@ -2048,6 +2086,25 @@ data:
                                 SecondaryCidrBlocks defines secondary CIDR ranges,
                                 from which secondary IP ranges of a VM may be allocated
                               type: object
+                            stackType:
+                              default: IPV4_ONLY
+                              description: |-
+                                StackType: The stack type for the subnet. If set to IPV4_ONLY, new VMs in
+                                the subnet are assigned IPv4 addresses only. If set to IPV4_IPV6, new VMs in
+                                the subnet can be assigned both IPv4 and IPv6 addresses. If not specified,
+                                IPV4_ONLY is used. This field can be both set at resource creation time and
+                                updated using patch.
+
+                                Possible values:
+                                  "IPV4_IPV6" - New VMs in this subnet can have both IPv4 and IPv6
+                                addresses.
+                                  "IPV4_ONLY" - New VMs in this subnet will only be assigned IPv4 addresses.
+                                  "IPV6_ONLY" - New VMs in this subnet will only be assigned IPv6 addresses.
+                              enum:
+                              - IPV4_ONLY
+                              - IPV4_IPV6
+                              - IPV6_ONLY
+                              type: string
                           type: object
                         type: array
                     type: object
@@ -3590,6 +3647,6 @@ metadata:
   labels:
     provider.cluster.x-k8s.io/name: gcp
     provider.cluster.x-k8s.io/type: infrastructure
-    provider.cluster.x-k8s.io/version: 1.8.0
+    provider.cluster.x-k8s.io/version: 1.8.1
   name: gcp
   namespace: openshift-cluster-api
