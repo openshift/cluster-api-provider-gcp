@@ -137,9 +137,22 @@ const (
 	ConfidentialComputePolicyDisabled ConfidentialComputePolicy = "Disabled"
 )
 
+// ConfidentialVMTechnology represents the confidential computing technology used by a GCP confidential machine.
+type ConfidentialVMTechnology string
+
+const (
+	// ConfidentialVMTechSEV sets AMD SEV as the VM instance's confidential computing technology of choice.
+	ConfidentialVMTechSEV ConfidentialVMTechnology = "sev"
+	// ConfidentialVMTechSEVSNP sets AMD SEV-SNP as the VM instance's confidential computing technology of choice.
+	ConfidentialVMTechSEVSNP ConfidentialVMTechnology = "sev-snp"
+)
+
 // Confidential VM supports Compute Engine machine types in the following series:
 // reference: https://cloud.google.com/compute/confidential-vm/docs/os-and-machine-type#machine-type
-var confidentialComputeSupportedMachineSeries = []string{"n2d", "c2d"}
+var confidentialComputeSupportedMachineSeries = map[ConfidentialVMTechnology][]string{
+	ConfidentialVMTechSEV:    {"n2d", "c2d", "c3d"},
+	ConfidentialVMTechSEVSNP: {"n2d"},
+}
 
 // HostMaintenancePolicy represents the desired behavior ase of a host maintenance event.
 type HostMaintenancePolicy string
@@ -339,9 +352,17 @@ type GCPMachineSpec struct {
 	// ConfidentialCompute Defines whether the instance should have confidential compute enabled.
 	// If enabled OnHostMaintenance is required to be set to "Terminate".
 	// If omitted, the platform chooses a default, which is subject to change over time, currently that default is false.
+	// If ConfidentialInstanceType is configured, even if ConfidentialCompute is Disabled, a confidential compute instance will be configured.
 	// +kubebuilder:validation:Enum=Enabled;Disabled
 	// +optional
 	ConfidentialCompute *ConfidentialComputePolicy `json:"confidentialCompute,omitempty"`
+
+	// confidentialInstanceType determines the required type of confidential computing technology.
+	// confidentialInstanceType will precede confidentialCompute. That is, if confidentialCompute is "Disabled" but a valid confidentialInstanceType is specified, a confidential instance will be configured.
+	// If confidentialInstanceType isn't set and confidentialCompute is "Enabled" the platform will set the default, which is subject to change over time. Currently the default is "sev" for "c2d", "c3d", and "n2d" machineTypes. For the other machine cases, a valid confidentialInstanceType must be specified.
+	// +kubebuilder:validation:Enum=sev;sev-snp;
+	// +optional
+	ConfidentialInstanceType *ConfidentialVMTechnology `json:"confidentialInstanceType,omitempty"`
 
 	// RootDiskEncryptionKey defines the KMS key to be used to encrypt the root disk.
 	// +optional
