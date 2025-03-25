@@ -9,9 +9,9 @@ package compute
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 
+	internallog "github.com/googleapis/gax-go/v2/internallog"
 	googleapi "google.golang.org/api/googleapi"
 	gensupport "google.golang.org/api/internal/gensupport"
 )
@@ -79,12 +79,11 @@ func (c *RegionBackendServicesDeleteCall) Header() http.Header {
 
 func (c *RegionBackendServicesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/backendServices/{backendService}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -94,6 +93,7 @@ func (c *RegionBackendServicesDeleteCall) doRequest(alt string) (*http.Response,
 		"region":         c.region,
 		"backendService": c.backendService,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -128,9 +128,11 @@ func (c *RegionBackendServicesDeleteCall) Do(opts ...googleapi.CallOption) (*Ope
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -194,12 +196,11 @@ func (c *RegionBackendServicesGetCall) doRequest(alt string) (*http.Response, er
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/backendServices/{backendService}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -209,6 +210,7 @@ func (c *RegionBackendServicesGetCall) doRequest(alt string) (*http.Response, er
 		"region":         c.region,
 		"backendService": c.backendService,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -243,9 +245,11 @@ func (c *RegionBackendServicesGetCall) Do(opts ...googleapi.CallOption) (*Backen
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -301,8 +305,7 @@ func (c *RegionBackendServicesGetHealthCall) Header() http.Header {
 
 func (c *RegionBackendServicesGetHealthCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.resourcegroupreference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.resourcegroupreference)
 	if err != nil {
 		return nil, err
 	}
@@ -320,6 +323,7 @@ func (c *RegionBackendServicesGetHealthCall) doRequest(alt string) (*http.Respon
 		"region":         c.region,
 		"backendService": c.backendService,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.getHealth", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -355,9 +359,11 @@ func (c *RegionBackendServicesGetHealthCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.getHealth", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -429,12 +435,11 @@ func (c *RegionBackendServicesGetIamPolicyCall) doRequest(alt string) (*http.Res
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/backendServices/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -444,6 +449,7 @@ func (c *RegionBackendServicesGetIamPolicyCall) doRequest(alt string) (*http.Res
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -478,9 +484,11 @@ func (c *RegionBackendServicesGetIamPolicyCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -548,8 +556,7 @@ func (c *RegionBackendServicesInsertCall) Header() http.Header {
 
 func (c *RegionBackendServicesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.backendservice)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.backendservice)
 	if err != nil {
 		return nil, err
 	}
@@ -566,6 +573,7 @@ func (c *RegionBackendServicesInsertCall) doRequest(alt string) (*http.Response,
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -600,9 +608,11 @@ func (c *RegionBackendServicesInsertCall) Do(opts ...googleapi.CallOption) (*Ope
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -742,12 +752,11 @@ func (c *RegionBackendServicesListCall) doRequest(alt string) (*http.Response, e
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/backendServices")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -756,6 +765,7 @@ func (c *RegionBackendServicesListCall) doRequest(alt string) (*http.Response, e
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -791,9 +801,11 @@ func (c *RegionBackendServicesListCall) Do(opts ...googleapi.CallOption) (*Backe
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -955,12 +967,11 @@ func (c *RegionBackendServicesListUsableCall) doRequest(alt string) (*http.Respo
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/backendServices/listUsable")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -969,6 +980,7 @@ func (c *RegionBackendServicesListUsableCall) doRequest(alt string) (*http.Respo
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.listUsable", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -1004,9 +1016,11 @@ func (c *RegionBackendServicesListUsableCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.listUsable", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -1099,8 +1113,7 @@ func (c *RegionBackendServicesPatchCall) Header() http.Header {
 
 func (c *RegionBackendServicesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.backendservice)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.backendservice)
 	if err != nil {
 		return nil, err
 	}
@@ -1118,6 +1131,7 @@ func (c *RegionBackendServicesPatchCall) doRequest(alt string) (*http.Response, 
 		"region":         c.region,
 		"backendService": c.backendService,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -1152,9 +1166,11 @@ func (c *RegionBackendServicesPatchCall) Do(opts ...googleapi.CallOption) (*Oper
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -1209,8 +1225,7 @@ func (c *RegionBackendServicesSetIamPolicyCall) Header() http.Header {
 
 func (c *RegionBackendServicesSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -1228,6 +1243,7 @@ func (c *RegionBackendServicesSetIamPolicyCall) doRequest(alt string) (*http.Res
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -1262,9 +1278,11 @@ func (c *RegionBackendServicesSetIamPolicyCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -1336,8 +1354,7 @@ func (c *RegionBackendServicesSetSecurityPolicyCall) Header() http.Header {
 
 func (c *RegionBackendServicesSetSecurityPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicyreference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.securitypolicyreference)
 	if err != nil {
 		return nil, err
 	}
@@ -1355,6 +1372,7 @@ func (c *RegionBackendServicesSetSecurityPolicyCall) doRequest(alt string) (*htt
 		"region":         c.region,
 		"backendService": c.backendService,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.setSecurityPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -1389,9 +1407,11 @@ func (c *RegionBackendServicesSetSecurityPolicyCall) Do(opts ...googleapi.CallOp
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.setSecurityPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -1446,8 +1466,7 @@ func (c *RegionBackendServicesTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionBackendServicesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -1465,6 +1484,7 @@ func (c *RegionBackendServicesTestIamPermissionsCall) doRequest(alt string) (*ht
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -1500,9 +1520,11 @@ func (c *RegionBackendServicesTestIamPermissionsCall) Do(opts ...googleapi.CallO
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -1573,8 +1595,7 @@ func (c *RegionBackendServicesUpdateCall) Header() http.Header {
 
 func (c *RegionBackendServicesUpdateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.backendservice)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.backendservice)
 	if err != nil {
 		return nil, err
 	}
@@ -1592,6 +1613,7 @@ func (c *RegionBackendServicesUpdateCall) doRequest(alt string) (*http.Response,
 		"region":         c.region,
 		"backendService": c.backendService,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionBackendServices.update", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -1626,9 +1648,11 @@ func (c *RegionBackendServicesUpdateCall) Do(opts ...googleapi.CallOption) (*Ope
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionBackendServices.update", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -1787,12 +1811,11 @@ func (c *RegionCommitmentsAggregatedListCall) doRequest(alt string) (*http.Respo
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/commitments")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1800,6 +1823,7 @@ func (c *RegionCommitmentsAggregatedListCall) doRequest(alt string) (*http.Respo
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionCommitments.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -1835,9 +1859,11 @@ func (c *RegionCommitmentsAggregatedListCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionCommitments.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -1926,12 +1952,11 @@ func (c *RegionCommitmentsCalculateCancellationFeeCall) Header() http.Header {
 
 func (c *RegionCommitmentsCalculateCancellationFeeCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/commitments/{commitment}/calculateCancellationFee")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1941,6 +1966,7 @@ func (c *RegionCommitmentsCalculateCancellationFeeCall) doRequest(alt string) (*
 		"region":     c.region,
 		"commitment": c.commitment,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionCommitments.calculateCancellationFee", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -1975,9 +2001,11 @@ func (c *RegionCommitmentsCalculateCancellationFeeCall) Do(opts ...googleapi.Cal
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionCommitments.calculateCancellationFee", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -2044,12 +2072,11 @@ func (c *RegionCommitmentsCancelCall) Header() http.Header {
 
 func (c *RegionCommitmentsCancelCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/commitments/{commitment}/cancel")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2059,6 +2086,7 @@ func (c *RegionCommitmentsCancelCall) doRequest(alt string) (*http.Response, err
 		"region":     c.region,
 		"commitment": c.commitment,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionCommitments.cancel", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -2093,9 +2121,11 @@ func (c *RegionCommitmentsCancelCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionCommitments.cancel", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -2159,12 +2189,11 @@ func (c *RegionCommitmentsGetCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/commitments/{commitment}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2174,6 +2203,7 @@ func (c *RegionCommitmentsGetCall) doRequest(alt string) (*http.Response, error)
 		"region":     c.region,
 		"commitment": c.commitment,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionCommitments.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -2208,9 +2238,11 @@ func (c *RegionCommitmentsGetCall) Do(opts ...googleapi.CallOption) (*Commitment
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionCommitments.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -2277,8 +2309,7 @@ func (c *RegionCommitmentsInsertCall) Header() http.Header {
 
 func (c *RegionCommitmentsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.commitment)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.commitment)
 	if err != nil {
 		return nil, err
 	}
@@ -2295,6 +2326,7 @@ func (c *RegionCommitmentsInsertCall) doRequest(alt string) (*http.Response, err
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionCommitments.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -2329,9 +2361,11 @@ func (c *RegionCommitmentsInsertCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionCommitments.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -2470,12 +2504,11 @@ func (c *RegionCommitmentsListCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/commitments")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2484,6 +2517,7 @@ func (c *RegionCommitmentsListCall) doRequest(alt string) (*http.Response, error
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionCommitments.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -2518,9 +2552,11 @@ func (c *RegionCommitmentsListCall) Do(opts ...googleapi.CallOption) (*Commitmen
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionCommitments.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -2596,8 +2632,7 @@ func (c *RegionCommitmentsTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionCommitmentsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -2615,6 +2650,7 @@ func (c *RegionCommitmentsTestIamPermissionsCall) doRequest(alt string) (*http.R
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionCommitments.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -2650,9 +2686,11 @@ func (c *RegionCommitmentsTestIamPermissionsCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionCommitments.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -2736,8 +2774,7 @@ func (c *RegionCommitmentsUpdateCall) Header() http.Header {
 
 func (c *RegionCommitmentsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.commitment2)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.commitment2)
 	if err != nil {
 		return nil, err
 	}
@@ -2755,6 +2792,7 @@ func (c *RegionCommitmentsUpdateCall) doRequest(alt string) (*http.Response, err
 		"region":     c.region,
 		"commitment": c.commitment,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionCommitments.update", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -2789,9 +2827,11 @@ func (c *RegionCommitmentsUpdateCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionCommitments.update", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -2862,8 +2902,7 @@ func (c *RegionCommitmentsUpdateReservationsCall) Header() http.Header {
 
 func (c *RegionCommitmentsUpdateReservationsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioncommitmentsupdatereservationsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioncommitmentsupdatereservationsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -2881,6 +2920,7 @@ func (c *RegionCommitmentsUpdateReservationsCall) doRequest(alt string) (*http.R
 		"region":     c.region,
 		"commitment": c.commitment,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionCommitments.updateReservations", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -2915,9 +2955,11 @@ func (c *RegionCommitmentsUpdateReservationsCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionCommitments.updateReservations", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -2978,12 +3020,11 @@ func (c *RegionDiskSettingsGetCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/diskSettings")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2992,6 +3033,7 @@ func (c *RegionDiskSettingsGetCall) doRequest(alt string) (*http.Response, error
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDiskSettings.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -3026,9 +3068,11 @@ func (c *RegionDiskSettingsGetCall) Do(opts ...googleapi.CallOption) (*DiskSetti
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDiskSettings.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -3101,8 +3145,7 @@ func (c *RegionDiskSettingsPatchCall) Header() http.Header {
 
 func (c *RegionDiskSettingsPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.disksettings)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.disksettings)
 	if err != nil {
 		return nil, err
 	}
@@ -3119,6 +3162,7 @@ func (c *RegionDiskSettingsPatchCall) doRequest(alt string) (*http.Response, err
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDiskSettings.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -3153,9 +3197,11 @@ func (c *RegionDiskSettingsPatchCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDiskSettings.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -3219,12 +3265,11 @@ func (c *RegionDiskTypesGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/diskTypes/{diskType}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3234,6 +3279,7 @@ func (c *RegionDiskTypesGetCall) doRequest(alt string) (*http.Response, error) {
 		"region":   c.region,
 		"diskType": c.diskType,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDiskTypes.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -3268,9 +3314,11 @@ func (c *RegionDiskTypesGetCall) Do(opts ...googleapi.CallOption) (*DiskType, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDiskTypes.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -3410,12 +3458,11 @@ func (c *RegionDiskTypesListCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/diskTypes")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3424,6 +3471,7 @@ func (c *RegionDiskTypesListCall) doRequest(alt string) (*http.Response, error) 
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDiskTypes.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -3459,9 +3507,11 @@ func (c *RegionDiskTypesListCall) Do(opts ...googleapi.CallOption) (*RegionDiskT
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDiskTypes.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -3553,8 +3603,7 @@ func (c *RegionDisksAddResourcePoliciesCall) Header() http.Header {
 
 func (c *RegionDisksAddResourcePoliciesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regiondisksaddresourcepoliciesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regiondisksaddresourcepoliciesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -3572,6 +3621,7 @@ func (c *RegionDisksAddResourcePoliciesCall) doRequest(alt string) (*http.Respon
 		"region":  c.region,
 		"disk":    c.disk,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.addResourcePolicies", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -3606,9 +3656,11 @@ func (c *RegionDisksAddResourcePoliciesCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.addResourcePolicies", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -3674,8 +3726,7 @@ func (c *RegionDisksBulkInsertCall) Header() http.Header {
 
 func (c *RegionDisksBulkInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.bulkinsertdiskresource)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.bulkinsertdiskresource)
 	if err != nil {
 		return nil, err
 	}
@@ -3692,6 +3743,7 @@ func (c *RegionDisksBulkInsertCall) doRequest(alt string) (*http.Response, error
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.bulkInsert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -3726,9 +3778,11 @@ func (c *RegionDisksBulkInsertCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.bulkInsert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -3808,8 +3862,7 @@ func (c *RegionDisksCreateSnapshotCall) Header() http.Header {
 
 func (c *RegionDisksCreateSnapshotCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.snapshot)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.snapshot)
 	if err != nil {
 		return nil, err
 	}
@@ -3827,6 +3880,7 @@ func (c *RegionDisksCreateSnapshotCall) doRequest(alt string) (*http.Response, e
 		"region":  c.region,
 		"disk":    c.disk,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.createSnapshot", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -3861,9 +3915,11 @@ func (c *RegionDisksCreateSnapshotCall) Do(opts ...googleapi.CallOption) (*Opera
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.createSnapshot", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -3933,12 +3989,11 @@ func (c *RegionDisksDeleteCall) Header() http.Header {
 
 func (c *RegionDisksDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/disks/{disk}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3948,6 +4003,7 @@ func (c *RegionDisksDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"disk":    c.disk,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -3982,9 +4038,11 @@ func (c *RegionDisksDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -4048,12 +4106,11 @@ func (c *RegionDisksGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/disks/{disk}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -4063,6 +4120,7 @@ func (c *RegionDisksGetCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"disk":    c.disk,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -4097,9 +4155,131 @@ func (c *RegionDisksGetCall) Do(opts ...googleapi.CallOption) (*Disk, error) {
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.get", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type RegionDisksGetAsyncReplicationStatusCall struct {
+	s            *Service
+	project      string
+	region       string
+	disk         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// GetAsyncReplicationStatus: Gets the status of current async replication for
+// a given device.
+//
+//   - disk: Name of the Disk resource whose Async replication details are
+//     requested. Name should conform to RFC1035 or be an unsigned long integer.
+//   - project: Project ID for this request.
+//   - region: The name of the zone for this request.
+func (r *RegionDisksService) GetAsyncReplicationStatus(project string, region string, disk string) *RegionDisksGetAsyncReplicationStatusCall {
+	c := &RegionDisksGetAsyncReplicationStatusCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.region = region
+	c.disk = disk
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *RegionDisksGetAsyncReplicationStatusCall) Fields(s ...googleapi.Field) *RegionDisksGetAsyncReplicationStatusCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets an optional parameter which makes the operation fail if the
+// object's ETag matches the given value. This is useful for getting updates
+// only after the object has changed since the last request.
+func (c *RegionDisksGetAsyncReplicationStatusCall) IfNoneMatch(entityTag string) *RegionDisksGetAsyncReplicationStatusCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *RegionDisksGetAsyncReplicationStatusCall) Context(ctx context.Context) *RegionDisksGetAsyncReplicationStatusCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *RegionDisksGetAsyncReplicationStatusCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *RegionDisksGetAsyncReplicationStatusCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/disks/{disk}/getAsyncReplicationStatus")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project": c.project,
+		"region":  c.region,
+		"disk":    c.disk,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.getAsyncReplicationStatus", "request", internallog.HTTPRequest(req, nil))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.regionDisks.getAsyncReplicationStatus" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *GetAsyncReplicationStatusResponse.ServerResponse.Header or (if a response
+// was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *RegionDisksGetAsyncReplicationStatusCall) Do(opts ...googleapi.CallOption) (*GetAsyncReplicationStatusResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &GetAsyncReplicationStatusResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.getAsyncReplicationStatus", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -4171,12 +4351,11 @@ func (c *RegionDisksGetIamPolicyCall) doRequest(alt string) (*http.Response, err
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/disks/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -4186,6 +4365,7 @@ func (c *RegionDisksGetIamPolicyCall) doRequest(alt string) (*http.Response, err
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -4220,9 +4400,11 @@ func (c *RegionDisksGetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Policy,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -4296,8 +4478,7 @@ func (c *RegionDisksInsertCall) Header() http.Header {
 
 func (c *RegionDisksInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.disk)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.disk)
 	if err != nil {
 		return nil, err
 	}
@@ -4314,6 +4495,7 @@ func (c *RegionDisksInsertCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -4348,9 +4530,11 @@ func (c *RegionDisksInsertCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -4490,12 +4674,11 @@ func (c *RegionDisksListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/disks")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -4504,6 +4687,7 @@ func (c *RegionDisksListCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -4538,9 +4722,11 @@ func (c *RegionDisksListCall) Do(opts ...googleapi.CallOption) (*DiskList, error
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -4630,8 +4816,7 @@ func (c *RegionDisksRemoveResourcePoliciesCall) Header() http.Header {
 
 func (c *RegionDisksRemoveResourcePoliciesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regiondisksremoveresourcepoliciesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regiondisksremoveresourcepoliciesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -4649,6 +4834,7 @@ func (c *RegionDisksRemoveResourcePoliciesCall) doRequest(alt string) (*http.Res
 		"region":  c.region,
 		"disk":    c.disk,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.removeResourcePolicies", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -4683,9 +4869,11 @@ func (c *RegionDisksRemoveResourcePoliciesCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.removeResourcePolicies", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -4754,8 +4942,7 @@ func (c *RegionDisksResizeCall) Header() http.Header {
 
 func (c *RegionDisksResizeCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regiondisksresizerequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regiondisksresizerequest)
 	if err != nil {
 		return nil, err
 	}
@@ -4773,6 +4960,7 @@ func (c *RegionDisksResizeCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"disk":    c.disk,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.resize", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -4807,9 +4995,11 @@ func (c *RegionDisksResizeCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.resize", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -4864,8 +5054,7 @@ func (c *RegionDisksSetIamPolicyCall) Header() http.Header {
 
 func (c *RegionDisksSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -4883,6 +5072,7 @@ func (c *RegionDisksSetIamPolicyCall) doRequest(alt string) (*http.Response, err
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -4917,9 +5107,11 @@ func (c *RegionDisksSetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Policy,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -4988,8 +5180,7 @@ func (c *RegionDisksSetLabelsCall) Header() http.Header {
 
 func (c *RegionDisksSetLabelsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetlabelsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetlabelsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -5007,6 +5198,7 @@ func (c *RegionDisksSetLabelsCall) doRequest(alt string) (*http.Response, error)
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.setLabels", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -5041,9 +5233,11 @@ func (c *RegionDisksSetLabelsCall) Do(opts ...googleapi.CallOption) (*Operation,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.setLabels", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -5113,8 +5307,7 @@ func (c *RegionDisksStartAsyncReplicationCall) Header() http.Header {
 
 func (c *RegionDisksStartAsyncReplicationCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regiondisksstartasyncreplicationrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regiondisksstartasyncreplicationrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -5132,6 +5325,7 @@ func (c *RegionDisksStartAsyncReplicationCall) doRequest(alt string) (*http.Resp
 		"region":  c.region,
 		"disk":    c.disk,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.startAsyncReplication", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -5166,9 +5360,11 @@ func (c *RegionDisksStartAsyncReplicationCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.startAsyncReplication", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -5236,12 +5432,11 @@ func (c *RegionDisksStopAsyncReplicationCall) Header() http.Header {
 
 func (c *RegionDisksStopAsyncReplicationCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/disks/{disk}/stopAsyncReplication")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -5251,6 +5446,7 @@ func (c *RegionDisksStopAsyncReplicationCall) doRequest(alt string) (*http.Respo
 		"region":  c.region,
 		"disk":    c.disk,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.stopAsyncReplication", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -5285,9 +5481,11 @@ func (c *RegionDisksStopAsyncReplicationCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.stopAsyncReplication", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -5355,8 +5553,7 @@ func (c *RegionDisksStopGroupAsyncReplicationCall) Header() http.Header {
 
 func (c *RegionDisksStopGroupAsyncReplicationCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.disksstopgroupasyncreplicationresource)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.disksstopgroupasyncreplicationresource)
 	if err != nil {
 		return nil, err
 	}
@@ -5373,6 +5570,7 @@ func (c *RegionDisksStopGroupAsyncReplicationCall) doRequest(alt string) (*http.
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.stopGroupAsyncReplication", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -5407,9 +5605,11 @@ func (c *RegionDisksStopGroupAsyncReplicationCall) Do(opts ...googleapi.CallOpti
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.stopGroupAsyncReplication", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -5464,8 +5664,7 @@ func (c *RegionDisksTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionDisksTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -5483,6 +5682,7 @@ func (c *RegionDisksTestIamPermissionsCall) doRequest(alt string) (*http.Respons
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -5518,9 +5718,11 @@ func (c *RegionDisksTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*T
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -5604,8 +5806,7 @@ func (c *RegionDisksUpdateCall) Header() http.Header {
 
 func (c *RegionDisksUpdateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.disk2)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.disk2)
 	if err != nil {
 		return nil, err
 	}
@@ -5623,6 +5824,7 @@ func (c *RegionDisksUpdateCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"disk":    c.disk,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.update", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -5657,9 +5859,139 @@ func (c *RegionDisksUpdateCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.update", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type RegionDisksWaitForReplicationCatchUpCall struct {
+	s                                      *Service
+	project                                string
+	region                                 string
+	disk                                   string
+	regionwaitforreplicationcatchuprequest *RegionWaitForReplicationCatchUpRequest
+	urlParams_                             gensupport.URLParams
+	ctx_                                   context.Context
+	header_                                http.Header
+}
+
+// WaitForReplicationCatchUp: Wait for replication to catch up on the secondary
+// disk.
+//
+//   - disk: The name of the persistent disk. Name should conform to RFC1035 or
+//     be an unsigned long integer.
+//   - project: Project ID for this request.
+//   - region: Name of the region for this request.
+func (r *RegionDisksService) WaitForReplicationCatchUp(project string, region string, disk string, regionwaitforreplicationcatchuprequest *RegionWaitForReplicationCatchUpRequest) *RegionDisksWaitForReplicationCatchUpCall {
+	c := &RegionDisksWaitForReplicationCatchUpCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.region = region
+	c.disk = disk
+	c.regionwaitforreplicationcatchuprequest = regionwaitforreplicationcatchuprequest
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional request ID to
+// identify requests. Specify a unique request ID so that if you must retry
+// your request, the server will know to ignore the request if it has already
+// been completed. For example, consider a situation where you make an initial
+// request and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the same
+// request ID was received, and if so, will ignore the second request. This
+// prevents clients from accidentally creating duplicate commitments. The
+// request ID must be a valid UUID with the exception that zero UUID is not
+// supported ( 00000000-0000-0000-0000-000000000000).
+func (c *RegionDisksWaitForReplicationCatchUpCall) RequestId(requestId string) *RegionDisksWaitForReplicationCatchUpCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *RegionDisksWaitForReplicationCatchUpCall) Fields(s ...googleapi.Field) *RegionDisksWaitForReplicationCatchUpCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *RegionDisksWaitForReplicationCatchUpCall) Context(ctx context.Context) *RegionDisksWaitForReplicationCatchUpCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *RegionDisksWaitForReplicationCatchUpCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *RegionDisksWaitForReplicationCatchUpCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionwaitforreplicationcatchuprequest)
+	if err != nil {
+		return nil, err
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/disks/{disk}/waitForReplicationCatchUp")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project": c.project,
+		"region":  c.region,
+		"disk":    c.disk,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionDisks.waitForReplicationCatchUp", "request", internallog.HTTPRequest(req, body.Bytes()))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.regionDisks.waitForReplicationCatchUp" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *RegionDisksWaitForReplicationCatchUpCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionDisks.waitForReplicationCatchUp", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -5819,12 +6151,11 @@ func (c *RegionHealthCheckServicesAggregatedListCall) doRequest(alt string) (*ht
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/healthCheckServices")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -5832,6 +6163,7 @@ func (c *RegionHealthCheckServicesAggregatedListCall) doRequest(alt string) (*ht
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -5867,9 +6199,11 @@ func (c *RegionHealthCheckServicesAggregatedListCall) Do(opts ...googleapi.CallO
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -5958,12 +6292,11 @@ func (c *RegionHealthCheckServicesDeleteCall) Header() http.Header {
 
 func (c *RegionHealthCheckServicesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/healthCheckServices/{healthCheckService}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -5973,6 +6306,7 @@ func (c *RegionHealthCheckServicesDeleteCall) doRequest(alt string) (*http.Respo
 		"region":             c.region,
 		"healthCheckService": c.healthCheckService,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -6007,9 +6341,11 @@ func (c *RegionHealthCheckServicesDeleteCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -6074,12 +6410,11 @@ func (c *RegionHealthCheckServicesGetCall) doRequest(alt string) (*http.Response
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/healthCheckServices/{healthCheckService}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -6089,6 +6424,7 @@ func (c *RegionHealthCheckServicesGetCall) doRequest(alt string) (*http.Response
 		"region":             c.region,
 		"healthCheckService": c.healthCheckService,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -6124,9 +6460,11 @@ func (c *RegionHealthCheckServicesGetCall) Do(opts ...googleapi.CallOption) (*He
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -6193,8 +6531,7 @@ func (c *RegionHealthCheckServicesInsertCall) Header() http.Header {
 
 func (c *RegionHealthCheckServicesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.healthcheckservice)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.healthcheckservice)
 	if err != nil {
 		return nil, err
 	}
@@ -6211,6 +6548,7 @@ func (c *RegionHealthCheckServicesInsertCall) doRequest(alt string) (*http.Respo
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -6245,9 +6583,11 @@ func (c *RegionHealthCheckServicesInsertCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -6387,12 +6727,11 @@ func (c *RegionHealthCheckServicesListCall) doRequest(alt string) (*http.Respons
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/healthCheckServices")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -6401,6 +6740,7 @@ func (c *RegionHealthCheckServicesListCall) doRequest(alt string) (*http.Respons
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -6436,9 +6776,11 @@ func (c *RegionHealthCheckServicesListCall) Do(opts ...googleapi.CallOption) (*H
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -6531,8 +6873,7 @@ func (c *RegionHealthCheckServicesPatchCall) Header() http.Header {
 
 func (c *RegionHealthCheckServicesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.healthcheckservice)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.healthcheckservice)
 	if err != nil {
 		return nil, err
 	}
@@ -6550,6 +6891,7 @@ func (c *RegionHealthCheckServicesPatchCall) doRequest(alt string) (*http.Respon
 		"region":             c.region,
 		"healthCheckService": c.healthCheckService,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -6584,9 +6926,11 @@ func (c *RegionHealthCheckServicesPatchCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -6641,8 +6985,7 @@ func (c *RegionHealthCheckServicesTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionHealthCheckServicesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -6660,6 +7003,7 @@ func (c *RegionHealthCheckServicesTestIamPermissionsCall) doRequest(alt string) 
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -6695,9 +7039,11 @@ func (c *RegionHealthCheckServicesTestIamPermissionsCall) Do(opts ...googleapi.C
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthCheckServices.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -6764,12 +7110,11 @@ func (c *RegionHealthChecksDeleteCall) Header() http.Header {
 
 func (c *RegionHealthChecksDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/healthChecks/{healthCheck}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -6779,6 +7124,7 @@ func (c *RegionHealthChecksDeleteCall) doRequest(alt string) (*http.Response, er
 		"region":      c.region,
 		"healthCheck": c.healthCheck,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -6813,9 +7159,11 @@ func (c *RegionHealthChecksDeleteCall) Do(opts ...googleapi.CallOption) (*Operat
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -6879,12 +7227,11 @@ func (c *RegionHealthChecksGetCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/healthChecks/{healthCheck}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -6894,6 +7241,7 @@ func (c *RegionHealthChecksGetCall) doRequest(alt string) (*http.Response, error
 		"region":      c.region,
 		"healthCheck": c.healthCheck,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -6928,9 +7276,11 @@ func (c *RegionHealthChecksGetCall) Do(opts ...googleapi.CallOption) (*HealthChe
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -6997,8 +7347,7 @@ func (c *RegionHealthChecksInsertCall) Header() http.Header {
 
 func (c *RegionHealthChecksInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.healthcheck)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.healthcheck)
 	if err != nil {
 		return nil, err
 	}
@@ -7015,6 +7364,7 @@ func (c *RegionHealthChecksInsertCall) doRequest(alt string) (*http.Response, er
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -7049,9 +7399,11 @@ func (c *RegionHealthChecksInsertCall) Do(opts ...googleapi.CallOption) (*Operat
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -7191,12 +7543,11 @@ func (c *RegionHealthChecksListCall) doRequest(alt string) (*http.Response, erro
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/healthChecks")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -7205,6 +7556,7 @@ func (c *RegionHealthChecksListCall) doRequest(alt string) (*http.Response, erro
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -7240,9 +7592,11 @@ func (c *RegionHealthChecksListCall) Do(opts ...googleapi.CallOption) (*HealthCh
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -7334,8 +7688,7 @@ func (c *RegionHealthChecksPatchCall) Header() http.Header {
 
 func (c *RegionHealthChecksPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.healthcheck)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.healthcheck)
 	if err != nil {
 		return nil, err
 	}
@@ -7353,6 +7706,7 @@ func (c *RegionHealthChecksPatchCall) doRequest(alt string) (*http.Response, err
 		"region":      c.region,
 		"healthCheck": c.healthCheck,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -7387,9 +7741,11 @@ func (c *RegionHealthChecksPatchCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -7444,8 +7800,7 @@ func (c *RegionHealthChecksTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionHealthChecksTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -7463,6 +7818,7 @@ func (c *RegionHealthChecksTestIamPermissionsCall) doRequest(alt string) (*http.
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -7498,9 +7854,11 @@ func (c *RegionHealthChecksTestIamPermissionsCall) Do(opts ...googleapi.CallOpti
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -7570,8 +7928,7 @@ func (c *RegionHealthChecksUpdateCall) Header() http.Header {
 
 func (c *RegionHealthChecksUpdateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.healthcheck)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.healthcheck)
 	if err != nil {
 		return nil, err
 	}
@@ -7589,6 +7946,7 @@ func (c *RegionHealthChecksUpdateCall) doRequest(alt string) (*http.Response, er
 		"region":      c.region,
 		"healthCheck": c.healthCheck,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.update", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -7623,9 +7981,11 @@ func (c *RegionHealthChecksUpdateCall) Do(opts ...googleapi.CallOption) (*Operat
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionHealthChecks.update", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -7700,12 +8060,11 @@ func (c *RegionInstanceGroupManagerResizeRequestsCancelCall) Header() http.Heade
 
 func (c *RegionInstanceGroupManagerResizeRequestsCancelCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}/resizeRequests/{resizeRequest}/cancel")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -7716,6 +8075,7 @@ func (c *RegionInstanceGroupManagerResizeRequestsCancelCall) doRequest(alt strin
 		"instanceGroupManager": c.instanceGroupManager,
 		"resizeRequest":        c.resizeRequest,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagerResizeRequests.cancel", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -7750,9 +8110,11 @@ func (c *RegionInstanceGroupManagerResizeRequestsCancelCall) Do(opts ...googleap
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagerResizeRequests.cancel", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -7827,12 +8189,11 @@ func (c *RegionInstanceGroupManagerResizeRequestsDeleteCall) Header() http.Heade
 
 func (c *RegionInstanceGroupManagerResizeRequestsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}/resizeRequests/{resizeRequest}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -7843,6 +8204,7 @@ func (c *RegionInstanceGroupManagerResizeRequestsDeleteCall) doRequest(alt strin
 		"instanceGroupManager": c.instanceGroupManager,
 		"resizeRequest":        c.resizeRequest,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagerResizeRequests.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -7877,9 +8239,11 @@ func (c *RegionInstanceGroupManagerResizeRequestsDeleteCall) Do(opts ...googleap
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagerResizeRequests.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -7949,12 +8313,11 @@ func (c *RegionInstanceGroupManagerResizeRequestsGetCall) doRequest(alt string) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}/resizeRequests/{resizeRequest}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -7965,6 +8328,7 @@ func (c *RegionInstanceGroupManagerResizeRequestsGetCall) doRequest(alt string) 
 		"instanceGroupManager": c.instanceGroupManager,
 		"resizeRequest":        c.resizeRequest,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagerResizeRequests.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -8000,9 +8364,11 @@ func (c *RegionInstanceGroupManagerResizeRequestsGetCall) Do(opts ...googleapi.C
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagerResizeRequests.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -8075,8 +8441,7 @@ func (c *RegionInstanceGroupManagerResizeRequestsInsertCall) Header() http.Heade
 
 func (c *RegionInstanceGroupManagerResizeRequestsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.instancegroupmanagerresizerequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.instancegroupmanagerresizerequest)
 	if err != nil {
 		return nil, err
 	}
@@ -8094,6 +8459,7 @@ func (c *RegionInstanceGroupManagerResizeRequestsInsertCall) doRequest(alt strin
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagerResizeRequests.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -8128,9 +8494,11 @@ func (c *RegionInstanceGroupManagerResizeRequestsInsertCall) Do(opts ...googleap
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagerResizeRequests.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -8275,12 +8643,11 @@ func (c *RegionInstanceGroupManagerResizeRequestsListCall) doRequest(alt string)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}/resizeRequests")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -8290,6 +8657,7 @@ func (c *RegionInstanceGroupManagerResizeRequestsListCall) doRequest(alt string)
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagerResizeRequests.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -8325,9 +8693,11 @@ func (c *RegionInstanceGroupManagerResizeRequestsListCall) Do(opts ...googleapi.
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagerResizeRequests.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -8428,8 +8798,7 @@ func (c *RegionInstanceGroupManagersAbandonInstancesCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersAbandonInstancesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagersabandoninstancesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagersabandoninstancesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -8447,6 +8816,7 @@ func (c *RegionInstanceGroupManagersAbandonInstancesCall) doRequest(alt string) 
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.abandonInstances", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -8481,9 +8851,11 @@ func (c *RegionInstanceGroupManagersAbandonInstancesCall) Do(opts ...googleapi.C
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.abandonInstances", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -8540,8 +8912,7 @@ func (c *RegionInstanceGroupManagersApplyUpdatesToInstancesCall) Header() http.H
 
 func (c *RegionInstanceGroupManagersApplyUpdatesToInstancesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagersapplyupdatesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagersapplyupdatesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -8559,6 +8930,7 @@ func (c *RegionInstanceGroupManagersApplyUpdatesToInstancesCall) doRequest(alt s
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.applyUpdatesToInstances", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -8593,9 +8965,11 @@ func (c *RegionInstanceGroupManagersApplyUpdatesToInstancesCall) Do(opts ...goog
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.applyUpdatesToInstances", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -8670,8 +9044,7 @@ func (c *RegionInstanceGroupManagersCreateInstancesCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersCreateInstancesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagerscreateinstancesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagerscreateinstancesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -8689,6 +9062,7 @@ func (c *RegionInstanceGroupManagersCreateInstancesCall) doRequest(alt string) (
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.createInstances", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -8723,9 +9097,11 @@ func (c *RegionInstanceGroupManagersCreateInstancesCall) Do(opts ...googleapi.Ca
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.createInstances", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -8793,12 +9169,11 @@ func (c *RegionInstanceGroupManagersDeleteCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -8808,6 +9183,7 @@ func (c *RegionInstanceGroupManagersDeleteCall) doRequest(alt string) (*http.Res
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -8842,9 +9218,11 @@ func (c *RegionInstanceGroupManagersDeleteCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -8923,8 +9301,7 @@ func (c *RegionInstanceGroupManagersDeleteInstancesCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersDeleteInstancesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagersdeleteinstancesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagersdeleteinstancesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -8942,6 +9319,7 @@ func (c *RegionInstanceGroupManagersDeleteInstancesCall) doRequest(alt string) (
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.deleteInstances", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -8976,9 +9354,11 @@ func (c *RegionInstanceGroupManagersDeleteInstancesCall) Do(opts ...googleapi.Ca
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.deleteInstances", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -9035,8 +9415,7 @@ func (c *RegionInstanceGroupManagersDeletePerInstanceConfigsCall) Header() http.
 
 func (c *RegionInstanceGroupManagersDeletePerInstanceConfigsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagerdeleteinstanceconfigreq)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagerdeleteinstanceconfigreq)
 	if err != nil {
 		return nil, err
 	}
@@ -9054,6 +9433,7 @@ func (c *RegionInstanceGroupManagersDeletePerInstanceConfigsCall) doRequest(alt 
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.deletePerInstanceConfigs", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -9088,9 +9468,11 @@ func (c *RegionInstanceGroupManagersDeletePerInstanceConfigsCall) Do(opts ...goo
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.deletePerInstanceConfigs", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -9154,12 +9536,11 @@ func (c *RegionInstanceGroupManagersGetCall) doRequest(alt string) (*http.Respon
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -9169,6 +9550,7 @@ func (c *RegionInstanceGroupManagersGetCall) doRequest(alt string) (*http.Respon
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -9204,9 +9586,11 @@ func (c *RegionInstanceGroupManagersGetCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -9278,8 +9662,7 @@ func (c *RegionInstanceGroupManagersInsertCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.instancegroupmanager)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.instancegroupmanager)
 	if err != nil {
 		return nil, err
 	}
@@ -9296,6 +9679,7 @@ func (c *RegionInstanceGroupManagersInsertCall) doRequest(alt string) (*http.Res
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -9330,9 +9714,11 @@ func (c *RegionInstanceGroupManagersInsertCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -9472,12 +9858,11 @@ func (c *RegionInstanceGroupManagersListCall) doRequest(alt string) (*http.Respo
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroupManagers")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -9486,6 +9871,7 @@ func (c *RegionInstanceGroupManagersListCall) doRequest(alt string) (*http.Respo
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -9521,9 +9907,11 @@ func (c *RegionInstanceGroupManagersListCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -9692,12 +10080,11 @@ func (c *RegionInstanceGroupManagersListErrorsCall) doRequest(alt string) (*http
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}/listErrors")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -9707,6 +10094,7 @@ func (c *RegionInstanceGroupManagersListErrorsCall) doRequest(alt string) (*http
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.listErrors", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -9742,9 +10130,11 @@ func (c *RegionInstanceGroupManagersListErrorsCall) Do(opts ...googleapi.CallOpt
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.listErrors", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -9900,12 +10290,11 @@ func (c *RegionInstanceGroupManagersListManagedInstancesCall) Header() http.Head
 
 func (c *RegionInstanceGroupManagersListManagedInstancesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}/listManagedInstances")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -9915,6 +10304,7 @@ func (c *RegionInstanceGroupManagersListManagedInstancesCall) doRequest(alt stri
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.listManagedInstances", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -9950,9 +10340,11 @@ func (c *RegionInstanceGroupManagersListManagedInstancesCall) Do(opts ...googlea
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.listManagedInstances", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -10107,12 +10499,11 @@ func (c *RegionInstanceGroupManagersListPerInstanceConfigsCall) Header() http.He
 
 func (c *RegionInstanceGroupManagersListPerInstanceConfigsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}/listPerInstanceConfigs")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -10122,6 +10513,7 @@ func (c *RegionInstanceGroupManagersListPerInstanceConfigsCall) doRequest(alt st
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.listPerInstanceConfigs", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -10157,9 +10549,11 @@ func (c *RegionInstanceGroupManagersListPerInstanceConfigsCall) Do(opts ...googl
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.listPerInstanceConfigs", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -10258,8 +10652,7 @@ func (c *RegionInstanceGroupManagersPatchCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.instancegroupmanager)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.instancegroupmanager)
 	if err != nil {
 		return nil, err
 	}
@@ -10277,6 +10670,7 @@ func (c *RegionInstanceGroupManagersPatchCall) doRequest(alt string) (*http.Resp
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -10311,9 +10705,11 @@ func (c *RegionInstanceGroupManagersPatchCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -10386,8 +10782,7 @@ func (c *RegionInstanceGroupManagersPatchPerInstanceConfigsCall) Header() http.H
 
 func (c *RegionInstanceGroupManagersPatchPerInstanceConfigsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagerpatchinstanceconfigreq)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagerpatchinstanceconfigreq)
 	if err != nil {
 		return nil, err
 	}
@@ -10405,6 +10800,7 @@ func (c *RegionInstanceGroupManagersPatchPerInstanceConfigsCall) doRequest(alt s
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.patchPerInstanceConfigs", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -10439,9 +10835,11 @@ func (c *RegionInstanceGroupManagersPatchPerInstanceConfigsCall) Do(opts ...goog
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.patchPerInstanceConfigs", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -10519,8 +10917,7 @@ func (c *RegionInstanceGroupManagersRecreateInstancesCall) Header() http.Header 
 
 func (c *RegionInstanceGroupManagersRecreateInstancesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagersrecreaterequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagersrecreaterequest)
 	if err != nil {
 		return nil, err
 	}
@@ -10538,6 +10935,7 @@ func (c *RegionInstanceGroupManagersRecreateInstancesCall) doRequest(alt string)
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.recreateInstances", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -10572,9 +10970,11 @@ func (c *RegionInstanceGroupManagersRecreateInstancesCall) Do(opts ...googleapi.
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.recreateInstances", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -10653,12 +11053,11 @@ func (c *RegionInstanceGroupManagersResizeCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersResizeCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}/resize")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -10668,6 +11067,7 @@ func (c *RegionInstanceGroupManagersResizeCall) doRequest(alt string) (*http.Res
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.resize", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -10702,9 +11102,11 @@ func (c *RegionInstanceGroupManagersResizeCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.resize", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -10785,8 +11187,7 @@ func (c *RegionInstanceGroupManagersResizeAdvancedCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersResizeAdvancedCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagersresizeadvancedrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagersresizeadvancedrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -10804,6 +11205,7 @@ func (c *RegionInstanceGroupManagersResizeAdvancedCall) doRequest(alt string) (*
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.resizeAdvanced", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -10838,9 +11240,11 @@ func (c *RegionInstanceGroupManagersResizeAdvancedCall) Do(opts ...googleapi.Cal
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.resizeAdvanced", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -10921,8 +11325,7 @@ func (c *RegionInstanceGroupManagersResumeInstancesCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersResumeInstancesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagersresumeinstancesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagersresumeinstancesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -10940,6 +11343,7 @@ func (c *RegionInstanceGroupManagersResumeInstancesCall) doRequest(alt string) (
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.resumeInstances", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -10974,9 +11378,11 @@ func (c *RegionInstanceGroupManagersResumeInstancesCall) Do(opts ...googleapi.Ca
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.resumeInstances", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -11047,8 +11453,7 @@ func (c *RegionInstanceGroupManagersSetAutoHealingPoliciesCall) Header() http.He
 
 func (c *RegionInstanceGroupManagersSetAutoHealingPoliciesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagerssetautohealingrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagerssetautohealingrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -11066,6 +11471,7 @@ func (c *RegionInstanceGroupManagersSetAutoHealingPoliciesCall) doRequest(alt st
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.setAutoHealingPolicies", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -11100,9 +11506,11 @@ func (c *RegionInstanceGroupManagersSetAutoHealingPoliciesCall) Do(opts ...googl
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.setAutoHealingPolicies", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -11173,8 +11581,7 @@ func (c *RegionInstanceGroupManagersSetInstanceTemplateCall) Header() http.Heade
 
 func (c *RegionInstanceGroupManagersSetInstanceTemplateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagerssettemplaterequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagerssettemplaterequest)
 	if err != nil {
 		return nil, err
 	}
@@ -11192,6 +11599,7 @@ func (c *RegionInstanceGroupManagersSetInstanceTemplateCall) doRequest(alt strin
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.setInstanceTemplate", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -11226,9 +11634,11 @@ func (c *RegionInstanceGroupManagersSetInstanceTemplateCall) Do(opts ...googleap
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.setInstanceTemplate", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -11298,8 +11708,7 @@ func (c *RegionInstanceGroupManagersSetTargetPoolsCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersSetTargetPoolsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagerssettargetpoolsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagerssettargetpoolsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -11317,6 +11726,7 @@ func (c *RegionInstanceGroupManagersSetTargetPoolsCall) doRequest(alt string) (*
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.setTargetPools", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -11351,9 +11761,11 @@ func (c *RegionInstanceGroupManagersSetTargetPoolsCall) Do(opts ...googleapi.Cal
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.setTargetPools", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -11433,8 +11845,7 @@ func (c *RegionInstanceGroupManagersStartInstancesCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersStartInstancesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagersstartinstancesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagersstartinstancesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -11452,6 +11863,7 @@ func (c *RegionInstanceGroupManagersStartInstancesCall) doRequest(alt string) (*
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.startInstances", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -11486,9 +11898,11 @@ func (c *RegionInstanceGroupManagersStartInstancesCall) Do(opts ...googleapi.Cal
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.startInstances", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -11574,8 +11988,7 @@ func (c *RegionInstanceGroupManagersStopInstancesCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersStopInstancesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagersstopinstancesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagersstopinstancesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -11593,6 +12006,7 @@ func (c *RegionInstanceGroupManagersStopInstancesCall) doRequest(alt string) (*h
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.stopInstances", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -11627,9 +12041,11 @@ func (c *RegionInstanceGroupManagersStopInstancesCall) Do(opts ...googleapi.Call
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.stopInstances", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -11716,8 +12132,7 @@ func (c *RegionInstanceGroupManagersSuspendInstancesCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersSuspendInstancesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagerssuspendinstancesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagerssuspendinstancesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -11735,6 +12150,7 @@ func (c *RegionInstanceGroupManagersSuspendInstancesCall) doRequest(alt string) 
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.suspendInstances", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -11769,9 +12185,11 @@ func (c *RegionInstanceGroupManagersSuspendInstancesCall) Do(opts ...googleapi.C
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.suspendInstances", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -11826,8 +12244,7 @@ func (c *RegionInstanceGroupManagersTestIamPermissionsCall) Header() http.Header
 
 func (c *RegionInstanceGroupManagersTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -11845,6 +12262,7 @@ func (c *RegionInstanceGroupManagersTestIamPermissionsCall) doRequest(alt string
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -11880,9 +12298,11 @@ func (c *RegionInstanceGroupManagersTestIamPermissionsCall) Do(opts ...googleapi
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -11959,8 +12379,7 @@ func (c *RegionInstanceGroupManagersUpdateCall) Header() http.Header {
 
 func (c *RegionInstanceGroupManagersUpdateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.instancegroupmanager)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.instancegroupmanager)
 	if err != nil {
 		return nil, err
 	}
@@ -11978,6 +12397,7 @@ func (c *RegionInstanceGroupManagersUpdateCall) doRequest(alt string) (*http.Res
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.update", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -12012,9 +12432,11 @@ func (c *RegionInstanceGroupManagersUpdateCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.update", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -12087,8 +12509,7 @@ func (c *RegionInstanceGroupManagersUpdatePerInstanceConfigsCall) Header() http.
 
 func (c *RegionInstanceGroupManagersUpdatePerInstanceConfigsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupmanagerupdateinstanceconfigreq)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupmanagerupdateinstanceconfigreq)
 	if err != nil {
 		return nil, err
 	}
@@ -12106,6 +12527,7 @@ func (c *RegionInstanceGroupManagersUpdatePerInstanceConfigsCall) doRequest(alt 
 		"region":               c.region,
 		"instanceGroupManager": c.instanceGroupManager,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.updatePerInstanceConfigs", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -12140,9 +12562,11 @@ func (c *RegionInstanceGroupManagersUpdatePerInstanceConfigsCall) Do(opts ...goo
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroupManagers.updatePerInstanceConfigs", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -12206,12 +12630,11 @@ func (c *RegionInstanceGroupsGetCall) doRequest(alt string) (*http.Response, err
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroups/{instanceGroup}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -12221,6 +12644,7 @@ func (c *RegionInstanceGroupsGetCall) doRequest(alt string) (*http.Response, err
 		"region":        c.region,
 		"instanceGroup": c.instanceGroup,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroups.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -12255,9 +12679,11 @@ func (c *RegionInstanceGroupsGetCall) Do(opts ...googleapi.CallOption) (*Instanc
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroups.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -12397,12 +12823,11 @@ func (c *RegionInstanceGroupsListCall) doRequest(alt string) (*http.Response, er
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceGroups")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -12411,6 +12836,7 @@ func (c *RegionInstanceGroupsListCall) doRequest(alt string) (*http.Response, er
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroups.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -12446,9 +12872,11 @@ func (c *RegionInstanceGroupsListCall) Do(opts ...googleapi.CallOption) (*Region
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroups.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -12605,8 +13033,7 @@ func (c *RegionInstanceGroupsListInstancesCall) Header() http.Header {
 
 func (c *RegionInstanceGroupsListInstancesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupslistinstancesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupslistinstancesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -12624,6 +13051,7 @@ func (c *RegionInstanceGroupsListInstancesCall) doRequest(alt string) (*http.Res
 		"region":        c.region,
 		"instanceGroup": c.instanceGroup,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroups.listInstances", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -12659,9 +13087,11 @@ func (c *RegionInstanceGroupsListInstancesCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroups.listInstances", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -12753,8 +13183,7 @@ func (c *RegionInstanceGroupsSetNamedPortsCall) Header() http.Header {
 
 func (c *RegionInstanceGroupsSetNamedPortsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regioninstancegroupssetnamedportsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regioninstancegroupssetnamedportsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -12772,6 +13201,7 @@ func (c *RegionInstanceGroupsSetNamedPortsCall) doRequest(alt string) (*http.Res
 		"region":        c.region,
 		"instanceGroup": c.instanceGroup,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroups.setNamedPorts", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -12806,9 +13236,11 @@ func (c *RegionInstanceGroupsSetNamedPortsCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroups.setNamedPorts", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -12863,8 +13295,7 @@ func (c *RegionInstanceGroupsTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionInstanceGroupsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -12882,6 +13313,7 @@ func (c *RegionInstanceGroupsTestIamPermissionsCall) doRequest(alt string) (*htt
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceGroups.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -12917,9 +13349,11 @@ func (c *RegionInstanceGroupsTestIamPermissionsCall) Do(opts ...googleapi.CallOp
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceGroups.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -12987,12 +13421,11 @@ func (c *RegionInstanceTemplatesDeleteCall) Header() http.Header {
 
 func (c *RegionInstanceTemplatesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceTemplates/{instanceTemplate}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -13002,6 +13435,7 @@ func (c *RegionInstanceTemplatesDeleteCall) doRequest(alt string) (*http.Respons
 		"region":           c.region,
 		"instanceTemplate": c.instanceTemplate,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceTemplates.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -13036,9 +13470,11 @@ func (c *RegionInstanceTemplatesDeleteCall) Do(opts ...googleapi.CallOption) (*O
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceTemplates.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -13116,12 +13552,11 @@ func (c *RegionInstanceTemplatesGetCall) doRequest(alt string) (*http.Response, 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceTemplates/{instanceTemplate}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -13131,6 +13566,7 @@ func (c *RegionInstanceTemplatesGetCall) doRequest(alt string) (*http.Response, 
 		"region":           c.region,
 		"instanceTemplate": c.instanceTemplate,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceTemplates.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -13166,9 +13602,11 @@ func (c *RegionInstanceTemplatesGetCall) Do(opts ...googleapi.CallOption) (*Inst
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceTemplates.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -13235,8 +13673,7 @@ func (c *RegionInstanceTemplatesInsertCall) Header() http.Header {
 
 func (c *RegionInstanceTemplatesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.instancetemplate)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.instancetemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -13253,6 +13690,7 @@ func (c *RegionInstanceTemplatesInsertCall) doRequest(alt string) (*http.Respons
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceTemplates.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -13287,9 +13725,11 @@ func (c *RegionInstanceTemplatesInsertCall) Do(opts ...googleapi.CallOption) (*O
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceTemplates.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -13443,12 +13883,11 @@ func (c *RegionInstanceTemplatesListCall) doRequest(alt string) (*http.Response,
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instanceTemplates")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -13457,6 +13896,7 @@ func (c *RegionInstanceTemplatesListCall) doRequest(alt string) (*http.Response,
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstanceTemplates.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -13492,9 +13932,11 @@ func (c *RegionInstanceTemplatesListCall) Do(opts ...googleapi.CallOption) (*Ins
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstanceTemplates.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -13582,8 +14024,7 @@ func (c *RegionInstancesBulkInsertCall) Header() http.Header {
 
 func (c *RegionInstancesBulkInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.bulkinsertinstanceresource)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.bulkinsertinstanceresource)
 	if err != nil {
 		return nil, err
 	}
@@ -13600,6 +14041,7 @@ func (c *RegionInstancesBulkInsertCall) doRequest(alt string) (*http.Response, e
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstances.bulkInsert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -13634,9 +14076,11 @@ func (c *RegionInstancesBulkInsertCall) Do(opts ...googleapi.CallOption) (*Opera
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstances.bulkInsert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -13703,12 +14147,11 @@ func (c *RegionInstantSnapshotGroupsDeleteCall) Header() http.Header {
 
 func (c *RegionInstantSnapshotGroupsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instantSnapshotGroups/{instantSnapshotGroup}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -13718,6 +14161,7 @@ func (c *RegionInstantSnapshotGroupsDeleteCall) doRequest(alt string) (*http.Res
 		"region":               c.region,
 		"instantSnapshotGroup": c.instantSnapshotGroup,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -13752,9 +14196,11 @@ func (c *RegionInstantSnapshotGroupsDeleteCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -13819,12 +14265,11 @@ func (c *RegionInstantSnapshotGroupsGetCall) doRequest(alt string) (*http.Respon
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instantSnapshotGroups/{instantSnapshotGroup}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -13834,6 +14279,7 @@ func (c *RegionInstantSnapshotGroupsGetCall) doRequest(alt string) (*http.Respon
 		"region":               c.region,
 		"instantSnapshotGroup": c.instantSnapshotGroup,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -13869,9 +14315,11 @@ func (c *RegionInstantSnapshotGroupsGetCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -13943,12 +14391,11 @@ func (c *RegionInstantSnapshotGroupsGetIamPolicyCall) doRequest(alt string) (*ht
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instantSnapshotGroups/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -13958,6 +14405,7 @@ func (c *RegionInstantSnapshotGroupsGetIamPolicyCall) doRequest(alt string) (*ht
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -13992,9 +14440,11 @@ func (c *RegionInstantSnapshotGroupsGetIamPolicyCall) Do(opts ...googleapi.CallO
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -14067,8 +14517,7 @@ func (c *RegionInstantSnapshotGroupsInsertCall) Header() http.Header {
 
 func (c *RegionInstantSnapshotGroupsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.instantsnapshotgroup)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.instantsnapshotgroup)
 	if err != nil {
 		return nil, err
 	}
@@ -14085,6 +14534,7 @@ func (c *RegionInstantSnapshotGroupsInsertCall) doRequest(alt string) (*http.Res
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -14119,9 +14569,11 @@ func (c *RegionInstantSnapshotGroupsInsertCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -14261,12 +14713,11 @@ func (c *RegionInstantSnapshotGroupsListCall) doRequest(alt string) (*http.Respo
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instantSnapshotGroups")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -14275,6 +14726,7 @@ func (c *RegionInstantSnapshotGroupsListCall) doRequest(alt string) (*http.Respo
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -14310,9 +14762,11 @@ func (c *RegionInstantSnapshotGroupsListCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -14388,8 +14842,7 @@ func (c *RegionInstantSnapshotGroupsSetIamPolicyCall) Header() http.Header {
 
 func (c *RegionInstantSnapshotGroupsSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -14407,6 +14860,7 @@ func (c *RegionInstantSnapshotGroupsSetIamPolicyCall) doRequest(alt string) (*ht
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -14441,9 +14895,11 @@ func (c *RegionInstantSnapshotGroupsSetIamPolicyCall) Do(opts ...googleapi.CallO
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -14498,8 +14954,7 @@ func (c *RegionInstantSnapshotGroupsTestIamPermissionsCall) Header() http.Header
 
 func (c *RegionInstantSnapshotGroupsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -14517,6 +14972,7 @@ func (c *RegionInstantSnapshotGroupsTestIamPermissionsCall) doRequest(alt string
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -14552,9 +15008,11 @@ func (c *RegionInstantSnapshotGroupsTestIamPermissionsCall) Do(opts ...googleapi
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshotGroups.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -14626,12 +15084,11 @@ func (c *RegionInstantSnapshotsDeleteCall) Header() http.Header {
 
 func (c *RegionInstantSnapshotsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instantSnapshots/{instantSnapshot}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -14641,6 +15098,7 @@ func (c *RegionInstantSnapshotsDeleteCall) doRequest(alt string) (*http.Response
 		"region":          c.region,
 		"instantSnapshot": c.instantSnapshot,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -14675,9 +15133,11 @@ func (c *RegionInstantSnapshotsDeleteCall) Do(opts ...googleapi.CallOption) (*Op
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -14741,12 +15201,11 @@ func (c *RegionInstantSnapshotsGetCall) doRequest(alt string) (*http.Response, e
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instantSnapshots/{instantSnapshot}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -14756,6 +15215,7 @@ func (c *RegionInstantSnapshotsGetCall) doRequest(alt string) (*http.Response, e
 		"region":          c.region,
 		"instantSnapshot": c.instantSnapshot,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -14791,9 +15251,11 @@ func (c *RegionInstantSnapshotsGetCall) Do(opts ...googleapi.CallOption) (*Insta
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -14865,12 +15327,11 @@ func (c *RegionInstantSnapshotsGetIamPolicyCall) doRequest(alt string) (*http.Re
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instantSnapshots/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -14880,6 +15341,7 @@ func (c *RegionInstantSnapshotsGetIamPolicyCall) doRequest(alt string) (*http.Re
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -14914,9 +15376,11 @@ func (c *RegionInstantSnapshotsGetIamPolicyCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -14982,8 +15446,7 @@ func (c *RegionInstantSnapshotsInsertCall) Header() http.Header {
 
 func (c *RegionInstantSnapshotsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.instantsnapshot)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.instantsnapshot)
 	if err != nil {
 		return nil, err
 	}
@@ -15000,6 +15463,7 @@ func (c *RegionInstantSnapshotsInsertCall) doRequest(alt string) (*http.Response
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -15034,9 +15498,11 @@ func (c *RegionInstantSnapshotsInsertCall) Do(opts ...googleapi.CallOption) (*Op
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -15176,12 +15642,11 @@ func (c *RegionInstantSnapshotsListCall) doRequest(alt string) (*http.Response, 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/instantSnapshots")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -15190,6 +15655,7 @@ func (c *RegionInstantSnapshotsListCall) doRequest(alt string) (*http.Response, 
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -15225,9 +15691,11 @@ func (c *RegionInstantSnapshotsListCall) Do(opts ...googleapi.CallOption) (*Inst
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -15303,8 +15771,7 @@ func (c *RegionInstantSnapshotsSetIamPolicyCall) Header() http.Header {
 
 func (c *RegionInstantSnapshotsSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -15322,6 +15789,7 @@ func (c *RegionInstantSnapshotsSetIamPolicyCall) doRequest(alt string) (*http.Re
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -15356,9 +15824,11 @@ func (c *RegionInstantSnapshotsSetIamPolicyCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -15428,8 +15898,7 @@ func (c *RegionInstantSnapshotsSetLabelsCall) Header() http.Header {
 
 func (c *RegionInstantSnapshotsSetLabelsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetlabelsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetlabelsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -15447,6 +15916,7 @@ func (c *RegionInstantSnapshotsSetLabelsCall) doRequest(alt string) (*http.Respo
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.setLabels", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -15481,9 +15951,11 @@ func (c *RegionInstantSnapshotsSetLabelsCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.setLabels", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -15538,8 +16010,7 @@ func (c *RegionInstantSnapshotsTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionInstantSnapshotsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -15557,6 +16028,7 @@ func (c *RegionInstantSnapshotsTestIamPermissionsCall) doRequest(alt string) (*h
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -15592,9 +16064,11 @@ func (c *RegionInstantSnapshotsTestIamPermissionsCall) Do(opts ...googleapi.Call
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionInstantSnapshots.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -15661,12 +16135,11 @@ func (c *RegionMultiMigsDeleteCall) Header() http.Header {
 
 func (c *RegionMultiMigsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/multiMigs/{multiMig}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -15676,6 +16149,7 @@ func (c *RegionMultiMigsDeleteCall) doRequest(alt string) (*http.Response, error
 		"region":   c.region,
 		"multiMig": c.multiMig,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionMultiMigs.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -15710,9 +16184,11 @@ func (c *RegionMultiMigsDeleteCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionMultiMigs.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -15727,7 +16203,7 @@ type RegionMultiMigsGetCall struct {
 	header_      http.Header
 }
 
-// Get: Returns the specified multi-MIG resource.
+// Get: Returns all the details of a specific multi-MIG.
 //
 // - multiMig: Name of the multi-MIG resource to return.
 // - project: Project ID for this request.
@@ -15776,12 +16252,11 @@ func (c *RegionMultiMigsGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/multiMigs/{multiMig}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -15791,6 +16266,7 @@ func (c *RegionMultiMigsGetCall) doRequest(alt string) (*http.Response, error) {
 		"region":   c.region,
 		"multiMig": c.multiMig,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionMultiMigs.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -15825,9 +16301,11 @@ func (c *RegionMultiMigsGetCall) Do(opts ...googleapi.CallOption) (*MultiMig, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionMultiMigs.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -15860,9 +16338,9 @@ func (r *RegionMultiMigsService) Insert(project string, region string, multimig 
 // request and the request times out. If you make the request again with the
 // same request ID, the server can check if original operation with the same
 // request ID was received, and if so, will ignore the second request. This
-// prevents clients from accidentally creating duplicate commitments. The
-// request ID must be a valid UUID with the exception that zero UUID is not
-// supported ( 00000000-0000-0000-0000-000000000000).
+// prevents you from accidentally creating duplicate commitments. The request
+// ID must be a valid UUID with the exception that zero UUID is not supported (
+// 00000000-0000-0000-0000-000000000000).
 func (c *RegionMultiMigsInsertCall) RequestId(requestId string) *RegionMultiMigsInsertCall {
 	c.urlParams_.Set("requestId", requestId)
 	return c
@@ -15893,8 +16371,7 @@ func (c *RegionMultiMigsInsertCall) Header() http.Header {
 
 func (c *RegionMultiMigsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.multimig)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.multimig)
 	if err != nil {
 		return nil, err
 	}
@@ -15911,6 +16388,7 @@ func (c *RegionMultiMigsInsertCall) doRequest(alt string) (*http.Response, error
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionMultiMigs.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -15945,9 +16423,11 @@ func (c *RegionMultiMigsInsertCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionMultiMigs.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -16086,12 +16566,11 @@ func (c *RegionMultiMigsListCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/multiMigs")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -16100,6 +16579,7 @@ func (c *RegionMultiMigsListCall) doRequest(alt string) (*http.Response, error) 
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionMultiMigs.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -16134,9 +16614,11 @@ func (c *RegionMultiMigsListCall) Do(opts ...googleapi.CallOption) (*MultiMigsLi
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionMultiMigs.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -16229,8 +16711,7 @@ func (c *RegionNetworkEndpointGroupsAttachNetworkEndpointsCall) Header() http.He
 
 func (c *RegionNetworkEndpointGroupsAttachNetworkEndpointsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionnetworkendpointgroupsattachendpointsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionnetworkendpointgroupsattachendpointsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -16248,6 +16729,7 @@ func (c *RegionNetworkEndpointGroupsAttachNetworkEndpointsCall) doRequest(alt st
 		"region":               c.region,
 		"networkEndpointGroup": c.networkEndpointGroup,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.attachNetworkEndpoints", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -16282,9 +16764,11 @@ func (c *RegionNetworkEndpointGroupsAttachNetworkEndpointsCall) Do(opts ...googl
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.attachNetworkEndpoints", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -16354,12 +16838,11 @@ func (c *RegionNetworkEndpointGroupsDeleteCall) Header() http.Header {
 
 func (c *RegionNetworkEndpointGroupsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/networkEndpointGroups/{networkEndpointGroup}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -16369,6 +16852,7 @@ func (c *RegionNetworkEndpointGroupsDeleteCall) doRequest(alt string) (*http.Res
 		"region":               c.region,
 		"networkEndpointGroup": c.networkEndpointGroup,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -16403,9 +16887,11 @@ func (c *RegionNetworkEndpointGroupsDeleteCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -16478,8 +16964,7 @@ func (c *RegionNetworkEndpointGroupsDetachNetworkEndpointsCall) Header() http.He
 
 func (c *RegionNetworkEndpointGroupsDetachNetworkEndpointsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionnetworkendpointgroupsdetachendpointsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionnetworkendpointgroupsdetachendpointsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -16497,6 +16982,7 @@ func (c *RegionNetworkEndpointGroupsDetachNetworkEndpointsCall) doRequest(alt st
 		"region":               c.region,
 		"networkEndpointGroup": c.networkEndpointGroup,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.detachNetworkEndpoints", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -16531,9 +17017,11 @@ func (c *RegionNetworkEndpointGroupsDetachNetworkEndpointsCall) Do(opts ...googl
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.detachNetworkEndpoints", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -16599,12 +17087,11 @@ func (c *RegionNetworkEndpointGroupsGetCall) doRequest(alt string) (*http.Respon
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/networkEndpointGroups/{networkEndpointGroup}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -16614,6 +17101,7 @@ func (c *RegionNetworkEndpointGroupsGetCall) doRequest(alt string) (*http.Respon
 		"region":               c.region,
 		"networkEndpointGroup": c.networkEndpointGroup,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -16649,9 +17137,11 @@ func (c *RegionNetworkEndpointGroupsGetCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -16719,8 +17209,7 @@ func (c *RegionNetworkEndpointGroupsInsertCall) Header() http.Header {
 
 func (c *RegionNetworkEndpointGroupsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.networkendpointgroup)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.networkendpointgroup)
 	if err != nil {
 		return nil, err
 	}
@@ -16737,6 +17226,7 @@ func (c *RegionNetworkEndpointGroupsInsertCall) doRequest(alt string) (*http.Res
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -16771,9 +17261,11 @@ func (c *RegionNetworkEndpointGroupsInsertCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -16914,12 +17406,11 @@ func (c *RegionNetworkEndpointGroupsListCall) doRequest(alt string) (*http.Respo
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/networkEndpointGroups")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -16928,6 +17419,7 @@ func (c *RegionNetworkEndpointGroupsListCall) doRequest(alt string) (*http.Respo
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -16963,9 +17455,11 @@ func (c *RegionNetworkEndpointGroupsListCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -17120,12 +17614,11 @@ func (c *RegionNetworkEndpointGroupsListNetworkEndpointsCall) Header() http.Head
 
 func (c *RegionNetworkEndpointGroupsListNetworkEndpointsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/networkEndpointGroups/{networkEndpointGroup}/listNetworkEndpoints")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -17135,6 +17628,7 @@ func (c *RegionNetworkEndpointGroupsListNetworkEndpointsCall) doRequest(alt stri
 		"region":               c.region,
 		"networkEndpointGroup": c.networkEndpointGroup,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.listNetworkEndpoints", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -17170,9 +17664,11 @@ func (c *RegionNetworkEndpointGroupsListNetworkEndpointsCall) Do(opts ...googlea
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkEndpointGroups.listNetworkEndpoints", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -17281,8 +17777,7 @@ func (c *RegionNetworkFirewallPoliciesAddAssociationCall) Header() http.Header {
 
 func (c *RegionNetworkFirewallPoliciesAddAssociationCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.firewallpolicyassociation)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.firewallpolicyassociation)
 	if err != nil {
 		return nil, err
 	}
@@ -17300,6 +17795,7 @@ func (c *RegionNetworkFirewallPoliciesAddAssociationCall) doRequest(alt string) 
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.addAssociation", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -17334,9 +17830,11 @@ func (c *RegionNetworkFirewallPoliciesAddAssociationCall) Do(opts ...googleapi.C
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.addAssociation", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -17421,8 +17919,7 @@ func (c *RegionNetworkFirewallPoliciesAddRuleCall) Header() http.Header {
 
 func (c *RegionNetworkFirewallPoliciesAddRuleCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.firewallpolicyrule)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.firewallpolicyrule)
 	if err != nil {
 		return nil, err
 	}
@@ -17440,6 +17937,7 @@ func (c *RegionNetworkFirewallPoliciesAddRuleCall) doRequest(alt string) (*http.
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.addRule", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -17474,9 +17972,11 @@ func (c *RegionNetworkFirewallPoliciesAddRuleCall) Do(opts ...googleapi.CallOpti
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.addRule", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -17550,12 +18050,11 @@ func (c *RegionNetworkFirewallPoliciesCloneRulesCall) Header() http.Header {
 
 func (c *RegionNetworkFirewallPoliciesCloneRulesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/firewallPolicies/{firewallPolicy}/cloneRules")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -17565,6 +18064,7 @@ func (c *RegionNetworkFirewallPoliciesCloneRulesCall) doRequest(alt string) (*ht
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.cloneRules", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -17599,9 +18099,11 @@ func (c *RegionNetworkFirewallPoliciesCloneRulesCall) Do(opts ...googleapi.CallO
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.cloneRules", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -17668,12 +18170,11 @@ func (c *RegionNetworkFirewallPoliciesDeleteCall) Header() http.Header {
 
 func (c *RegionNetworkFirewallPoliciesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/firewallPolicies/{firewallPolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -17683,6 +18184,7 @@ func (c *RegionNetworkFirewallPoliciesDeleteCall) doRequest(alt string) (*http.R
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -17717,9 +18219,11 @@ func (c *RegionNetworkFirewallPoliciesDeleteCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -17783,12 +18287,11 @@ func (c *RegionNetworkFirewallPoliciesGetCall) doRequest(alt string) (*http.Resp
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/firewallPolicies/{firewallPolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -17798,6 +18301,7 @@ func (c *RegionNetworkFirewallPoliciesGetCall) doRequest(alt string) (*http.Resp
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -17832,9 +18336,11 @@ func (c *RegionNetworkFirewallPoliciesGetCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -17906,12 +18412,11 @@ func (c *RegionNetworkFirewallPoliciesGetAssociationCall) doRequest(alt string) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/firewallPolicies/{firewallPolicy}/getAssociation")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -17921,6 +18426,7 @@ func (c *RegionNetworkFirewallPoliciesGetAssociationCall) doRequest(alt string) 
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.getAssociation", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -17956,9 +18462,11 @@ func (c *RegionNetworkFirewallPoliciesGetAssociationCall) Do(opts ...googleapi.C
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.getAssociation", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -18021,12 +18529,11 @@ func (c *RegionNetworkFirewallPoliciesGetEffectiveFirewallsCall) doRequest(alt s
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/firewallPolicies/getEffectiveFirewalls")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -18035,6 +18542,7 @@ func (c *RegionNetworkFirewallPoliciesGetEffectiveFirewallsCall) doRequest(alt s
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.getEffectiveFirewalls", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -18070,9 +18578,11 @@ func (c *RegionNetworkFirewallPoliciesGetEffectiveFirewallsCall) Do(opts ...goog
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.getEffectiveFirewalls", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -18144,12 +18654,11 @@ func (c *RegionNetworkFirewallPoliciesGetIamPolicyCall) doRequest(alt string) (*
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/firewallPolicies/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -18159,6 +18668,7 @@ func (c *RegionNetworkFirewallPoliciesGetIamPolicyCall) doRequest(alt string) (*
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -18193,9 +18703,11 @@ func (c *RegionNetworkFirewallPoliciesGetIamPolicyCall) Do(opts ...googleapi.Cal
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -18267,12 +18779,11 @@ func (c *RegionNetworkFirewallPoliciesGetRuleCall) doRequest(alt string) (*http.
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/firewallPolicies/{firewallPolicy}/getRule")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -18282,6 +18793,7 @@ func (c *RegionNetworkFirewallPoliciesGetRuleCall) doRequest(alt string) (*http.
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.getRule", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -18317,9 +18829,11 @@ func (c *RegionNetworkFirewallPoliciesGetRuleCall) Do(opts ...googleapi.CallOpti
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.getRule", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -18386,8 +18900,7 @@ func (c *RegionNetworkFirewallPoliciesInsertCall) Header() http.Header {
 
 func (c *RegionNetworkFirewallPoliciesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.firewallpolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.firewallpolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -18404,6 +18917,7 @@ func (c *RegionNetworkFirewallPoliciesInsertCall) doRequest(alt string) (*http.R
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -18438,9 +18952,11 @@ func (c *RegionNetworkFirewallPoliciesInsertCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -18580,12 +19096,11 @@ func (c *RegionNetworkFirewallPoliciesListCall) doRequest(alt string) (*http.Res
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/firewallPolicies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -18594,6 +19109,7 @@ func (c *RegionNetworkFirewallPoliciesListCall) doRequest(alt string) (*http.Res
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -18629,9 +19145,11 @@ func (c *RegionNetworkFirewallPoliciesListCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -18721,8 +19239,7 @@ func (c *RegionNetworkFirewallPoliciesPatchCall) Header() http.Header {
 
 func (c *RegionNetworkFirewallPoliciesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.firewallpolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.firewallpolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -18740,6 +19257,7 @@ func (c *RegionNetworkFirewallPoliciesPatchCall) doRequest(alt string) (*http.Re
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -18774,9 +19292,11 @@ func (c *RegionNetworkFirewallPoliciesPatchCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -18846,8 +19366,7 @@ func (c *RegionNetworkFirewallPoliciesPatchAssociationCall) Header() http.Header
 
 func (c *RegionNetworkFirewallPoliciesPatchAssociationCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.firewallpolicyassociation)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.firewallpolicyassociation)
 	if err != nil {
 		return nil, err
 	}
@@ -18865,6 +19384,7 @@ func (c *RegionNetworkFirewallPoliciesPatchAssociationCall) doRequest(alt string
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.patchAssociation", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -18899,9 +19419,11 @@ func (c *RegionNetworkFirewallPoliciesPatchAssociationCall) Do(opts ...googleapi
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.patchAssociation", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -18977,8 +19499,7 @@ func (c *RegionNetworkFirewallPoliciesPatchRuleCall) Header() http.Header {
 
 func (c *RegionNetworkFirewallPoliciesPatchRuleCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.firewallpolicyrule)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.firewallpolicyrule)
 	if err != nil {
 		return nil, err
 	}
@@ -18996,6 +19517,7 @@ func (c *RegionNetworkFirewallPoliciesPatchRuleCall) doRequest(alt string) (*htt
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.patchRule", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -19030,9 +19552,11 @@ func (c *RegionNetworkFirewallPoliciesPatchRuleCall) Do(opts ...googleapi.CallOp
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.patchRule", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -19107,12 +19631,11 @@ func (c *RegionNetworkFirewallPoliciesRemoveAssociationCall) Header() http.Heade
 
 func (c *RegionNetworkFirewallPoliciesRemoveAssociationCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/firewallPolicies/{firewallPolicy}/removeAssociation")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -19122,6 +19645,7 @@ func (c *RegionNetworkFirewallPoliciesRemoveAssociationCall) doRequest(alt strin
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.removeAssociation", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -19156,9 +19680,11 @@ func (c *RegionNetworkFirewallPoliciesRemoveAssociationCall) Do(opts ...googleap
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.removeAssociation", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -19232,12 +19758,11 @@ func (c *RegionNetworkFirewallPoliciesRemoveRuleCall) Header() http.Header {
 
 func (c *RegionNetworkFirewallPoliciesRemoveRuleCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/firewallPolicies/{firewallPolicy}/removeRule")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -19247,6 +19772,7 @@ func (c *RegionNetworkFirewallPoliciesRemoveRuleCall) doRequest(alt string) (*ht
 		"region":         c.region,
 		"firewallPolicy": c.firewallPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.removeRule", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -19281,9 +19807,11 @@ func (c *RegionNetworkFirewallPoliciesRemoveRuleCall) Do(opts ...googleapi.CallO
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.removeRule", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -19338,8 +19866,7 @@ func (c *RegionNetworkFirewallPoliciesSetIamPolicyCall) Header() http.Header {
 
 func (c *RegionNetworkFirewallPoliciesSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -19357,6 +19884,7 @@ func (c *RegionNetworkFirewallPoliciesSetIamPolicyCall) doRequest(alt string) (*
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -19391,9 +19919,11 @@ func (c *RegionNetworkFirewallPoliciesSetIamPolicyCall) Do(opts ...googleapi.Cal
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -19448,8 +19978,7 @@ func (c *RegionNetworkFirewallPoliciesTestIamPermissionsCall) Header() http.Head
 
 func (c *RegionNetworkFirewallPoliciesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -19467,6 +19996,7 @@ func (c *RegionNetworkFirewallPoliciesTestIamPermissionsCall) doRequest(alt stri
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -19502,9 +20032,11 @@ func (c *RegionNetworkFirewallPoliciesTestIamPermissionsCall) Do(opts ...googlea
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNetworkFirewallPolicies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -19662,12 +20194,11 @@ func (c *RegionNotificationEndpointsAggregatedListCall) doRequest(alt string) (*
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/notificationEndpoints")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -19675,6 +20206,7 @@ func (c *RegionNotificationEndpointsAggregatedListCall) doRequest(alt string) (*
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -19710,9 +20242,11 @@ func (c *RegionNotificationEndpointsAggregatedListCall) Do(opts ...googleapi.Cal
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -19800,12 +20334,11 @@ func (c *RegionNotificationEndpointsDeleteCall) Header() http.Header {
 
 func (c *RegionNotificationEndpointsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/notificationEndpoints/{notificationEndpoint}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -19815,6 +20348,7 @@ func (c *RegionNotificationEndpointsDeleteCall) doRequest(alt string) (*http.Res
 		"region":               c.region,
 		"notificationEndpoint": c.notificationEndpoint,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -19849,9 +20383,11 @@ func (c *RegionNotificationEndpointsDeleteCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -19916,12 +20452,11 @@ func (c *RegionNotificationEndpointsGetCall) doRequest(alt string) (*http.Respon
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/notificationEndpoints/{notificationEndpoint}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -19931,6 +20466,7 @@ func (c *RegionNotificationEndpointsGetCall) doRequest(alt string) (*http.Respon
 		"region":               c.region,
 		"notificationEndpoint": c.notificationEndpoint,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -19966,9 +20502,11 @@ func (c *RegionNotificationEndpointsGetCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -20035,8 +20573,7 @@ func (c *RegionNotificationEndpointsInsertCall) Header() http.Header {
 
 func (c *RegionNotificationEndpointsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.notificationendpoint)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.notificationendpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -20053,6 +20590,7 @@ func (c *RegionNotificationEndpointsInsertCall) doRequest(alt string) (*http.Res
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -20087,9 +20625,11 @@ func (c *RegionNotificationEndpointsInsertCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -20228,12 +20768,11 @@ func (c *RegionNotificationEndpointsListCall) doRequest(alt string) (*http.Respo
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/notificationEndpoints")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -20242,6 +20781,7 @@ func (c *RegionNotificationEndpointsListCall) doRequest(alt string) (*http.Respo
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -20277,9 +20817,11 @@ func (c *RegionNotificationEndpointsListCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -20355,8 +20897,7 @@ func (c *RegionNotificationEndpointsTestIamPermissionsCall) Header() http.Header
 
 func (c *RegionNotificationEndpointsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -20374,6 +20915,7 @@ func (c *RegionNotificationEndpointsTestIamPermissionsCall) doRequest(alt string
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -20409,9 +20951,11 @@ func (c *RegionNotificationEndpointsTestIamPermissionsCall) Do(opts ...googleapi
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionNotificationEndpoints.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -20464,12 +21008,11 @@ func (c *RegionOperationsDeleteCall) Header() http.Header {
 
 func (c *RegionOperationsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/operations/{operation}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -20479,6 +21022,7 @@ func (c *RegionOperationsDeleteCall) doRequest(alt string) (*http.Response, erro
 		"region":    c.region,
 		"operation": c.operationid,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionOperations.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -20493,6 +21037,7 @@ func (c *RegionOperationsDeleteCall) Do(opts ...googleapi.CallOption) error {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return gensupport.WrapError(err)
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionOperations.delete", "response", internallog.HTTPResponse(res, nil))
 	return nil
 }
 
@@ -20557,12 +21102,11 @@ func (c *RegionOperationsGetCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/operations/{operation}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -20572,6 +21116,7 @@ func (c *RegionOperationsGetCall) doRequest(alt string) (*http.Response, error) 
 		"region":    c.region,
 		"operation": c.operationid,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionOperations.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -20606,9 +21151,11 @@ func (c *RegionOperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionOperations.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -20748,12 +21295,11 @@ func (c *RegionOperationsListCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/operations")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -20762,6 +21308,7 @@ func (c *RegionOperationsListCall) doRequest(alt string) (*http.Response, error)
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionOperations.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -20796,9 +21343,11 @@ func (c *RegionOperationsListCall) Do(opts ...googleapi.CallOption) (*OperationL
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionOperations.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -20882,12 +21431,11 @@ func (c *RegionOperationsWaitCall) Header() http.Header {
 
 func (c *RegionOperationsWaitCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/operations/{operation}/wait")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -20897,6 +21445,7 @@ func (c *RegionOperationsWaitCall) doRequest(alt string) (*http.Response, error)
 		"region":    c.region,
 		"operation": c.operationid,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionOperations.wait", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -20931,9 +21480,11 @@ func (c *RegionOperationsWaitCall) Do(opts ...googleapi.CallOption) (*Operation,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionOperations.wait", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -20994,8 +21545,7 @@ func (c *RegionSecurityPoliciesAddRuleCall) Header() http.Header {
 
 func (c *RegionSecurityPoliciesAddRuleCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicyrule)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.securitypolicyrule)
 	if err != nil {
 		return nil, err
 	}
@@ -21013,6 +21563,7 @@ func (c *RegionSecurityPoliciesAddRuleCall) doRequest(alt string) (*http.Respons
 		"region":         c.region,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.addRule", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -21047,9 +21598,11 @@ func (c *RegionSecurityPoliciesAddRuleCall) Do(opts ...googleapi.CallOption) (*O
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.addRule", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -21116,12 +21669,11 @@ func (c *RegionSecurityPoliciesDeleteCall) Header() http.Header {
 
 func (c *RegionSecurityPoliciesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/securityPolicies/{securityPolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -21131,6 +21683,7 @@ func (c *RegionSecurityPoliciesDeleteCall) doRequest(alt string) (*http.Response
 		"region":         c.region,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -21165,9 +21718,11 @@ func (c *RegionSecurityPoliciesDeleteCall) Do(opts ...googleapi.CallOption) (*Op
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -21231,12 +21786,11 @@ func (c *RegionSecurityPoliciesGetCall) doRequest(alt string) (*http.Response, e
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/securityPolicies/{securityPolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -21246,6 +21800,7 @@ func (c *RegionSecurityPoliciesGetCall) doRequest(alt string) (*http.Response, e
 		"region":         c.region,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -21280,9 +21835,11 @@ func (c *RegionSecurityPoliciesGetCall) Do(opts ...googleapi.CallOption) (*Secur
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -21354,12 +21911,11 @@ func (c *RegionSecurityPoliciesGetRuleCall) doRequest(alt string) (*http.Respons
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/securityPolicies/{securityPolicy}/getRule")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -21369,6 +21925,7 @@ func (c *RegionSecurityPoliciesGetRuleCall) doRequest(alt string) (*http.Respons
 		"region":         c.region,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.getRule", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -21404,9 +21961,11 @@ func (c *RegionSecurityPoliciesGetRuleCall) Do(opts ...googleapi.CallOption) (*S
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.getRule", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -21480,8 +22039,7 @@ func (c *RegionSecurityPoliciesInsertCall) Header() http.Header {
 
 func (c *RegionSecurityPoliciesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.securitypolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -21498,6 +22056,7 @@ func (c *RegionSecurityPoliciesInsertCall) doRequest(alt string) (*http.Response
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -21532,9 +22091,11 @@ func (c *RegionSecurityPoliciesInsertCall) Do(opts ...googleapi.CallOption) (*Op
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -21674,12 +22235,11 @@ func (c *RegionSecurityPoliciesListCall) doRequest(alt string) (*http.Response, 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/securityPolicies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -21688,6 +22248,7 @@ func (c *RegionSecurityPoliciesListCall) doRequest(alt string) (*http.Response, 
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -21723,9 +22284,11 @@ func (c *RegionSecurityPoliciesListCall) Do(opts ...googleapi.CallOption) (*Secu
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -21832,8 +22395,7 @@ func (c *RegionSecurityPoliciesPatchCall) Header() http.Header {
 
 func (c *RegionSecurityPoliciesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.securitypolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -21851,6 +22413,7 @@ func (c *RegionSecurityPoliciesPatchCall) doRequest(alt string) (*http.Response,
 		"region":         c.region,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -21885,9 +22448,11 @@ func (c *RegionSecurityPoliciesPatchCall) Do(opts ...googleapi.CallOption) (*Ope
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -21963,8 +22528,7 @@ func (c *RegionSecurityPoliciesPatchRuleCall) Header() http.Header {
 
 func (c *RegionSecurityPoliciesPatchRuleCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicyrule)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.securitypolicyrule)
 	if err != nil {
 		return nil, err
 	}
@@ -21982,6 +22546,7 @@ func (c *RegionSecurityPoliciesPatchRuleCall) doRequest(alt string) (*http.Respo
 		"region":         c.region,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.patchRule", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -22016,9 +22581,11 @@ func (c *RegionSecurityPoliciesPatchRuleCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.patchRule", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -22077,12 +22644,11 @@ func (c *RegionSecurityPoliciesRemoveRuleCall) Header() http.Header {
 
 func (c *RegionSecurityPoliciesRemoveRuleCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/securityPolicies/{securityPolicy}/removeRule")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -22092,6 +22658,7 @@ func (c *RegionSecurityPoliciesRemoveRuleCall) doRequest(alt string) (*http.Resp
 		"region":         c.region,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.removeRule", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -22126,9 +22693,138 @@ func (c *RegionSecurityPoliciesRemoveRuleCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.removeRule", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type RegionSecurityPoliciesSetLabelsCall struct {
+	s                      *Service
+	project                string
+	region                 string
+	resource               string
+	regionsetlabelsrequest *RegionSetLabelsRequest
+	urlParams_             gensupport.URLParams
+	ctx_                   context.Context
+	header_                http.Header
+}
+
+// SetLabels: Sets the labels on a security policy. To learn more about labels,
+// read the Labeling Resources documentation.
+//
+// - project: Project ID for this request.
+// - region: The region for this request.
+// - resource: Name or id of the resource for this request.
+func (r *RegionSecurityPoliciesService) SetLabels(project string, region string, resource string, regionsetlabelsrequest *RegionSetLabelsRequest) *RegionSecurityPoliciesSetLabelsCall {
+	c := &RegionSecurityPoliciesSetLabelsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.region = region
+	c.resource = resource
+	c.regionsetlabelsrequest = regionsetlabelsrequest
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional request ID to
+// identify requests. Specify a unique request ID so that if you must retry
+// your request, the server will know to ignore the request if it has already
+// been completed. For example, consider a situation where you make an initial
+// request and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the same
+// request ID was received, and if so, will ignore the second request. This
+// prevents clients from accidentally creating duplicate commitments. The
+// request ID must be a valid UUID with the exception that zero UUID is not
+// supported ( 00000000-0000-0000-0000-000000000000).
+func (c *RegionSecurityPoliciesSetLabelsCall) RequestId(requestId string) *RegionSecurityPoliciesSetLabelsCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *RegionSecurityPoliciesSetLabelsCall) Fields(s ...googleapi.Field) *RegionSecurityPoliciesSetLabelsCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *RegionSecurityPoliciesSetLabelsCall) Context(ctx context.Context) *RegionSecurityPoliciesSetLabelsCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *RegionSecurityPoliciesSetLabelsCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *RegionSecurityPoliciesSetLabelsCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetlabelsrequest)
+	if err != nil {
+		return nil, err
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/securityPolicies/{resource}/setLabels")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":  c.project,
+		"region":   c.region,
+		"resource": c.resource,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.setLabels", "request", internallog.HTTPRequest(req, body.Bytes()))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.regionSecurityPolicies.setLabels" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *RegionSecurityPoliciesSetLabelsCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSecurityPolicies.setLabels", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -22189,12 +22885,11 @@ func (c *RegionSnapshotSettingsGetCall) doRequest(alt string) (*http.Response, e
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/snapshotSettings")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -22203,6 +22898,7 @@ func (c *RegionSnapshotSettingsGetCall) doRequest(alt string) (*http.Response, e
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSnapshotSettings.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -22238,9 +22934,11 @@ func (c *RegionSnapshotSettingsGetCall) Do(opts ...googleapi.CallOption) (*Snaps
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSnapshotSettings.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -22313,8 +23011,7 @@ func (c *RegionSnapshotSettingsPatchCall) Header() http.Header {
 
 func (c *RegionSnapshotSettingsPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.snapshotsettings)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.snapshotsettings)
 	if err != nil {
 		return nil, err
 	}
@@ -22331,6 +23028,7 @@ func (c *RegionSnapshotSettingsPatchCall) doRequest(alt string) (*http.Response,
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSnapshotSettings.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -22365,9 +23063,11 @@ func (c *RegionSnapshotSettingsPatchCall) Do(opts ...googleapi.CallOption) (*Ope
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSnapshotSettings.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -22438,12 +23138,11 @@ func (c *RegionSnapshotsDeleteCall) Header() http.Header {
 
 func (c *RegionSnapshotsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/snapshots/{snapshot}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -22453,6 +23152,7 @@ func (c *RegionSnapshotsDeleteCall) doRequest(alt string) (*http.Response, error
 		"region":   c.region,
 		"snapshot": c.snapshot,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSnapshots.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -22487,9 +23187,11 @@ func (c *RegionSnapshotsDeleteCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSnapshots.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -22553,12 +23255,11 @@ func (c *RegionSnapshotsGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/snapshots/{snapshot}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -22568,6 +23269,7 @@ func (c *RegionSnapshotsGetCall) doRequest(alt string) (*http.Response, error) {
 		"region":   c.region,
 		"snapshot": c.snapshot,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSnapshots.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -22602,9 +23304,11 @@ func (c *RegionSnapshotsGetCall) Do(opts ...googleapi.CallOption) (*Snapshot, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSnapshots.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -22676,12 +23380,11 @@ func (c *RegionSnapshotsGetIamPolicyCall) doRequest(alt string) (*http.Response,
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/snapshots/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -22691,6 +23394,7 @@ func (c *RegionSnapshotsGetIamPolicyCall) doRequest(alt string) (*http.Response,
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSnapshots.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -22725,9 +23429,11 @@ func (c *RegionSnapshotsGetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Pol
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSnapshots.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -22794,8 +23500,7 @@ func (c *RegionSnapshotsInsertCall) Header() http.Header {
 
 func (c *RegionSnapshotsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.snapshot)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.snapshot)
 	if err != nil {
 		return nil, err
 	}
@@ -22812,6 +23517,7 @@ func (c *RegionSnapshotsInsertCall) doRequest(alt string) (*http.Response, error
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSnapshots.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -22846,9 +23552,11 @@ func (c *RegionSnapshotsInsertCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSnapshots.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -22988,12 +23696,11 @@ func (c *RegionSnapshotsListCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/snapshots")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -23002,6 +23709,7 @@ func (c *RegionSnapshotsListCall) doRequest(alt string) (*http.Response, error) 
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSnapshots.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -23036,9 +23744,11 @@ func (c *RegionSnapshotsListCall) Do(opts ...googleapi.CallOption) (*SnapshotLis
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSnapshots.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -23114,8 +23824,7 @@ func (c *RegionSnapshotsSetIamPolicyCall) Header() http.Header {
 
 func (c *RegionSnapshotsSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -23133,6 +23842,7 @@ func (c *RegionSnapshotsSetIamPolicyCall) doRequest(alt string) (*http.Response,
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSnapshots.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -23167,9 +23877,11 @@ func (c *RegionSnapshotsSetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Pol
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSnapshots.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -23239,8 +23951,7 @@ func (c *RegionSnapshotsSetLabelsCall) Header() http.Header {
 
 func (c *RegionSnapshotsSetLabelsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetlabelsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetlabelsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -23258,6 +23969,7 @@ func (c *RegionSnapshotsSetLabelsCall) doRequest(alt string) (*http.Response, er
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSnapshots.setLabels", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -23292,9 +24004,11 @@ func (c *RegionSnapshotsSetLabelsCall) Do(opts ...googleapi.CallOption) (*Operat
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSnapshots.setLabels", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -23349,8 +24063,7 @@ func (c *RegionSnapshotsTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionSnapshotsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -23368,6 +24081,7 @@ func (c *RegionSnapshotsTestIamPermissionsCall) doRequest(alt string) (*http.Res
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSnapshots.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -23403,9 +24117,11 @@ func (c *RegionSnapshotsTestIamPermissionsCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSnapshots.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -23472,12 +24188,11 @@ func (c *RegionSslCertificatesDeleteCall) Header() http.Header {
 
 func (c *RegionSslCertificatesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/sslCertificates/{sslCertificate}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -23487,6 +24202,7 @@ func (c *RegionSslCertificatesDeleteCall) doRequest(alt string) (*http.Response,
 		"region":         c.region,
 		"sslCertificate": c.sslCertificate,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslCertificates.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -23521,9 +24237,11 @@ func (c *RegionSslCertificatesDeleteCall) Do(opts ...googleapi.CallOption) (*Ope
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslCertificates.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -23588,12 +24306,11 @@ func (c *RegionSslCertificatesGetCall) doRequest(alt string) (*http.Response, er
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/sslCertificates/{sslCertificate}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -23603,6 +24320,7 @@ func (c *RegionSslCertificatesGetCall) doRequest(alt string) (*http.Response, er
 		"region":         c.region,
 		"sslCertificate": c.sslCertificate,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslCertificates.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -23637,9 +24355,11 @@ func (c *RegionSslCertificatesGetCall) Do(opts ...googleapi.CallOption) (*SslCer
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslCertificates.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -23706,8 +24426,7 @@ func (c *RegionSslCertificatesInsertCall) Header() http.Header {
 
 func (c *RegionSslCertificatesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslcertificate)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.sslcertificate)
 	if err != nil {
 		return nil, err
 	}
@@ -23724,6 +24443,7 @@ func (c *RegionSslCertificatesInsertCall) doRequest(alt string) (*http.Response,
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslCertificates.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -23758,9 +24478,11 @@ func (c *RegionSslCertificatesInsertCall) Do(opts ...googleapi.CallOption) (*Ope
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslCertificates.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -23900,12 +24622,11 @@ func (c *RegionSslCertificatesListCall) doRequest(alt string) (*http.Response, e
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/sslCertificates")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -23914,6 +24635,7 @@ func (c *RegionSslCertificatesListCall) doRequest(alt string) (*http.Response, e
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslCertificates.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -23949,9 +24671,11 @@ func (c *RegionSslCertificatesListCall) Do(opts ...googleapi.CallOption) (*SslCe
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslCertificates.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -24027,8 +24751,7 @@ func (c *RegionSslCertificatesTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionSslCertificatesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -24046,6 +24769,7 @@ func (c *RegionSslCertificatesTestIamPermissionsCall) doRequest(alt string) (*ht
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslCertificates.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -24081,9 +24805,11 @@ func (c *RegionSslCertificatesTestIamPermissionsCall) Do(opts ...googleapi.CallO
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslCertificates.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -24153,12 +24879,11 @@ func (c *RegionSslPoliciesDeleteCall) Header() http.Header {
 
 func (c *RegionSslPoliciesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/sslPolicies/{sslPolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -24168,6 +24893,7 @@ func (c *RegionSslPoliciesDeleteCall) doRequest(alt string) (*http.Response, err
 		"region":    c.region,
 		"sslPolicy": c.sslPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -24202,9 +24928,11 @@ func (c *RegionSslPoliciesDeleteCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -24269,12 +24997,11 @@ func (c *RegionSslPoliciesGetCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/sslPolicies/{sslPolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -24284,6 +25011,7 @@ func (c *RegionSslPoliciesGetCall) doRequest(alt string) (*http.Response, error)
 		"region":    c.region,
 		"sslPolicy": c.sslPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -24318,9 +25046,11 @@ func (c *RegionSslPoliciesGetCall) Do(opts ...googleapi.CallOption) (*SslPolicy,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -24387,8 +25117,7 @@ func (c *RegionSslPoliciesInsertCall) Header() http.Header {
 
 func (c *RegionSslPoliciesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslpolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.sslpolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -24405,6 +25134,7 @@ func (c *RegionSslPoliciesInsertCall) doRequest(alt string) (*http.Response, err
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -24439,9 +25169,11 @@ func (c *RegionSslPoliciesInsertCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -24581,12 +25313,11 @@ func (c *RegionSslPoliciesListCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/sslPolicies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -24595,6 +25326,7 @@ func (c *RegionSslPoliciesListCall) doRequest(alt string) (*http.Response, error
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -24630,9 +25362,11 @@ func (c *RegionSslPoliciesListCall) Do(opts ...googleapi.CallOption) (*SslPolici
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -24793,12 +25527,11 @@ func (c *RegionSslPoliciesListAvailableFeaturesCall) doRequest(alt string) (*htt
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/sslPolicies/listAvailableFeatures")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -24807,6 +25540,7 @@ func (c *RegionSslPoliciesListAvailableFeaturesCall) doRequest(alt string) (*htt
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.listAvailableFeatures", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -24842,9 +25576,11 @@ func (c *RegionSslPoliciesListAvailableFeaturesCall) Do(opts ...googleapi.CallOp
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.listAvailableFeatures", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -24915,8 +25651,7 @@ func (c *RegionSslPoliciesPatchCall) Header() http.Header {
 
 func (c *RegionSslPoliciesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslpolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.sslpolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -24934,6 +25669,7 @@ func (c *RegionSslPoliciesPatchCall) doRequest(alt string) (*http.Response, erro
 		"region":    c.region,
 		"sslPolicy": c.sslPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -24968,9 +25704,11 @@ func (c *RegionSslPoliciesPatchCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -25025,8 +25763,7 @@ func (c *RegionSslPoliciesTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionSslPoliciesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -25044,6 +25781,7 @@ func (c *RegionSslPoliciesTestIamPermissionsCall) doRequest(alt string) (*http.R
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -25079,9 +25817,11 @@ func (c *RegionSslPoliciesTestIamPermissionsCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionSslPolicies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -25148,12 +25888,11 @@ func (c *RegionTargetHttpProxiesDeleteCall) Header() http.Header {
 
 func (c *RegionTargetHttpProxiesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetHttpProxies/{targetHttpProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -25163,6 +25902,7 @@ func (c *RegionTargetHttpProxiesDeleteCall) doRequest(alt string) (*http.Respons
 		"region":          c.region,
 		"targetHttpProxy": c.targetHttpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -25197,9 +25937,11 @@ func (c *RegionTargetHttpProxiesDeleteCall) Do(opts ...googleapi.CallOption) (*O
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -25263,12 +26005,11 @@ func (c *RegionTargetHttpProxiesGetCall) doRequest(alt string) (*http.Response, 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetHttpProxies/{targetHttpProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -25278,6 +26019,7 @@ func (c *RegionTargetHttpProxiesGetCall) doRequest(alt string) (*http.Response, 
 		"region":          c.region,
 		"targetHttpProxy": c.targetHttpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -25313,9 +26055,11 @@ func (c *RegionTargetHttpProxiesGetCall) Do(opts ...googleapi.CallOption) (*Targ
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -25382,8 +26126,7 @@ func (c *RegionTargetHttpProxiesInsertCall) Header() http.Header {
 
 func (c *RegionTargetHttpProxiesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targethttpproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targethttpproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -25400,6 +26143,7 @@ func (c *RegionTargetHttpProxiesInsertCall) doRequest(alt string) (*http.Respons
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -25434,9 +26178,11 @@ func (c *RegionTargetHttpProxiesInsertCall) Do(opts ...googleapi.CallOption) (*O
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -25576,12 +26322,11 @@ func (c *RegionTargetHttpProxiesListCall) doRequest(alt string) (*http.Response,
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetHttpProxies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -25590,6 +26335,7 @@ func (c *RegionTargetHttpProxiesListCall) doRequest(alt string) (*http.Response,
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -25625,9 +26371,11 @@ func (c *RegionTargetHttpProxiesListCall) Do(opts ...googleapi.CallOption) (*Tar
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -25717,8 +26465,7 @@ func (c *RegionTargetHttpProxiesSetUrlMapCall) Header() http.Header {
 
 func (c *RegionTargetHttpProxiesSetUrlMapCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.urlmapreference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.urlmapreference)
 	if err != nil {
 		return nil, err
 	}
@@ -25736,6 +26483,7 @@ func (c *RegionTargetHttpProxiesSetUrlMapCall) doRequest(alt string) (*http.Resp
 		"region":          c.region,
 		"targetHttpProxy": c.targetHttpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.setUrlMap", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -25770,9 +26518,11 @@ func (c *RegionTargetHttpProxiesSetUrlMapCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.setUrlMap", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -25827,8 +26577,7 @@ func (c *RegionTargetHttpProxiesTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionTargetHttpProxiesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -25846,6 +26595,7 @@ func (c *RegionTargetHttpProxiesTestIamPermissionsCall) doRequest(alt string) (*
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -25881,9 +26631,11 @@ func (c *RegionTargetHttpProxiesTestIamPermissionsCall) Do(opts ...googleapi.Cal
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpProxies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -25950,12 +26702,11 @@ func (c *RegionTargetHttpsProxiesDeleteCall) Header() http.Header {
 
 func (c *RegionTargetHttpsProxiesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetHttpsProxies/{targetHttpsProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -25965,6 +26716,7 @@ func (c *RegionTargetHttpsProxiesDeleteCall) doRequest(alt string) (*http.Respon
 		"region":           c.region,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -25999,9 +26751,11 @@ func (c *RegionTargetHttpsProxiesDeleteCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -26066,12 +26820,11 @@ func (c *RegionTargetHttpsProxiesGetCall) doRequest(alt string) (*http.Response,
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetHttpsProxies/{targetHttpsProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -26081,6 +26834,7 @@ func (c *RegionTargetHttpsProxiesGetCall) doRequest(alt string) (*http.Response,
 		"region":           c.region,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -26116,9 +26870,11 @@ func (c *RegionTargetHttpsProxiesGetCall) Do(opts ...googleapi.CallOption) (*Tar
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -26185,8 +26941,7 @@ func (c *RegionTargetHttpsProxiesInsertCall) Header() http.Header {
 
 func (c *RegionTargetHttpsProxiesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targethttpsproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targethttpsproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -26203,6 +26958,7 @@ func (c *RegionTargetHttpsProxiesInsertCall) doRequest(alt string) (*http.Respon
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -26237,9 +26993,11 @@ func (c *RegionTargetHttpsProxiesInsertCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -26379,12 +27137,11 @@ func (c *RegionTargetHttpsProxiesListCall) doRequest(alt string) (*http.Response
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetHttpsProxies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -26393,6 +27150,7 @@ func (c *RegionTargetHttpsProxiesListCall) doRequest(alt string) (*http.Response
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -26428,9 +27186,11 @@ func (c *RegionTargetHttpsProxiesListCall) Do(opts ...googleapi.CallOption) (*Ta
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -26522,8 +27282,7 @@ func (c *RegionTargetHttpsProxiesPatchCall) Header() http.Header {
 
 func (c *RegionTargetHttpsProxiesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targethttpsproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targethttpsproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -26541,6 +27300,7 @@ func (c *RegionTargetHttpsProxiesPatchCall) doRequest(alt string) (*http.Respons
 		"region":           c.region,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -26575,9 +27335,11 @@ func (c *RegionTargetHttpsProxiesPatchCall) Do(opts ...googleapi.CallOption) (*O
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -26647,8 +27409,7 @@ func (c *RegionTargetHttpsProxiesSetSslCertificatesCall) Header() http.Header {
 
 func (c *RegionTargetHttpsProxiesSetSslCertificatesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regiontargethttpsproxiessetsslcertificatesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regiontargethttpsproxiessetsslcertificatesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -26666,6 +27427,7 @@ func (c *RegionTargetHttpsProxiesSetSslCertificatesCall) doRequest(alt string) (
 		"region":           c.region,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.setSslCertificates", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -26700,9 +27462,11 @@ func (c *RegionTargetHttpsProxiesSetSslCertificatesCall) Do(opts ...googleapi.Ca
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.setSslCertificates", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -26771,8 +27535,7 @@ func (c *RegionTargetHttpsProxiesSetUrlMapCall) Header() http.Header {
 
 func (c *RegionTargetHttpsProxiesSetUrlMapCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.urlmapreference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.urlmapreference)
 	if err != nil {
 		return nil, err
 	}
@@ -26790,6 +27553,7 @@ func (c *RegionTargetHttpsProxiesSetUrlMapCall) doRequest(alt string) (*http.Res
 		"region":           c.region,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.setUrlMap", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -26824,9 +27588,11 @@ func (c *RegionTargetHttpsProxiesSetUrlMapCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.setUrlMap", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -26881,8 +27647,7 @@ func (c *RegionTargetHttpsProxiesTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionTargetHttpsProxiesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -26900,6 +27665,7 @@ func (c *RegionTargetHttpsProxiesTestIamPermissionsCall) doRequest(alt string) (
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -26935,9 +27701,11 @@ func (c *RegionTargetHttpsProxiesTestIamPermissionsCall) Do(opts ...googleapi.Ca
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetHttpsProxies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -27004,12 +27772,11 @@ func (c *RegionTargetTcpProxiesDeleteCall) Header() http.Header {
 
 func (c *RegionTargetTcpProxiesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetTcpProxies/{targetTcpProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -27019,6 +27786,7 @@ func (c *RegionTargetTcpProxiesDeleteCall) doRequest(alt string) (*http.Response
 		"region":         c.region,
 		"targetTcpProxy": c.targetTcpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetTcpProxies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -27053,9 +27821,11 @@ func (c *RegionTargetTcpProxiesDeleteCall) Do(opts ...googleapi.CallOption) (*Op
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetTcpProxies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -27119,12 +27889,11 @@ func (c *RegionTargetTcpProxiesGetCall) doRequest(alt string) (*http.Response, e
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetTcpProxies/{targetTcpProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -27134,6 +27903,7 @@ func (c *RegionTargetTcpProxiesGetCall) doRequest(alt string) (*http.Response, e
 		"region":         c.region,
 		"targetTcpProxy": c.targetTcpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetTcpProxies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -27168,9 +27938,11 @@ func (c *RegionTargetTcpProxiesGetCall) Do(opts ...googleapi.CallOption) (*Targe
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetTcpProxies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -27237,8 +28009,7 @@ func (c *RegionTargetTcpProxiesInsertCall) Header() http.Header {
 
 func (c *RegionTargetTcpProxiesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targettcpproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targettcpproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -27255,6 +28026,7 @@ func (c *RegionTargetTcpProxiesInsertCall) doRequest(alt string) (*http.Response
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetTcpProxies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -27289,9 +28061,11 @@ func (c *RegionTargetTcpProxiesInsertCall) Do(opts ...googleapi.CallOption) (*Op
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetTcpProxies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -27431,12 +28205,11 @@ func (c *RegionTargetTcpProxiesListCall) doRequest(alt string) (*http.Response, 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetTcpProxies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -27445,6 +28218,7 @@ func (c *RegionTargetTcpProxiesListCall) doRequest(alt string) (*http.Response, 
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetTcpProxies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -27480,9 +28254,11 @@ func (c *RegionTargetTcpProxiesListCall) Do(opts ...googleapi.CallOption) (*Targ
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetTcpProxies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -27558,8 +28334,7 @@ func (c *RegionTargetTcpProxiesTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionTargetTcpProxiesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -27577,6 +28352,7 @@ func (c *RegionTargetTcpProxiesTestIamPermissionsCall) doRequest(alt string) (*h
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionTargetTcpProxies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -27612,9 +28388,11 @@ func (c *RegionTargetTcpProxiesTestIamPermissionsCall) Do(opts ...googleapi.Call
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionTargetTcpProxies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -27673,12 +28451,11 @@ func (c *RegionUrlMapsDeleteCall) Header() http.Header {
 
 func (c *RegionUrlMapsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/urlMaps/{urlMap}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -27688,6 +28465,7 @@ func (c *RegionUrlMapsDeleteCall) doRequest(alt string) (*http.Response, error) 
 		"region":  c.region,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -27722,9 +28500,11 @@ func (c *RegionUrlMapsDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -27788,12 +28568,11 @@ func (c *RegionUrlMapsGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/urlMaps/{urlMap}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -27803,6 +28582,7 @@ func (c *RegionUrlMapsGetCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -27837,9 +28617,11 @@ func (c *RegionUrlMapsGetCall) Do(opts ...googleapi.CallOption) (*UrlMap, error)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -27898,8 +28680,7 @@ func (c *RegionUrlMapsInsertCall) Header() http.Header {
 
 func (c *RegionUrlMapsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.urlmap)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.urlmap)
 	if err != nil {
 		return nil, err
 	}
@@ -27916,6 +28697,7 @@ func (c *RegionUrlMapsInsertCall) doRequest(alt string) (*http.Response, error) 
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -27950,9 +28732,11 @@ func (c *RegionUrlMapsInsertCall) Do(opts ...googleapi.CallOption) (*Operation, 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -28015,8 +28799,7 @@ func (c *RegionUrlMapsInvalidateCacheCall) Header() http.Header {
 
 func (c *RegionUrlMapsInvalidateCacheCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.cacheinvalidationrule)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.cacheinvalidationrule)
 	if err != nil {
 		return nil, err
 	}
@@ -28034,6 +28817,7 @@ func (c *RegionUrlMapsInvalidateCacheCall) doRequest(alt string) (*http.Response
 		"region":  c.region,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.invalidateCache", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -28068,9 +28852,11 @@ func (c *RegionUrlMapsInvalidateCacheCall) Do(opts ...googleapi.CallOption) (*Op
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.invalidateCache", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -28210,12 +28996,11 @@ func (c *RegionUrlMapsListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/urlMaps")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -28224,6 +29009,7 @@ func (c *RegionUrlMapsListCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -28258,9 +29044,11 @@ func (c *RegionUrlMapsListCall) Do(opts ...googleapi.CallOption) (*UrlMapList, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -28344,8 +29132,7 @@ func (c *RegionUrlMapsPatchCall) Header() http.Header {
 
 func (c *RegionUrlMapsPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.urlmap)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.urlmap)
 	if err != nil {
 		return nil, err
 	}
@@ -28363,6 +29150,7 @@ func (c *RegionUrlMapsPatchCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -28397,9 +29185,11 @@ func (c *RegionUrlMapsPatchCall) Do(opts ...googleapi.CallOption) (*Operation, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -28454,8 +29244,7 @@ func (c *RegionUrlMapsTestIamPermissionsCall) Header() http.Header {
 
 func (c *RegionUrlMapsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -28473,6 +29262,7 @@ func (c *RegionUrlMapsTestIamPermissionsCall) doRequest(alt string) (*http.Respo
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -28508,9 +29298,11 @@ func (c *RegionUrlMapsTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -28572,8 +29364,7 @@ func (c *RegionUrlMapsUpdateCall) Header() http.Header {
 
 func (c *RegionUrlMapsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.urlmap)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.urlmap)
 	if err != nil {
 		return nil, err
 	}
@@ -28591,6 +29382,7 @@ func (c *RegionUrlMapsUpdateCall) doRequest(alt string) (*http.Response, error) 
 		"region":  c.region,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.update", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -28625,9 +29417,11 @@ func (c *RegionUrlMapsUpdateCall) Do(opts ...googleapi.CallOption) (*Operation, 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.update", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -28683,8 +29477,7 @@ func (c *RegionUrlMapsValidateCall) Header() http.Header {
 
 func (c *RegionUrlMapsValidateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionurlmapsvalidaterequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionurlmapsvalidaterequest)
 	if err != nil {
 		return nil, err
 	}
@@ -28702,6 +29495,7 @@ func (c *RegionUrlMapsValidateCall) doRequest(alt string) (*http.Response, error
 		"region":  c.region,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.validate", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -28737,9 +29531,11 @@ func (c *RegionUrlMapsValidateCall) Do(opts ...googleapi.CallOption) (*UrlMapsVa
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionUrlMaps.validate", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -28879,12 +29675,11 @@ func (c *RegionZonesListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/zones")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -28893,6 +29688,7 @@ func (c *RegionZonesListCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regionZones.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -28927,9 +29723,11 @@ func (c *RegionZonesListCall) Do(opts ...googleapi.CallOption) (*ZoneList, error
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regionZones.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -29023,12 +29821,11 @@ func (c *RegionsGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -29037,6 +29834,7 @@ func (c *RegionsGetCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regions.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -29071,9 +29869,11 @@ func (c *RegionsGetCall) Do(opts ...googleapi.CallOption) (*Region, error) {
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regions.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -29222,12 +30022,11 @@ func (c *RegionsListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -29235,6 +30034,7 @@ func (c *RegionsListCall) doRequest(alt string) (*http.Response, error) {
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.regions.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -29269,9 +30069,11 @@ func (c *RegionsListCall) Do(opts ...googleapi.CallOption) (*RegionList, error) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.regions.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -29362,12 +30164,11 @@ func (c *ReservationBlocksGetCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/reservations/{reservation}/reservationBlocks/{reservationBlock}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -29378,6 +30179,7 @@ func (c *ReservationBlocksGetCall) doRequest(alt string) (*http.Response, error)
 		"reservation":      c.reservation,
 		"reservationBlock": c.reservationBlock,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservationBlocks.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -29413,9 +30215,11 @@ func (c *ReservationBlocksGetCall) Do(opts ...googleapi.CallOption) (*Reservatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservationBlocks.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -29559,12 +30363,11 @@ func (c *ReservationBlocksListCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/reservations/{reservation}/reservationBlocks")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -29574,6 +30377,7 @@ func (c *ReservationBlocksListCall) doRequest(alt string) (*http.Response, error
 		"zone":        c.zone,
 		"reservation": c.reservation,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservationBlocks.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -29609,9 +30413,11 @@ func (c *ReservationBlocksListCall) Do(opts ...googleapi.CallOption) (*Reservati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservationBlocks.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -29634,6 +30440,140 @@ func (c *ReservationBlocksListCall) Pages(ctx context.Context, f func(*Reservati
 		}
 		c.PageToken(x.NextPageToken)
 	}
+}
+
+type ReservationBlocksPerformMaintenanceCall struct {
+	s                                           *Service
+	project                                     string
+	zone                                        string
+	reservation                                 string
+	reservationBlock                            string
+	reservationsblocksperformmaintenancerequest *ReservationsBlocksPerformMaintenanceRequest
+	urlParams_                                  gensupport.URLParams
+	ctx_                                        context.Context
+	header_                                     http.Header
+}
+
+// PerformMaintenance: Allows customers to perform maintenance on a reservation
+// block
+//
+//   - project: Project ID for this request.
+//   - reservation: The name of the reservation. Name should conform to RFC1035
+//     or be a resource ID.
+//   - reservationBlock: The name of the reservation block. Name should conform
+//     to RFC1035 or be a resource ID.
+//   - zone: Name of the zone for this request. Zone name should conform to
+//     RFC1035.
+func (r *ReservationBlocksService) PerformMaintenance(project string, zone string, reservation string, reservationBlock string, reservationsblocksperformmaintenancerequest *ReservationsBlocksPerformMaintenanceRequest) *ReservationBlocksPerformMaintenanceCall {
+	c := &ReservationBlocksPerformMaintenanceCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.zone = zone
+	c.reservation = reservation
+	c.reservationBlock = reservationBlock
+	c.reservationsblocksperformmaintenancerequest = reservationsblocksperformmaintenancerequest
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional request ID to
+// identify requests. Specify a unique request ID so that if you must retry
+// your request, the server will know to ignore the request if it has already
+// been completed. For example, consider a situation where you make an initial
+// request and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the same
+// request ID was received, and if so, will ignore the second request. This
+// prevents clients from accidentally creating duplicate commitments. The
+// request ID must be a valid UUID with the exception that zero UUID is not
+// supported ( 00000000-0000-0000-0000-000000000000).
+func (c *ReservationBlocksPerformMaintenanceCall) RequestId(requestId string) *ReservationBlocksPerformMaintenanceCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *ReservationBlocksPerformMaintenanceCall) Fields(s ...googleapi.Field) *ReservationBlocksPerformMaintenanceCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *ReservationBlocksPerformMaintenanceCall) Context(ctx context.Context) *ReservationBlocksPerformMaintenanceCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *ReservationBlocksPerformMaintenanceCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ReservationBlocksPerformMaintenanceCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.reservationsblocksperformmaintenancerequest)
+	if err != nil {
+		return nil, err
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/reservations/{reservation}/reservationBlocks/{reservationBlock}/performMaintenance")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":          c.project,
+		"zone":             c.zone,
+		"reservation":      c.reservation,
+		"reservationBlock": c.reservationBlock,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservationBlocks.performMaintenance", "request", internallog.HTTPRequest(req, body.Bytes()))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.reservationBlocks.performMaintenance" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *ReservationBlocksPerformMaintenanceCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservationBlocks.performMaintenance", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
 }
 
 type ReservationsAggregatedListCall struct {
@@ -29791,12 +30731,11 @@ func (c *ReservationsAggregatedListCall) doRequest(alt string) (*http.Response, 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/reservations")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -29804,6 +30743,7 @@ func (c *ReservationsAggregatedListCall) doRequest(alt string) (*http.Response, 
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservations.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -29839,9 +30779,11 @@ func (c *ReservationsAggregatedListCall) Do(opts ...googleapi.CallOption) (*Rese
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservations.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -29929,12 +30871,11 @@ func (c *ReservationsDeleteCall) Header() http.Header {
 
 func (c *ReservationsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/reservations/{reservation}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -29944,6 +30885,7 @@ func (c *ReservationsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"zone":        c.zone,
 		"reservation": c.reservation,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservations.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -29978,9 +30920,11 @@ func (c *ReservationsDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservations.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -30044,12 +30988,11 @@ func (c *ReservationsGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/reservations/{reservation}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -30059,6 +31002,7 @@ func (c *ReservationsGetCall) doRequest(alt string) (*http.Response, error) {
 		"zone":        c.zone,
 		"reservation": c.reservation,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservations.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -30093,9 +31037,11 @@ func (c *ReservationsGetCall) Do(opts ...googleapi.CallOption) (*Reservation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservations.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -30167,12 +31113,11 @@ func (c *ReservationsGetIamPolicyCall) doRequest(alt string) (*http.Response, er
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/reservations/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -30182,6 +31127,7 @@ func (c *ReservationsGetIamPolicyCall) doRequest(alt string) (*http.Response, er
 		"zone":     c.zone,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservations.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -30216,9 +31162,11 @@ func (c *ReservationsGetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Policy
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservations.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -30285,8 +31233,7 @@ func (c *ReservationsInsertCall) Header() http.Header {
 
 func (c *ReservationsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.reservation)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.reservation)
 	if err != nil {
 		return nil, err
 	}
@@ -30303,6 +31250,7 @@ func (c *ReservationsInsertCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"zone":    c.zone,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservations.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -30337,9 +31285,11 @@ func (c *ReservationsInsertCall) Do(opts ...googleapi.CallOption) (*Operation, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservations.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -30479,12 +31429,11 @@ func (c *ReservationsListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/reservations")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -30493,6 +31442,7 @@ func (c *ReservationsListCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"zone":    c.zone,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservations.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -30528,9 +31478,11 @@ func (c *ReservationsListCall) Do(opts ...googleapi.CallOption) (*ReservationLis
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservations.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -30553,6 +31505,134 @@ func (c *ReservationsListCall) Pages(ctx context.Context, f func(*ReservationLis
 		}
 		c.PageToken(x.NextPageToken)
 	}
+}
+
+type ReservationsPerformMaintenanceCall struct {
+	s                                     *Service
+	project                               string
+	zone                                  string
+	reservation                           string
+	reservationsperformmaintenancerequest *ReservationsPerformMaintenanceRequest
+	urlParams_                            gensupport.URLParams
+	ctx_                                  context.Context
+	header_                               http.Header
+}
+
+// PerformMaintenance: Perform maintenance on an extended reservation
+//
+//   - project: Project ID for this request.
+//   - reservation: The name of the reservation. Name should conform to RFC1035
+//     or be a resource ID.
+//   - zone: Name of the zone for this request. Zone name should conform to
+//     RFC1035.
+func (r *ReservationsService) PerformMaintenance(project string, zone string, reservation string, reservationsperformmaintenancerequest *ReservationsPerformMaintenanceRequest) *ReservationsPerformMaintenanceCall {
+	c := &ReservationsPerformMaintenanceCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.zone = zone
+	c.reservation = reservation
+	c.reservationsperformmaintenancerequest = reservationsperformmaintenancerequest
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional request ID to
+// identify requests. Specify a unique request ID so that if you must retry
+// your request, the server will know to ignore the request if it has already
+// been completed. For example, consider a situation where you make an initial
+// request and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the same
+// request ID was received, and if so, will ignore the second request. This
+// prevents clients from accidentally creating duplicate commitments. The
+// request ID must be a valid UUID with the exception that zero UUID is not
+// supported ( 00000000-0000-0000-0000-000000000000).
+func (c *ReservationsPerformMaintenanceCall) RequestId(requestId string) *ReservationsPerformMaintenanceCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *ReservationsPerformMaintenanceCall) Fields(s ...googleapi.Field) *ReservationsPerformMaintenanceCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *ReservationsPerformMaintenanceCall) Context(ctx context.Context) *ReservationsPerformMaintenanceCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *ReservationsPerformMaintenanceCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ReservationsPerformMaintenanceCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.reservationsperformmaintenancerequest)
+	if err != nil {
+		return nil, err
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/reservations/{reservation}/performMaintenance")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":     c.project,
+		"zone":        c.zone,
+		"reservation": c.reservation,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservations.performMaintenance", "request", internallog.HTTPRequest(req, body.Bytes()))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.reservations.performMaintenance" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *ReservationsPerformMaintenanceCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservations.performMaintenance", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
 }
 
 type ReservationsResizeCall struct {
@@ -30621,8 +31701,7 @@ func (c *ReservationsResizeCall) Header() http.Header {
 
 func (c *ReservationsResizeCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.reservationsresizerequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.reservationsresizerequest)
 	if err != nil {
 		return nil, err
 	}
@@ -30640,6 +31719,7 @@ func (c *ReservationsResizeCall) doRequest(alt string) (*http.Response, error) {
 		"zone":        c.zone,
 		"reservation": c.reservation,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservations.resize", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -30674,9 +31754,11 @@ func (c *ReservationsResizeCall) Do(opts ...googleapi.CallOption) (*Operation, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservations.resize", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -30731,8 +31813,7 @@ func (c *ReservationsSetIamPolicyCall) Header() http.Header {
 
 func (c *ReservationsSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.zonesetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.zonesetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -30750,6 +31831,7 @@ func (c *ReservationsSetIamPolicyCall) doRequest(alt string) (*http.Response, er
 		"zone":     c.zone,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservations.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -30784,9 +31866,11 @@ func (c *ReservationsSetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Policy
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservations.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -30841,8 +31925,7 @@ func (c *ReservationsTestIamPermissionsCall) Header() http.Header {
 
 func (c *ReservationsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -30860,6 +31943,7 @@ func (c *ReservationsTestIamPermissionsCall) doRequest(alt string) (*http.Respon
 		"zone":     c.zone,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservations.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -30895,9 +31979,11 @@ func (c *ReservationsTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservations.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -30979,8 +32065,7 @@ func (c *ReservationsUpdateCall) Header() http.Header {
 
 func (c *ReservationsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.reservation2)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.reservation2)
 	if err != nil {
 		return nil, err
 	}
@@ -30998,6 +32083,7 @@ func (c *ReservationsUpdateCall) doRequest(alt string) (*http.Response, error) {
 		"zone":        c.zone,
 		"reservation": c.reservation,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.reservations.update", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -31032,9 +32118,11 @@ func (c *ReservationsUpdateCall) Do(opts ...googleapi.CallOption) (*Operation, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.reservations.update", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -31193,12 +32281,11 @@ func (c *ResourcePoliciesAggregatedListCall) doRequest(alt string) (*http.Respon
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/resourcePolicies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -31206,6 +32293,7 @@ func (c *ResourcePoliciesAggregatedListCall) doRequest(alt string) (*http.Respon
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.resourcePolicies.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -31241,9 +32329,11 @@ func (c *ResourcePoliciesAggregatedListCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.resourcePolicies.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -31331,12 +32421,11 @@ func (c *ResourcePoliciesDeleteCall) Header() http.Header {
 
 func (c *ResourcePoliciesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/resourcePolicies/{resourcePolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -31346,6 +32435,7 @@ func (c *ResourcePoliciesDeleteCall) doRequest(alt string) (*http.Response, erro
 		"region":         c.region,
 		"resourcePolicy": c.resourcePolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.resourcePolicies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -31380,9 +32470,11 @@ func (c *ResourcePoliciesDeleteCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.resourcePolicies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -31446,12 +32538,11 @@ func (c *ResourcePoliciesGetCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/resourcePolicies/{resourcePolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -31461,6 +32552,7 @@ func (c *ResourcePoliciesGetCall) doRequest(alt string) (*http.Response, error) 
 		"region":         c.region,
 		"resourcePolicy": c.resourcePolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.resourcePolicies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -31495,9 +32587,11 @@ func (c *ResourcePoliciesGetCall) Do(opts ...googleapi.CallOption) (*ResourcePol
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.resourcePolicies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -31569,12 +32663,11 @@ func (c *ResourcePoliciesGetIamPolicyCall) doRequest(alt string) (*http.Response
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/resourcePolicies/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -31584,6 +32677,7 @@ func (c *ResourcePoliciesGetIamPolicyCall) doRequest(alt string) (*http.Response
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.resourcePolicies.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -31618,9 +32712,11 @@ func (c *ResourcePoliciesGetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Po
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.resourcePolicies.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -31686,8 +32782,7 @@ func (c *ResourcePoliciesInsertCall) Header() http.Header {
 
 func (c *ResourcePoliciesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.resourcepolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.resourcepolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -31704,6 +32799,7 @@ func (c *ResourcePoliciesInsertCall) doRequest(alt string) (*http.Response, erro
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.resourcePolicies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -31738,9 +32834,11 @@ func (c *ResourcePoliciesInsertCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.resourcePolicies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -31880,12 +32978,11 @@ func (c *ResourcePoliciesListCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/resourcePolicies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -31894,6 +32991,7 @@ func (c *ResourcePoliciesListCall) doRequest(alt string) (*http.Response, error)
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.resourcePolicies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -31929,9 +33027,11 @@ func (c *ResourcePoliciesListCall) Do(opts ...googleapi.CallOption) (*ResourcePo
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.resourcePolicies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -32034,8 +33134,7 @@ func (c *ResourcePoliciesPatchCall) Header() http.Header {
 
 func (c *ResourcePoliciesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.resourcepolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.resourcepolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -32053,6 +33152,7 @@ func (c *ResourcePoliciesPatchCall) doRequest(alt string) (*http.Response, error
 		"region":         c.region,
 		"resourcePolicy": c.resourcePolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.resourcePolicies.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -32087,9 +33187,11 @@ func (c *ResourcePoliciesPatchCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.resourcePolicies.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -32144,8 +33246,7 @@ func (c *ResourcePoliciesSetIamPolicyCall) Header() http.Header {
 
 func (c *ResourcePoliciesSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -32163,6 +33264,7 @@ func (c *ResourcePoliciesSetIamPolicyCall) doRequest(alt string) (*http.Response
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.resourcePolicies.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -32197,9 +33299,11 @@ func (c *ResourcePoliciesSetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Po
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.resourcePolicies.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -32254,8 +33358,7 @@ func (c *ResourcePoliciesTestIamPermissionsCall) Header() http.Header {
 
 func (c *ResourcePoliciesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -32273,6 +33376,7 @@ func (c *ResourcePoliciesTestIamPermissionsCall) doRequest(alt string) (*http.Re
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.resourcePolicies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -32308,9 +33412,11 @@ func (c *ResourcePoliciesTestIamPermissionsCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.resourcePolicies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -32469,12 +33575,11 @@ func (c *RoutersAggregatedListCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/routers")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -32482,6 +33587,7 @@ func (c *RoutersAggregatedListCall) doRequest(alt string) (*http.Response, error
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -32517,9 +33623,11 @@ func (c *RoutersAggregatedListCall) Do(opts ...googleapi.CallOption) (*RouterAgg
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -32607,12 +33715,11 @@ func (c *RoutersDeleteCall) Header() http.Header {
 
 func (c *RoutersDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -32622,6 +33729,7 @@ func (c *RoutersDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -32656,9 +33764,11 @@ func (c *RoutersDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -32732,12 +33842,11 @@ func (c *RoutersDeleteNamedSetCall) Header() http.Header {
 
 func (c *RoutersDeleteNamedSetCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}/deleteNamedSet")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -32747,6 +33856,7 @@ func (c *RoutersDeleteNamedSetCall) doRequest(alt string) (*http.Response, error
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.deleteNamedSet", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -32781,9 +33891,11 @@ func (c *RoutersDeleteNamedSetCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.deleteNamedSet", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -32857,12 +33969,11 @@ func (c *RoutersDeleteRoutePolicyCall) Header() http.Header {
 
 func (c *RoutersDeleteRoutePolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}/deleteRoutePolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -32872,6 +33983,7 @@ func (c *RoutersDeleteRoutePolicyCall) doRequest(alt string) (*http.Response, er
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.deleteRoutePolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -32906,9 +34018,11 @@ func (c *RoutersDeleteRoutePolicyCall) Do(opts ...googleapi.CallOption) (*Operat
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.deleteRoutePolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -32972,12 +34086,11 @@ func (c *RoutersGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -32987,6 +34100,7 @@ func (c *RoutersGetCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -33021,9 +34135,11 @@ func (c *RoutersGetCall) Do(opts ...googleapi.CallOption) (*Router, error) {
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -33095,12 +34211,11 @@ func (c *RoutersGetNamedSetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}/getNamedSet")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -33110,6 +34225,7 @@ func (c *RoutersGetNamedSetCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.getNamedSet", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -33145,9 +34261,11 @@ func (c *RoutersGetNamedSetCall) Do(opts ...googleapi.CallOption) (*RoutersGetNa
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.getNamedSet", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -33220,12 +34338,11 @@ func (c *RoutersGetNatIpInfoCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}/getNatIpInfo")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -33235,6 +34352,7 @@ func (c *RoutersGetNatIpInfoCall) doRequest(alt string) (*http.Response, error) 
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.getNatIpInfo", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -33270,9 +34388,11 @@ func (c *RoutersGetNatIpInfoCall) Do(opts ...googleapi.CallOption) (*NatIpInfoRe
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.getNatIpInfo", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -33424,12 +34544,11 @@ func (c *RoutersGetNatMappingInfoCall) doRequest(alt string) (*http.Response, er
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}/getNatMappingInfo")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -33439,6 +34558,7 @@ func (c *RoutersGetNatMappingInfoCall) doRequest(alt string) (*http.Response, er
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.getNatMappingInfo", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -33474,9 +34594,11 @@ func (c *RoutersGetNatMappingInfoCall) Do(opts ...googleapi.CallOption) (*VmEndp
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.getNatMappingInfo", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -33569,12 +34691,11 @@ func (c *RoutersGetRoutePolicyCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}/getRoutePolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -33584,6 +34705,7 @@ func (c *RoutersGetRoutePolicyCall) doRequest(alt string) (*http.Response, error
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.getRoutePolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -33619,9 +34741,11 @@ func (c *RoutersGetRoutePolicyCall) Do(opts ...googleapi.CallOption) (*RoutersGe
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.getRoutePolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -33685,12 +34809,11 @@ func (c *RoutersGetRouterStatusCall) doRequest(alt string) (*http.Response, erro
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}/getRouterStatus")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -33700,6 +34823,7 @@ func (c *RoutersGetRouterStatusCall) doRequest(alt string) (*http.Response, erro
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.getRouterStatus", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -33735,9 +34859,11 @@ func (c *RoutersGetRouterStatusCall) Do(opts ...googleapi.CallOption) (*RouterSt
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.getRouterStatus", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -33804,8 +34930,7 @@ func (c *RoutersInsertCall) Header() http.Header {
 
 func (c *RoutersInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.router)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.router)
 	if err != nil {
 		return nil, err
 	}
@@ -33822,6 +34947,7 @@ func (c *RoutersInsertCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -33856,9 +34982,11 @@ func (c *RoutersInsertCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -33998,12 +35126,11 @@ func (c *RoutersListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -34012,6 +35139,7 @@ func (c *RoutersListCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -34046,9 +35174,11 @@ func (c *RoutersListCall) Do(opts ...googleapi.CallOption) (*RouterList, error) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -34260,12 +35390,11 @@ func (c *RoutersListBgpRoutesCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}/listBgpRoutes")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -34275,6 +35404,7 @@ func (c *RoutersListBgpRoutesCall) doRequest(alt string) (*http.Response, error)
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.listBgpRoutes", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -34310,9 +35440,11 @@ func (c *RoutersListBgpRoutesCall) Do(opts ...googleapi.CallOption) (*RoutersLis
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.listBgpRoutes", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -34477,12 +35609,11 @@ func (c *RoutersListNamedSetsCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}/listNamedSets")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -34492,6 +35623,7 @@ func (c *RoutersListNamedSetsCall) doRequest(alt string) (*http.Response, error)
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.listNamedSets", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -34527,9 +35659,11 @@ func (c *RoutersListNamedSetsCall) Do(opts ...googleapi.CallOption) (*RoutersLis
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.listNamedSets", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -34694,12 +35828,11 @@ func (c *RoutersListRoutePoliciesCall) doRequest(alt string) (*http.Response, er
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/routers/{router}/listRoutePolicies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -34709,6 +35842,7 @@ func (c *RoutersListRoutePoliciesCall) doRequest(alt string) (*http.Response, er
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.listRoutePolicies", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -34744,9 +35878,11 @@ func (c *RoutersListRoutePoliciesCall) Do(opts ...googleapi.CallOption) (*Router
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.listRoutePolicies", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -34838,8 +35974,7 @@ func (c *RoutersPatchCall) Header() http.Header {
 
 func (c *RoutersPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.router2)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.router2)
 	if err != nil {
 		return nil, err
 	}
@@ -34857,6 +35992,7 @@ func (c *RoutersPatchCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -34891,9 +36027,11 @@ func (c *RoutersPatchCall) Do(opts ...googleapi.CallOption) (*Operation, error) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -34962,8 +36100,7 @@ func (c *RoutersPatchNamedSetCall) Header() http.Header {
 
 func (c *RoutersPatchNamedSetCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.namedset)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.namedset)
 	if err != nil {
 		return nil, err
 	}
@@ -34981,6 +36118,7 @@ func (c *RoutersPatchNamedSetCall) doRequest(alt string) (*http.Response, error)
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.patchNamedSet", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -35015,9 +36153,11 @@ func (c *RoutersPatchNamedSetCall) Do(opts ...googleapi.CallOption) (*Operation,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.patchNamedSet", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -35086,8 +36226,7 @@ func (c *RoutersPatchRoutePolicyCall) Header() http.Header {
 
 func (c *RoutersPatchRoutePolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.routepolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.routepolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -35105,6 +36244,7 @@ func (c *RoutersPatchRoutePolicyCall) doRequest(alt string) (*http.Response, err
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.patchRoutePolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -35139,9 +36279,11 @@ func (c *RoutersPatchRoutePolicyCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.patchRoutePolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -35196,8 +36338,7 @@ func (c *RoutersPreviewCall) Header() http.Header {
 
 func (c *RoutersPreviewCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.router2)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.router2)
 	if err != nil {
 		return nil, err
 	}
@@ -35215,6 +36356,7 @@ func (c *RoutersPreviewCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.preview", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -35250,9 +36392,11 @@ func (c *RoutersPreviewCall) Do(opts ...googleapi.CallOption) (*RoutersPreviewRe
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.preview", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -35307,8 +36451,7 @@ func (c *RoutersTestIamPermissionsCall) Header() http.Header {
 
 func (c *RoutersTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -35326,6 +36469,7 @@ func (c *RoutersTestIamPermissionsCall) doRequest(alt string) (*http.Response, e
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -35361,9 +36505,11 @@ func (c *RoutersTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*TestP
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -35435,8 +36581,7 @@ func (c *RoutersUpdateCall) Header() http.Header {
 
 func (c *RoutersUpdateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.router2)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.router2)
 	if err != nil {
 		return nil, err
 	}
@@ -35454,6 +36599,7 @@ func (c *RoutersUpdateCall) doRequest(alt string) (*http.Response, error) {
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.update", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -35488,9 +36634,11 @@ func (c *RoutersUpdateCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.update", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -35559,8 +36707,7 @@ func (c *RoutersUpdateNamedSetCall) Header() http.Header {
 
 func (c *RoutersUpdateNamedSetCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.namedset)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.namedset)
 	if err != nil {
 		return nil, err
 	}
@@ -35578,6 +36725,7 @@ func (c *RoutersUpdateNamedSetCall) doRequest(alt string) (*http.Response, error
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.updateNamedSet", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -35612,9 +36760,11 @@ func (c *RoutersUpdateNamedSetCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.updateNamedSet", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -35683,8 +36833,7 @@ func (c *RoutersUpdateRoutePolicyCall) Header() http.Header {
 
 func (c *RoutersUpdateRoutePolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.routepolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.routepolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -35702,6 +36851,7 @@ func (c *RoutersUpdateRoutePolicyCall) doRequest(alt string) (*http.Response, er
 		"region":  c.region,
 		"router":  c.router,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routers.updateRoutePolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -35736,9 +36886,11 @@ func (c *RoutersUpdateRoutePolicyCall) Do(opts ...googleapi.CallOption) (*Operat
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routers.updateRoutePolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -35802,12 +36954,11 @@ func (c *RoutesDeleteCall) Header() http.Header {
 
 func (c *RoutesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/routes/{route}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -35816,6 +36967,7 @@ func (c *RoutesDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"route":   c.route,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routes.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -35850,9 +37002,11 @@ func (c *RoutesDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, error) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routes.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -35913,12 +37067,11 @@ func (c *RoutesGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/routes/{route}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -35927,6 +37080,7 @@ func (c *RoutesGetCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"route":   c.route,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routes.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -35961,9 +37115,11 @@ func (c *RoutesGetCall) Do(opts ...googleapi.CallOption) (*Route, error) {
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routes.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -36027,8 +37183,7 @@ func (c *RoutesInsertCall) Header() http.Header {
 
 func (c *RoutesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.route)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.route)
 	if err != nil {
 		return nil, err
 	}
@@ -36044,6 +37199,7 @@ func (c *RoutesInsertCall) doRequest(alt string) (*http.Response, error) {
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routes.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -36078,9 +37234,11 @@ func (c *RoutesInsertCall) Do(opts ...googleapi.CallOption) (*Operation, error) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routes.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -36217,12 +37375,11 @@ func (c *RoutesListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/routes")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -36230,6 +37387,7 @@ func (c *RoutesListCall) doRequest(alt string) (*http.Response, error) {
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routes.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -36264,9 +37422,11 @@ func (c *RoutesListCall) Do(opts ...googleapi.CallOption) (*RouteList, error) {
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routes.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -36339,8 +37499,7 @@ func (c *RoutesTestIamPermissionsCall) Header() http.Header {
 
 func (c *RoutesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -36357,6 +37516,7 @@ func (c *RoutesTestIamPermissionsCall) doRequest(alt string) (*http.Response, er
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.routes.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -36392,9 +37552,11 @@ func (c *RoutesTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*TestPe
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.routes.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -36452,8 +37614,7 @@ func (c *SecurityPoliciesAddRuleCall) Header() http.Header {
 
 func (c *SecurityPoliciesAddRuleCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicyrule)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.securitypolicyrule)
 	if err != nil {
 		return nil, err
 	}
@@ -36470,6 +37631,7 @@ func (c *SecurityPoliciesAddRuleCall) doRequest(alt string) (*http.Response, err
 		"project":        c.project,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.addRule", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -36504,9 +37666,11 @@ func (c *SecurityPoliciesAddRuleCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.addRule", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -36665,12 +37829,11 @@ func (c *SecurityPoliciesAggregatedListCall) doRequest(alt string) (*http.Respon
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/securityPolicies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -36678,6 +37841,7 @@ func (c *SecurityPoliciesAggregatedListCall) doRequest(alt string) (*http.Respon
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -36713,9 +37877,11 @@ func (c *SecurityPoliciesAggregatedListCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -36800,12 +37966,11 @@ func (c *SecurityPoliciesDeleteCall) Header() http.Header {
 
 func (c *SecurityPoliciesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/securityPolicies/{securityPolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -36814,6 +37979,7 @@ func (c *SecurityPoliciesDeleteCall) doRequest(alt string) (*http.Response, erro
 		"project":        c.project,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -36848,9 +38014,11 @@ func (c *SecurityPoliciesDeleteCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -36911,12 +38079,11 @@ func (c *SecurityPoliciesGetCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/securityPolicies/{securityPolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -36925,6 +38092,7 @@ func (c *SecurityPoliciesGetCall) doRequest(alt string) (*http.Response, error) 
 		"project":        c.project,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -36959,9 +38127,11 @@ func (c *SecurityPoliciesGetCall) Do(opts ...googleapi.CallOption) (*SecurityPol
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -37030,12 +38200,11 @@ func (c *SecurityPoliciesGetRuleCall) doRequest(alt string) (*http.Response, err
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/securityPolicies/{securityPolicy}/getRule")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -37044,6 +38213,7 @@ func (c *SecurityPoliciesGetRuleCall) doRequest(alt string) (*http.Response, err
 		"project":        c.project,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.getRule", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -37079,9 +38249,11 @@ func (c *SecurityPoliciesGetRuleCall) Do(opts ...googleapi.CallOption) (*Securit
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.getRule", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -37152,8 +38324,7 @@ func (c *SecurityPoliciesInsertCall) Header() http.Header {
 
 func (c *SecurityPoliciesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.securitypolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -37169,6 +38340,7 @@ func (c *SecurityPoliciesInsertCall) doRequest(alt string) (*http.Response, erro
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -37203,9 +38375,11 @@ func (c *SecurityPoliciesInsertCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -37342,12 +38516,11 @@ func (c *SecurityPoliciesListCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/securityPolicies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -37355,6 +38528,7 @@ func (c *SecurityPoliciesListCall) doRequest(alt string) (*http.Response, error)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -37390,9 +38564,11 @@ func (c *SecurityPoliciesListCall) Do(opts ...googleapi.CallOption) (*SecurityPo
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -37550,12 +38726,11 @@ func (c *SecurityPoliciesListPreconfiguredExpressionSetsCall) doRequest(alt stri
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/securityPolicies/listPreconfiguredExpressionSets")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -37563,6 +38738,7 @@ func (c *SecurityPoliciesListPreconfiguredExpressionSetsCall) doRequest(alt stri
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.listPreconfiguredExpressionSets", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -37598,9 +38774,11 @@ func (c *SecurityPoliciesListPreconfiguredExpressionSetsCall) Do(opts ...googlea
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.listPreconfiguredExpressionSets", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -37683,8 +38861,7 @@ func (c *SecurityPoliciesPatchCall) Header() http.Header {
 
 func (c *SecurityPoliciesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.securitypolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -37701,6 +38878,7 @@ func (c *SecurityPoliciesPatchCall) doRequest(alt string) (*http.Response, error
 		"project":        c.project,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -37735,9 +38913,11 @@ func (c *SecurityPoliciesPatchCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -37810,8 +38990,7 @@ func (c *SecurityPoliciesPatchRuleCall) Header() http.Header {
 
 func (c *SecurityPoliciesPatchRuleCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicyrule)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.securitypolicyrule)
 	if err != nil {
 		return nil, err
 	}
@@ -37828,6 +39007,7 @@ func (c *SecurityPoliciesPatchRuleCall) doRequest(alt string) (*http.Response, e
 		"project":        c.project,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.patchRule", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -37862,9 +39042,11 @@ func (c *SecurityPoliciesPatchRuleCall) Do(opts ...googleapi.CallOption) (*Opera
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.patchRule", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -37920,12 +39102,11 @@ func (c *SecurityPoliciesRemoveRuleCall) Header() http.Header {
 
 func (c *SecurityPoliciesRemoveRuleCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/securityPolicies/{securityPolicy}/removeRule")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -37934,6 +39115,7 @@ func (c *SecurityPoliciesRemoveRuleCall) doRequest(alt string) (*http.Response, 
 		"project":        c.project,
 		"securityPolicy": c.securityPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.removeRule", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -37968,9 +39150,11 @@ func (c *SecurityPoliciesRemoveRuleCall) Do(opts ...googleapi.CallOption) (*Oper
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.removeRule", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -38022,8 +39206,7 @@ func (c *SecurityPoliciesSetLabelsCall) Header() http.Header {
 
 func (c *SecurityPoliciesSetLabelsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.globalsetlabelsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.globalsetlabelsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -38040,6 +39223,7 @@ func (c *SecurityPoliciesSetLabelsCall) doRequest(alt string) (*http.Response, e
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.setLabels", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -38074,9 +39258,11 @@ func (c *SecurityPoliciesSetLabelsCall) Do(opts ...googleapi.CallOption) (*Opera
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.setLabels", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -38128,8 +39314,7 @@ func (c *SecurityPoliciesTestIamPermissionsCall) Header() http.Header {
 
 func (c *SecurityPoliciesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -38146,6 +39331,7 @@ func (c *SecurityPoliciesTestIamPermissionsCall) doRequest(alt string) (*http.Re
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.securityPolicies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -38181,9 +39367,11 @@ func (c *SecurityPoliciesTestIamPermissionsCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.securityPolicies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -38343,12 +39531,11 @@ func (c *ServiceAttachmentsAggregatedListCall) doRequest(alt string) (*http.Resp
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/serviceAttachments")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -38356,6 +39543,7 @@ func (c *ServiceAttachmentsAggregatedListCall) doRequest(alt string) (*http.Resp
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.serviceAttachments.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -38391,9 +39579,11 @@ func (c *ServiceAttachmentsAggregatedListCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.serviceAttachments.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -38481,12 +39671,11 @@ func (c *ServiceAttachmentsDeleteCall) Header() http.Header {
 
 func (c *ServiceAttachmentsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/serviceAttachments/{serviceAttachment}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -38496,6 +39685,7 @@ func (c *ServiceAttachmentsDeleteCall) doRequest(alt string) (*http.Response, er
 		"region":            c.region,
 		"serviceAttachment": c.serviceAttachment,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.serviceAttachments.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -38530,9 +39720,11 @@ func (c *ServiceAttachmentsDeleteCall) Do(opts ...googleapi.CallOption) (*Operat
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.serviceAttachments.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -38596,12 +39788,11 @@ func (c *ServiceAttachmentsGetCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/serviceAttachments/{serviceAttachment}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -38611,6 +39802,7 @@ func (c *ServiceAttachmentsGetCall) doRequest(alt string) (*http.Response, error
 		"region":            c.region,
 		"serviceAttachment": c.serviceAttachment,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.serviceAttachments.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -38646,9 +39838,11 @@ func (c *ServiceAttachmentsGetCall) Do(opts ...googleapi.CallOption) (*ServiceAt
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.serviceAttachments.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -38720,12 +39914,11 @@ func (c *ServiceAttachmentsGetIamPolicyCall) doRequest(alt string) (*http.Respon
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/serviceAttachments/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -38735,6 +39928,7 @@ func (c *ServiceAttachmentsGetIamPolicyCall) doRequest(alt string) (*http.Respon
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.serviceAttachments.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -38769,9 +39963,11 @@ func (c *ServiceAttachmentsGetIamPolicyCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.serviceAttachments.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -38838,8 +40034,7 @@ func (c *ServiceAttachmentsInsertCall) Header() http.Header {
 
 func (c *ServiceAttachmentsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.serviceattachment)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.serviceattachment)
 	if err != nil {
 		return nil, err
 	}
@@ -38856,6 +40051,7 @@ func (c *ServiceAttachmentsInsertCall) doRequest(alt string) (*http.Response, er
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.serviceAttachments.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -38890,9 +40086,11 @@ func (c *ServiceAttachmentsInsertCall) Do(opts ...googleapi.CallOption) (*Operat
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.serviceAttachments.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -39031,12 +40229,11 @@ func (c *ServiceAttachmentsListCall) doRequest(alt string) (*http.Response, erro
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/serviceAttachments")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -39045,6 +40242,7 @@ func (c *ServiceAttachmentsListCall) doRequest(alt string) (*http.Response, erro
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.serviceAttachments.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -39080,9 +40278,11 @@ func (c *ServiceAttachmentsListCall) Do(opts ...googleapi.CallOption) (*ServiceA
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.serviceAttachments.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -39176,8 +40376,7 @@ func (c *ServiceAttachmentsPatchCall) Header() http.Header {
 
 func (c *ServiceAttachmentsPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.serviceattachment)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.serviceattachment)
 	if err != nil {
 		return nil, err
 	}
@@ -39195,6 +40394,7 @@ func (c *ServiceAttachmentsPatchCall) doRequest(alt string) (*http.Response, err
 		"region":            c.region,
 		"serviceAttachment": c.serviceAttachment,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.serviceAttachments.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -39229,9 +40429,11 @@ func (c *ServiceAttachmentsPatchCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.serviceAttachments.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -39286,8 +40488,7 @@ func (c *ServiceAttachmentsSetIamPolicyCall) Header() http.Header {
 
 func (c *ServiceAttachmentsSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -39305,6 +40506,7 @@ func (c *ServiceAttachmentsSetIamPolicyCall) doRequest(alt string) (*http.Respon
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.serviceAttachments.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -39339,9 +40541,11 @@ func (c *ServiceAttachmentsSetIamPolicyCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.serviceAttachments.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -39396,8 +40600,7 @@ func (c *ServiceAttachmentsTestIamPermissionsCall) Header() http.Header {
 
 func (c *ServiceAttachmentsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -39415,6 +40618,7 @@ func (c *ServiceAttachmentsTestIamPermissionsCall) doRequest(alt string) (*http.
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.serviceAttachments.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -39450,9 +40654,11 @@ func (c *ServiceAttachmentsTestIamPermissionsCall) Do(opts ...googleapi.CallOpti
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.serviceAttachments.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -39510,12 +40716,11 @@ func (c *SnapshotSettingsGetCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/snapshotSettings")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -39523,6 +40728,7 @@ func (c *SnapshotSettingsGetCall) doRequest(alt string) (*http.Response, error) 
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.snapshotSettings.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -39558,9 +40764,11 @@ func (c *SnapshotSettingsGetCall) Do(opts ...googleapi.CallOption) (*SnapshotSet
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.snapshotSettings.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -39630,8 +40838,7 @@ func (c *SnapshotSettingsPatchCall) Header() http.Header {
 
 func (c *SnapshotSettingsPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.snapshotsettings)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.snapshotsettings)
 	if err != nil {
 		return nil, err
 	}
@@ -39647,6 +40854,7 @@ func (c *SnapshotSettingsPatchCall) doRequest(alt string) (*http.Response, error
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.snapshotSettings.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -39681,9 +40889,11 @@ func (c *SnapshotSettingsPatchCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.snapshotSettings.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -39842,12 +41052,11 @@ func (c *SnapshotsAggregatedListCall) doRequest(alt string) (*http.Response, err
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/snapshots")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -39855,6 +41064,7 @@ func (c *SnapshotsAggregatedListCall) doRequest(alt string) (*http.Response, err
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.snapshots.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -39890,9 +41100,11 @@ func (c *SnapshotsAggregatedListCall) Do(opts ...googleapi.CallOption) (*Snapsho
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.snapshots.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -39981,12 +41193,11 @@ func (c *SnapshotsDeleteCall) Header() http.Header {
 
 func (c *SnapshotsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/snapshots/{snapshot}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -39995,6 +41206,7 @@ func (c *SnapshotsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"project":  c.project,
 		"snapshot": c.snapshot,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.snapshots.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -40029,9 +41241,11 @@ func (c *SnapshotsDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, erro
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.snapshots.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -40092,12 +41306,11 @@ func (c *SnapshotsGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/snapshots/{snapshot}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -40106,6 +41319,7 @@ func (c *SnapshotsGetCall) doRequest(alt string) (*http.Response, error) {
 		"project":  c.project,
 		"snapshot": c.snapshot,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.snapshots.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -40140,9 +41354,11 @@ func (c *SnapshotsGetCall) Do(opts ...googleapi.CallOption) (*Snapshot, error) {
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.snapshots.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -40211,12 +41427,11 @@ func (c *SnapshotsGetIamPolicyCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/snapshots/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -40225,6 +41440,7 @@ func (c *SnapshotsGetIamPolicyCall) doRequest(alt string) (*http.Response, error
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.snapshots.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -40259,9 +41475,11 @@ func (c *SnapshotsGetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Policy, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.snapshots.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -40327,8 +41545,7 @@ func (c *SnapshotsInsertCall) Header() http.Header {
 
 func (c *SnapshotsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.snapshot)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.snapshot)
 	if err != nil {
 		return nil, err
 	}
@@ -40344,6 +41561,7 @@ func (c *SnapshotsInsertCall) doRequest(alt string) (*http.Response, error) {
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.snapshots.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -40378,9 +41596,11 @@ func (c *SnapshotsInsertCall) Do(opts ...googleapi.CallOption) (*Operation, erro
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.snapshots.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -40517,12 +41737,11 @@ func (c *SnapshotsListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/snapshots")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -40530,6 +41749,7 @@ func (c *SnapshotsListCall) doRequest(alt string) (*http.Response, error) {
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.snapshots.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -40564,9 +41784,11 @@ func (c *SnapshotsListCall) Do(opts ...googleapi.CallOption) (*SnapshotList, err
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.snapshots.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -40639,8 +41861,7 @@ func (c *SnapshotsSetIamPolicyCall) Header() http.Header {
 
 func (c *SnapshotsSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.globalsetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.globalsetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -40657,6 +41878,7 @@ func (c *SnapshotsSetIamPolicyCall) doRequest(alt string) (*http.Response, error
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.snapshots.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -40691,9 +41913,11 @@ func (c *SnapshotsSetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Policy, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.snapshots.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -40745,8 +41969,7 @@ func (c *SnapshotsSetLabelsCall) Header() http.Header {
 
 func (c *SnapshotsSetLabelsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.globalsetlabelsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.globalsetlabelsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -40763,6 +41986,7 @@ func (c *SnapshotsSetLabelsCall) doRequest(alt string) (*http.Response, error) {
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.snapshots.setLabels", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -40797,9 +42021,11 @@ func (c *SnapshotsSetLabelsCall) Do(opts ...googleapi.CallOption) (*Operation, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.snapshots.setLabels", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -40851,8 +42077,7 @@ func (c *SnapshotsTestIamPermissionsCall) Header() http.Header {
 
 func (c *SnapshotsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -40869,6 +42094,7 @@ func (c *SnapshotsTestIamPermissionsCall) doRequest(alt string) (*http.Response,
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.snapshots.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -40904,9 +42130,11 @@ func (c *SnapshotsTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*Tes
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.snapshots.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -41065,12 +42293,11 @@ func (c *SslCertificatesAggregatedListCall) doRequest(alt string) (*http.Respons
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/sslCertificates")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -41078,6 +42305,7 @@ func (c *SslCertificatesAggregatedListCall) doRequest(alt string) (*http.Respons
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslCertificates.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -41113,9 +42341,11 @@ func (c *SslCertificatesAggregatedListCall) Do(opts ...googleapi.CallOption) (*S
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslCertificates.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -41200,12 +42430,11 @@ func (c *SslCertificatesDeleteCall) Header() http.Header {
 
 func (c *SslCertificatesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/sslCertificates/{sslCertificate}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -41214,6 +42443,7 @@ func (c *SslCertificatesDeleteCall) doRequest(alt string) (*http.Response, error
 		"project":        c.project,
 		"sslCertificate": c.sslCertificate,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslCertificates.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -41248,9 +42478,11 @@ func (c *SslCertificatesDeleteCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslCertificates.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -41311,12 +42543,11 @@ func (c *SslCertificatesGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/sslCertificates/{sslCertificate}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -41325,6 +42556,7 @@ func (c *SslCertificatesGetCall) doRequest(alt string) (*http.Response, error) {
 		"project":        c.project,
 		"sslCertificate": c.sslCertificate,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslCertificates.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -41359,9 +42591,11 @@ func (c *SslCertificatesGetCall) Do(opts ...googleapi.CallOption) (*SslCertifica
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslCertificates.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -41425,8 +42659,7 @@ func (c *SslCertificatesInsertCall) Header() http.Header {
 
 func (c *SslCertificatesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslcertificate)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.sslcertificate)
 	if err != nil {
 		return nil, err
 	}
@@ -41442,6 +42675,7 @@ func (c *SslCertificatesInsertCall) doRequest(alt string) (*http.Response, error
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslCertificates.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -41476,9 +42710,11 @@ func (c *SslCertificatesInsertCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslCertificates.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -41615,12 +42851,11 @@ func (c *SslCertificatesListCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/sslCertificates")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -41628,6 +42863,7 @@ func (c *SslCertificatesListCall) doRequest(alt string) (*http.Response, error) 
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslCertificates.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -41663,9 +42899,11 @@ func (c *SslCertificatesListCall) Do(opts ...googleapi.CallOption) (*SslCertific
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslCertificates.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -41738,8 +42976,7 @@ func (c *SslCertificatesTestIamPermissionsCall) Header() http.Header {
 
 func (c *SslCertificatesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -41756,6 +42993,7 @@ func (c *SslCertificatesTestIamPermissionsCall) doRequest(alt string) (*http.Res
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslCertificates.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -41791,9 +43029,11 @@ func (c *SslCertificatesTestIamPermissionsCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslCertificates.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -41952,12 +43192,11 @@ func (c *SslPoliciesAggregatedListCall) doRequest(alt string) (*http.Response, e
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/sslPolicies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -41965,6 +43204,7 @@ func (c *SslPoliciesAggregatedListCall) doRequest(alt string) (*http.Response, e
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslPolicies.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -42000,9 +43240,11 @@ func (c *SslPoliciesAggregatedListCall) Do(opts ...googleapi.CallOption) (*SslPo
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslPolicies.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -42090,12 +43332,11 @@ func (c *SslPoliciesDeleteCall) Header() http.Header {
 
 func (c *SslPoliciesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/sslPolicies/{sslPolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -42104,6 +43345,7 @@ func (c *SslPoliciesDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"project":   c.project,
 		"sslPolicy": c.sslPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslPolicies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -42138,9 +43380,11 @@ func (c *SslPoliciesDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslPolicies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -42202,12 +43446,11 @@ func (c *SslPoliciesGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/sslPolicies/{sslPolicy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -42216,6 +43459,7 @@ func (c *SslPoliciesGetCall) doRequest(alt string) (*http.Response, error) {
 		"project":   c.project,
 		"sslPolicy": c.sslPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslPolicies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -42250,9 +43494,11 @@ func (c *SslPoliciesGetCall) Do(opts ...googleapi.CallOption) (*SslPolicy, error
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslPolicies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -42315,8 +43561,7 @@ func (c *SslPoliciesInsertCall) Header() http.Header {
 
 func (c *SslPoliciesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslpolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.sslpolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -42332,6 +43577,7 @@ func (c *SslPoliciesInsertCall) doRequest(alt string) (*http.Response, error) {
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslPolicies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -42366,9 +43612,11 @@ func (c *SslPoliciesInsertCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslPolicies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -42505,12 +43753,11 @@ func (c *SslPoliciesListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/sslPolicies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -42518,6 +43765,7 @@ func (c *SslPoliciesListCall) doRequest(alt string) (*http.Response, error) {
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslPolicies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -42553,9 +43801,11 @@ func (c *SslPoliciesListCall) Do(opts ...googleapi.CallOption) (*SslPoliciesList
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslPolicies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -42713,12 +43963,11 @@ func (c *SslPoliciesListAvailableFeaturesCall) doRequest(alt string) (*http.Resp
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/sslPolicies/listAvailableFeatures")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -42726,6 +43975,7 @@ func (c *SslPoliciesListAvailableFeaturesCall) doRequest(alt string) (*http.Resp
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslPolicies.listAvailableFeatures", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -42761,9 +44011,11 @@ func (c *SslPoliciesListAvailableFeaturesCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslPolicies.listAvailableFeatures", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -42831,8 +44083,7 @@ func (c *SslPoliciesPatchCall) Header() http.Header {
 
 func (c *SslPoliciesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslpolicy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.sslpolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -42849,6 +44100,7 @@ func (c *SslPoliciesPatchCall) doRequest(alt string) (*http.Response, error) {
 		"project":   c.project,
 		"sslPolicy": c.sslPolicy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslPolicies.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -42883,9 +44135,11 @@ func (c *SslPoliciesPatchCall) Do(opts ...googleapi.CallOption) (*Operation, err
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslPolicies.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -42937,8 +44191,7 @@ func (c *SslPoliciesTestIamPermissionsCall) Header() http.Header {
 
 func (c *SslPoliciesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -42955,6 +44208,7 @@ func (c *SslPoliciesTestIamPermissionsCall) doRequest(alt string) (*http.Respons
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.sslPolicies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -42990,9 +44244,11 @@ func (c *SslPoliciesTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*T
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.sslPolicies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -43151,12 +44407,11 @@ func (c *StoragePoolTypesAggregatedListCall) doRequest(alt string) (*http.Respon
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/storagePoolTypes")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -43164,6 +44419,7 @@ func (c *StoragePoolTypesAggregatedListCall) doRequest(alt string) (*http.Respon
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePoolTypes.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -43199,9 +44455,11 @@ func (c *StoragePoolTypesAggregatedListCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePoolTypes.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -43286,12 +44544,11 @@ func (c *StoragePoolTypesGetCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/storagePoolTypes/{storagePoolType}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -43301,6 +44558,7 @@ func (c *StoragePoolTypesGetCall) doRequest(alt string) (*http.Response, error) 
 		"zone":            c.zone,
 		"storagePoolType": c.storagePoolType,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePoolTypes.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -43336,9 +44594,11 @@ func (c *StoragePoolTypesGetCall) Do(opts ...googleapi.CallOption) (*StoragePool
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePoolTypes.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -43478,12 +44738,11 @@ func (c *StoragePoolTypesListCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/storagePoolTypes")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -43492,6 +44751,7 @@ func (c *StoragePoolTypesListCall) doRequest(alt string) (*http.Response, error)
 		"project": c.project,
 		"zone":    c.zone,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePoolTypes.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -43527,9 +44787,11 @@ func (c *StoragePoolTypesListCall) Do(opts ...googleapi.CallOption) (*StoragePoo
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePoolTypes.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -43709,12 +44971,11 @@ func (c *StoragePoolsAggregatedListCall) doRequest(alt string) (*http.Response, 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/storagePools")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -43722,6 +44983,7 @@ func (c *StoragePoolsAggregatedListCall) doRequest(alt string) (*http.Response, 
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePools.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -43757,9 +45019,11 @@ func (c *StoragePoolsAggregatedListCall) Do(opts ...googleapi.CallOption) (*Stor
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePools.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -43850,12 +45114,11 @@ func (c *StoragePoolsDeleteCall) Header() http.Header {
 
 func (c *StoragePoolsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/storagePools/{storagePool}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -43865,6 +45128,7 @@ func (c *StoragePoolsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"zone":        c.zone,
 		"storagePool": c.storagePool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePools.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -43899,9 +45163,11 @@ func (c *StoragePoolsDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePools.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -43966,12 +45232,11 @@ func (c *StoragePoolsGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/storagePools/{storagePool}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -43981,6 +45246,7 @@ func (c *StoragePoolsGetCall) doRequest(alt string) (*http.Response, error) {
 		"zone":        c.zone,
 		"storagePool": c.storagePool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePools.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -44015,9 +45281,11 @@ func (c *StoragePoolsGetCall) Do(opts ...googleapi.CallOption) (*StoragePool, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePools.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -44089,12 +45357,11 @@ func (c *StoragePoolsGetIamPolicyCall) doRequest(alt string) (*http.Response, er
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/storagePools/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -44104,6 +45371,7 @@ func (c *StoragePoolsGetIamPolicyCall) doRequest(alt string) (*http.Response, er
 		"zone":     c.zone,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePools.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -44138,9 +45406,11 @@ func (c *StoragePoolsGetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Policy
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePools.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -44207,8 +45477,7 @@ func (c *StoragePoolsInsertCall) Header() http.Header {
 
 func (c *StoragePoolsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.storagepool)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.storagepool)
 	if err != nil {
 		return nil, err
 	}
@@ -44225,6 +45494,7 @@ func (c *StoragePoolsInsertCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"zone":    c.zone,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePools.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -44259,9 +45529,11 @@ func (c *StoragePoolsInsertCall) Do(opts ...googleapi.CallOption) (*Operation, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePools.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -44400,12 +45672,11 @@ func (c *StoragePoolsListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/storagePools")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -44414,6 +45685,7 @@ func (c *StoragePoolsListCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"zone":    c.zone,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePools.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -44449,9 +45721,11 @@ func (c *StoragePoolsListCall) Do(opts ...googleapi.CallOption) (*StoragePoolLis
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePools.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -44614,12 +45888,11 @@ func (c *StoragePoolsListDisksCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/storagePools/{storagePool}/listDisks")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -44629,6 +45902,7 @@ func (c *StoragePoolsListDisksCall) doRequest(alt string) (*http.Response, error
 		"zone":        c.zone,
 		"storagePool": c.storagePool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePools.listDisks", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -44664,9 +45938,11 @@ func (c *StoragePoolsListDisksCall) Do(opts ...googleapi.CallOption) (*StoragePo
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePools.listDisks", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -44742,8 +46018,7 @@ func (c *StoragePoolsSetIamPolicyCall) Header() http.Header {
 
 func (c *StoragePoolsSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.zonesetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.zonesetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -44761,6 +46036,7 @@ func (c *StoragePoolsSetIamPolicyCall) doRequest(alt string) (*http.Response, er
 		"zone":     c.zone,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePools.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -44795,9 +46071,11 @@ func (c *StoragePoolsSetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Policy
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePools.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -44867,8 +46145,7 @@ func (c *StoragePoolsSetLabelsCall) Header() http.Header {
 
 func (c *StoragePoolsSetLabelsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.zonesetlabelsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.zonesetlabelsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -44886,6 +46163,7 @@ func (c *StoragePoolsSetLabelsCall) doRequest(alt string) (*http.Response, error
 		"zone":     c.zone,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePools.setLabels", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -44920,9 +46198,11 @@ func (c *StoragePoolsSetLabelsCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePools.setLabels", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -44977,8 +46257,7 @@ func (c *StoragePoolsTestIamPermissionsCall) Header() http.Header {
 
 func (c *StoragePoolsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -44996,6 +46275,7 @@ func (c *StoragePoolsTestIamPermissionsCall) doRequest(alt string) (*http.Respon
 		"zone":     c.zone,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePools.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -45031,9 +46311,11 @@ func (c *StoragePoolsTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePools.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -45113,8 +46395,7 @@ func (c *StoragePoolsUpdateCall) Header() http.Header {
 
 func (c *StoragePoolsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.storagepool)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.storagepool)
 	if err != nil {
 		return nil, err
 	}
@@ -45132,6 +46413,7 @@ func (c *StoragePoolsUpdateCall) doRequest(alt string) (*http.Response, error) {
 		"zone":        c.zone,
 		"storagePool": c.storagePool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.storagePools.update", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -45166,9 +46448,11 @@ func (c *StoragePoolsUpdateCall) Do(opts ...googleapi.CallOption) (*Operation, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.storagePools.update", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -45327,12 +46611,11 @@ func (c *SubnetworksAggregatedListCall) doRequest(alt string) (*http.Response, e
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/subnetworks")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -45340,6 +46623,7 @@ func (c *SubnetworksAggregatedListCall) doRequest(alt string) (*http.Response, e
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -45375,9 +46659,11 @@ func (c *SubnetworksAggregatedListCall) Do(opts ...googleapi.CallOption) (*Subne
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -45465,12 +46751,11 @@ func (c *SubnetworksDeleteCall) Header() http.Header {
 
 func (c *SubnetworksDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/subnetworks/{subnetwork}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -45480,6 +46765,7 @@ func (c *SubnetworksDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"region":     c.region,
 		"subnetwork": c.subnetwork,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -45514,9 +46800,11 @@ func (c *SubnetworksDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -45586,8 +46874,7 @@ func (c *SubnetworksExpandIpCidrRangeCall) Header() http.Header {
 
 func (c *SubnetworksExpandIpCidrRangeCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.subnetworksexpandipcidrrangerequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.subnetworksexpandipcidrrangerequest)
 	if err != nil {
 		return nil, err
 	}
@@ -45605,6 +46892,7 @@ func (c *SubnetworksExpandIpCidrRangeCall) doRequest(alt string) (*http.Response
 		"region":     c.region,
 		"subnetwork": c.subnetwork,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.expandIpCidrRange", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -45639,9 +46927,11 @@ func (c *SubnetworksExpandIpCidrRangeCall) Do(opts ...googleapi.CallOption) (*Op
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.expandIpCidrRange", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -45705,12 +46995,11 @@ func (c *SubnetworksGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/subnetworks/{subnetwork}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -45720,6 +47009,7 @@ func (c *SubnetworksGetCall) doRequest(alt string) (*http.Response, error) {
 		"region":     c.region,
 		"subnetwork": c.subnetwork,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -45754,9 +47044,11 @@ func (c *SubnetworksGetCall) Do(opts ...googleapi.CallOption) (*Subnetwork, erro
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -45828,12 +47120,11 @@ func (c *SubnetworksGetIamPolicyCall) doRequest(alt string) (*http.Response, err
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/subnetworks/{resource}/getIamPolicy")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -45843,6 +47134,7 @@ func (c *SubnetworksGetIamPolicyCall) doRequest(alt string) (*http.Response, err
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.getIamPolicy", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -45877,9 +47169,11 @@ func (c *SubnetworksGetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Policy,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.getIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -45946,8 +47240,7 @@ func (c *SubnetworksInsertCall) Header() http.Header {
 
 func (c *SubnetworksInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.subnetwork)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.subnetwork)
 	if err != nil {
 		return nil, err
 	}
@@ -45964,6 +47257,7 @@ func (c *SubnetworksInsertCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -45998,9 +47292,11 @@ func (c *SubnetworksInsertCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -46139,12 +47435,11 @@ func (c *SubnetworksListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/subnetworks")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -46153,6 +47448,7 @@ func (c *SubnetworksListCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -46187,9 +47483,11 @@ func (c *SubnetworksListCall) Do(opts ...googleapi.CallOption) (*SubnetworkList,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -46356,12 +47654,11 @@ func (c *SubnetworksListUsableCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/subnetworks/listUsable")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -46369,6 +47666,7 @@ func (c *SubnetworksListUsableCall) doRequest(alt string) (*http.Response, error
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.listUsable", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -46404,9 +47702,11 @@ func (c *SubnetworksListUsableCall) Do(opts ...googleapi.CallOption) (*UsableSub
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.listUsable", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -46513,8 +47813,7 @@ func (c *SubnetworksPatchCall) Header() http.Header {
 
 func (c *SubnetworksPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.subnetwork2)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.subnetwork2)
 	if err != nil {
 		return nil, err
 	}
@@ -46532,6 +47831,7 @@ func (c *SubnetworksPatchCall) doRequest(alt string) (*http.Response, error) {
 		"region":     c.region,
 		"subnetwork": c.subnetwork,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -46566,9 +47866,11 @@ func (c *SubnetworksPatchCall) Do(opts ...googleapi.CallOption) (*Operation, err
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -46623,8 +47925,7 @@ func (c *SubnetworksSetIamPolicyCall) Header() http.Header {
 
 func (c *SubnetworksSetIamPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetpolicyrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetpolicyrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -46642,6 +47943,7 @@ func (c *SubnetworksSetIamPolicyCall) doRequest(alt string) (*http.Response, err
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.setIamPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -46676,9 +47978,11 @@ func (c *SubnetworksSetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Policy,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.setIamPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -46749,8 +48053,7 @@ func (c *SubnetworksSetPrivateIpGoogleAccessCall) Header() http.Header {
 
 func (c *SubnetworksSetPrivateIpGoogleAccessCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.subnetworkssetprivateipgoogleaccessrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.subnetworkssetprivateipgoogleaccessrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -46768,6 +48071,7 @@ func (c *SubnetworksSetPrivateIpGoogleAccessCall) doRequest(alt string) (*http.R
 		"region":     c.region,
 		"subnetwork": c.subnetwork,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.setPrivateIpGoogleAccess", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -46802,9 +48106,11 @@ func (c *SubnetworksSetPrivateIpGoogleAccessCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.setPrivateIpGoogleAccess", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -46859,8 +48165,7 @@ func (c *SubnetworksTestIamPermissionsCall) Header() http.Header {
 
 func (c *SubnetworksTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -46878,6 +48183,7 @@ func (c *SubnetworksTestIamPermissionsCall) doRequest(alt string) (*http.Respons
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.subnetworks.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -46913,9 +48219,11 @@ func (c *SubnetworksTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*T
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.subnetworks.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -46979,12 +48287,11 @@ func (c *TargetGrpcProxiesDeleteCall) Header() http.Header {
 
 func (c *TargetGrpcProxiesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetGrpcProxies/{targetGrpcProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -46993,6 +48300,7 @@ func (c *TargetGrpcProxiesDeleteCall) doRequest(alt string) (*http.Response, err
 		"project":         c.project,
 		"targetGrpcProxy": c.targetGrpcProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -47027,9 +48335,11 @@ func (c *TargetGrpcProxiesDeleteCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -47090,12 +48400,11 @@ func (c *TargetGrpcProxiesGetCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetGrpcProxies/{targetGrpcProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -47104,6 +48413,7 @@ func (c *TargetGrpcProxiesGetCall) doRequest(alt string) (*http.Response, error)
 		"project":         c.project,
 		"targetGrpcProxy": c.targetGrpcProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -47139,9 +48449,11 @@ func (c *TargetGrpcProxiesGetCall) Do(opts ...googleapi.CallOption) (*TargetGrpc
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -47205,8 +48517,7 @@ func (c *TargetGrpcProxiesInsertCall) Header() http.Header {
 
 func (c *TargetGrpcProxiesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetgrpcproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetgrpcproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -47222,6 +48533,7 @@ func (c *TargetGrpcProxiesInsertCall) doRequest(alt string) (*http.Response, err
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -47256,9 +48568,11 @@ func (c *TargetGrpcProxiesInsertCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -47394,12 +48708,11 @@ func (c *TargetGrpcProxiesListCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetGrpcProxies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -47407,6 +48720,7 @@ func (c *TargetGrpcProxiesListCall) doRequest(alt string) (*http.Response, error
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -47442,9 +48756,11 @@ func (c *TargetGrpcProxiesListCall) Do(opts ...googleapi.CallOption) (*TargetGrp
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -47533,8 +48849,7 @@ func (c *TargetGrpcProxiesPatchCall) Header() http.Header {
 
 func (c *TargetGrpcProxiesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetgrpcproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetgrpcproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -47551,6 +48866,7 @@ func (c *TargetGrpcProxiesPatchCall) doRequest(alt string) (*http.Response, erro
 		"project":         c.project,
 		"targetGrpcProxy": c.targetGrpcProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -47585,9 +48901,11 @@ func (c *TargetGrpcProxiesPatchCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -47639,8 +48957,7 @@ func (c *TargetGrpcProxiesTestIamPermissionsCall) Header() http.Header {
 
 func (c *TargetGrpcProxiesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -47657,6 +48974,7 @@ func (c *TargetGrpcProxiesTestIamPermissionsCall) doRequest(alt string) (*http.R
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -47692,9 +49010,11 @@ func (c *TargetGrpcProxiesTestIamPermissionsCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetGrpcProxies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -47854,12 +49174,11 @@ func (c *TargetHttpProxiesAggregatedListCall) doRequest(alt string) (*http.Respo
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/targetHttpProxies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -47867,6 +49186,7 @@ func (c *TargetHttpProxiesAggregatedListCall) doRequest(alt string) (*http.Respo
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -47902,9 +49222,11 @@ func (c *TargetHttpProxiesAggregatedListCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -47989,12 +49311,11 @@ func (c *TargetHttpProxiesDeleteCall) Header() http.Header {
 
 func (c *TargetHttpProxiesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetHttpProxies/{targetHttpProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48003,6 +49324,7 @@ func (c *TargetHttpProxiesDeleteCall) doRequest(alt string) (*http.Response, err
 		"project":         c.project,
 		"targetHttpProxy": c.targetHttpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -48037,9 +49359,11 @@ func (c *TargetHttpProxiesDeleteCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -48100,12 +49424,11 @@ func (c *TargetHttpProxiesGetCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetHttpProxies/{targetHttpProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48114,6 +49437,7 @@ func (c *TargetHttpProxiesGetCall) doRequest(alt string) (*http.Response, error)
 		"project":         c.project,
 		"targetHttpProxy": c.targetHttpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -48149,9 +49473,11 @@ func (c *TargetHttpProxiesGetCall) Do(opts ...googleapi.CallOption) (*TargetHttp
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -48215,8 +49541,7 @@ func (c *TargetHttpProxiesInsertCall) Header() http.Header {
 
 func (c *TargetHttpProxiesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targethttpproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targethttpproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -48232,6 +49557,7 @@ func (c *TargetHttpProxiesInsertCall) doRequest(alt string) (*http.Response, err
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -48266,9 +49592,11 @@ func (c *TargetHttpProxiesInsertCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -48405,12 +49733,11 @@ func (c *TargetHttpProxiesListCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetHttpProxies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48418,6 +49745,7 @@ func (c *TargetHttpProxiesListCall) doRequest(alt string) (*http.Response, error
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -48453,9 +49781,11 @@ func (c *TargetHttpProxiesListCall) Do(opts ...googleapi.CallOption) (*TargetHtt
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -48544,8 +49874,7 @@ func (c *TargetHttpProxiesPatchCall) Header() http.Header {
 
 func (c *TargetHttpProxiesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targethttpproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targethttpproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -48562,6 +49891,7 @@ func (c *TargetHttpProxiesPatchCall) doRequest(alt string) (*http.Response, erro
 		"project":         c.project,
 		"targetHttpProxy": c.targetHttpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -48596,9 +49926,11 @@ func (c *TargetHttpProxiesPatchCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -48664,8 +49996,7 @@ func (c *TargetHttpProxiesSetUrlMapCall) Header() http.Header {
 
 func (c *TargetHttpProxiesSetUrlMapCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.urlmapreference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.urlmapreference)
 	if err != nil {
 		return nil, err
 	}
@@ -48682,6 +50013,7 @@ func (c *TargetHttpProxiesSetUrlMapCall) doRequest(alt string) (*http.Response, 
 		"project":         c.project,
 		"targetHttpProxy": c.targetHttpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.setUrlMap", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -48716,9 +50048,11 @@ func (c *TargetHttpProxiesSetUrlMapCall) Do(opts ...googleapi.CallOption) (*Oper
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.setUrlMap", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -48770,8 +50104,7 @@ func (c *TargetHttpProxiesTestIamPermissionsCall) Header() http.Header {
 
 func (c *TargetHttpProxiesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -48788,6 +50121,7 @@ func (c *TargetHttpProxiesTestIamPermissionsCall) doRequest(alt string) (*http.R
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -48823,9 +50157,11 @@ func (c *TargetHttpProxiesTestIamPermissionsCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpProxies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -48985,12 +50321,11 @@ func (c *TargetHttpsProxiesAggregatedListCall) doRequest(alt string) (*http.Resp
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/targetHttpsProxies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48998,6 +50333,7 @@ func (c *TargetHttpsProxiesAggregatedListCall) doRequest(alt string) (*http.Resp
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -49033,9 +50369,11 @@ func (c *TargetHttpsProxiesAggregatedListCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -49120,12 +50458,11 @@ func (c *TargetHttpsProxiesDeleteCall) Header() http.Header {
 
 func (c *TargetHttpsProxiesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetHttpsProxies/{targetHttpsProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -49134,6 +50471,7 @@ func (c *TargetHttpsProxiesDeleteCall) doRequest(alt string) (*http.Response, er
 		"project":          c.project,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -49168,9 +50506,11 @@ func (c *TargetHttpsProxiesDeleteCall) Do(opts ...googleapi.CallOption) (*Operat
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -49231,12 +50571,11 @@ func (c *TargetHttpsProxiesGetCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetHttpsProxies/{targetHttpsProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -49245,6 +50584,7 @@ func (c *TargetHttpsProxiesGetCall) doRequest(alt string) (*http.Response, error
 		"project":          c.project,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -49280,9 +50620,11 @@ func (c *TargetHttpsProxiesGetCall) Do(opts ...googleapi.CallOption) (*TargetHtt
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -49346,8 +50688,7 @@ func (c *TargetHttpsProxiesInsertCall) Header() http.Header {
 
 func (c *TargetHttpsProxiesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targethttpsproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targethttpsproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -49363,6 +50704,7 @@ func (c *TargetHttpsProxiesInsertCall) doRequest(alt string) (*http.Response, er
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -49397,9 +50739,11 @@ func (c *TargetHttpsProxiesInsertCall) Do(opts ...googleapi.CallOption) (*Operat
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -49536,12 +50880,11 @@ func (c *TargetHttpsProxiesListCall) doRequest(alt string) (*http.Response, erro
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetHttpsProxies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -49549,6 +50892,7 @@ func (c *TargetHttpsProxiesListCall) doRequest(alt string) (*http.Response, erro
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -49584,9 +50928,11 @@ func (c *TargetHttpsProxiesListCall) Do(opts ...googleapi.CallOption) (*TargetHt
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -49675,8 +51021,7 @@ func (c *TargetHttpsProxiesPatchCall) Header() http.Header {
 
 func (c *TargetHttpsProxiesPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targethttpsproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targethttpsproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -49693,6 +51038,7 @@ func (c *TargetHttpsProxiesPatchCall) doRequest(alt string) (*http.Response, err
 		"project":          c.project,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -49727,9 +51073,11 @@ func (c *TargetHttpsProxiesPatchCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -49797,8 +51145,7 @@ func (c *TargetHttpsProxiesSetCertificateMapCall) Header() http.Header {
 
 func (c *TargetHttpsProxiesSetCertificateMapCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targethttpsproxiessetcertificatemaprequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targethttpsproxiessetcertificatemaprequest)
 	if err != nil {
 		return nil, err
 	}
@@ -49815,6 +51162,7 @@ func (c *TargetHttpsProxiesSetCertificateMapCall) doRequest(alt string) (*http.R
 		"project":          c.project,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.setCertificateMap", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -49849,9 +51197,11 @@ func (c *TargetHttpsProxiesSetCertificateMapCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.setCertificateMap", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -49918,8 +51268,7 @@ func (c *TargetHttpsProxiesSetQuicOverrideCall) Header() http.Header {
 
 func (c *TargetHttpsProxiesSetQuicOverrideCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targethttpsproxiessetquicoverriderequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targethttpsproxiessetquicoverriderequest)
 	if err != nil {
 		return nil, err
 	}
@@ -49936,6 +51285,7 @@ func (c *TargetHttpsProxiesSetQuicOverrideCall) doRequest(alt string) (*http.Res
 		"project":          c.project,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.setQuicOverride", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -49970,9 +51320,11 @@ func (c *TargetHttpsProxiesSetQuicOverrideCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.setQuicOverride", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -50039,8 +51391,7 @@ func (c *TargetHttpsProxiesSetSslCertificatesCall) Header() http.Header {
 
 func (c *TargetHttpsProxiesSetSslCertificatesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targethttpsproxiessetsslcertificatesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targethttpsproxiessetsslcertificatesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -50057,6 +51408,7 @@ func (c *TargetHttpsProxiesSetSslCertificatesCall) doRequest(alt string) (*http.
 		"project":          c.project,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.setSslCertificates", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -50091,9 +51443,11 @@ func (c *TargetHttpsProxiesSetSslCertificatesCall) Do(opts ...googleapi.CallOpti
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.setSslCertificates", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -50164,8 +51518,7 @@ func (c *TargetHttpsProxiesSetSslPolicyCall) Header() http.Header {
 
 func (c *TargetHttpsProxiesSetSslPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslpolicyreference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.sslpolicyreference)
 	if err != nil {
 		return nil, err
 	}
@@ -50182,6 +51535,7 @@ func (c *TargetHttpsProxiesSetSslPolicyCall) doRequest(alt string) (*http.Respon
 		"project":          c.project,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.setSslPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -50216,9 +51570,11 @@ func (c *TargetHttpsProxiesSetSslPolicyCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.setSslPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -50285,8 +51641,7 @@ func (c *TargetHttpsProxiesSetUrlMapCall) Header() http.Header {
 
 func (c *TargetHttpsProxiesSetUrlMapCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.urlmapreference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.urlmapreference)
 	if err != nil {
 		return nil, err
 	}
@@ -50303,6 +51658,7 @@ func (c *TargetHttpsProxiesSetUrlMapCall) doRequest(alt string) (*http.Response,
 		"project":          c.project,
 		"targetHttpsProxy": c.targetHttpsProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.setUrlMap", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -50337,9 +51693,11 @@ func (c *TargetHttpsProxiesSetUrlMapCall) Do(opts ...googleapi.CallOption) (*Ope
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.setUrlMap", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -50391,8 +51749,7 @@ func (c *TargetHttpsProxiesTestIamPermissionsCall) Header() http.Header {
 
 func (c *TargetHttpsProxiesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -50409,6 +51766,7 @@ func (c *TargetHttpsProxiesTestIamPermissionsCall) doRequest(alt string) (*http.
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -50444,9 +51802,11 @@ func (c *TargetHttpsProxiesTestIamPermissionsCall) Do(opts ...googleapi.CallOpti
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetHttpsProxies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -50605,12 +51965,11 @@ func (c *TargetInstancesAggregatedListCall) doRequest(alt string) (*http.Respons
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/targetInstances")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -50618,6 +51977,7 @@ func (c *TargetInstancesAggregatedListCall) doRequest(alt string) (*http.Respons
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetInstances.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -50653,9 +52013,11 @@ func (c *TargetInstancesAggregatedListCall) Do(opts ...googleapi.CallOption) (*T
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetInstances.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -50743,12 +52105,11 @@ func (c *TargetInstancesDeleteCall) Header() http.Header {
 
 func (c *TargetInstancesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/targetInstances/{targetInstance}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -50758,6 +52119,7 @@ func (c *TargetInstancesDeleteCall) doRequest(alt string) (*http.Response, error
 		"zone":           c.zone,
 		"targetInstance": c.targetInstance,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetInstances.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -50792,9 +52154,11 @@ func (c *TargetInstancesDeleteCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetInstances.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -50858,12 +52222,11 @@ func (c *TargetInstancesGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/targetInstances/{targetInstance}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -50873,6 +52236,7 @@ func (c *TargetInstancesGetCall) doRequest(alt string) (*http.Response, error) {
 		"zone":           c.zone,
 		"targetInstance": c.targetInstance,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetInstances.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -50907,9 +52271,11 @@ func (c *TargetInstancesGetCall) Do(opts ...googleapi.CallOption) (*TargetInstan
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetInstances.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -50976,8 +52342,7 @@ func (c *TargetInstancesInsertCall) Header() http.Header {
 
 func (c *TargetInstancesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetinstance)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetinstance)
 	if err != nil {
 		return nil, err
 	}
@@ -50994,6 +52359,7 @@ func (c *TargetInstancesInsertCall) doRequest(alt string) (*http.Response, error
 		"project": c.project,
 		"zone":    c.zone,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetInstances.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -51028,9 +52394,11 @@ func (c *TargetInstancesInsertCall) Do(opts ...googleapi.CallOption) (*Operation
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetInstances.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -51170,12 +52538,11 @@ func (c *TargetInstancesListCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/targetInstances")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -51184,6 +52551,7 @@ func (c *TargetInstancesListCall) doRequest(alt string) (*http.Response, error) 
 		"project": c.project,
 		"zone":    c.zone,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetInstances.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -51219,9 +52587,11 @@ func (c *TargetInstancesListCall) Do(opts ...googleapi.CallOption) (*TargetInsta
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetInstances.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -51314,8 +52684,7 @@ func (c *TargetInstancesSetSecurityPolicyCall) Header() http.Header {
 
 func (c *TargetInstancesSetSecurityPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicyreference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.securitypolicyreference)
 	if err != nil {
 		return nil, err
 	}
@@ -51333,6 +52702,7 @@ func (c *TargetInstancesSetSecurityPolicyCall) doRequest(alt string) (*http.Resp
 		"zone":           c.zone,
 		"targetInstance": c.targetInstance,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetInstances.setSecurityPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -51367,9 +52737,11 @@ func (c *TargetInstancesSetSecurityPolicyCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetInstances.setSecurityPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -51424,8 +52796,7 @@ func (c *TargetInstancesTestIamPermissionsCall) Header() http.Header {
 
 func (c *TargetInstancesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -51443,6 +52814,7 @@ func (c *TargetInstancesTestIamPermissionsCall) doRequest(alt string) (*http.Res
 		"zone":     c.zone,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetInstances.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -51478,9 +52850,11 @@ func (c *TargetInstancesTestIamPermissionsCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetInstances.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -51549,8 +52923,7 @@ func (c *TargetPoolsAddHealthCheckCall) Header() http.Header {
 
 func (c *TargetPoolsAddHealthCheckCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetpoolsaddhealthcheckrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetpoolsaddhealthcheckrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -51568,6 +52941,7 @@ func (c *TargetPoolsAddHealthCheckCall) doRequest(alt string) (*http.Response, e
 		"region":     c.region,
 		"targetPool": c.targetPool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.addHealthCheck", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -51602,9 +52976,11 @@ func (c *TargetPoolsAddHealthCheckCall) Do(opts ...googleapi.CallOption) (*Opera
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.addHealthCheck", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -51673,8 +53049,7 @@ func (c *TargetPoolsAddInstanceCall) Header() http.Header {
 
 func (c *TargetPoolsAddInstanceCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetpoolsaddinstancerequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetpoolsaddinstancerequest)
 	if err != nil {
 		return nil, err
 	}
@@ -51692,6 +53067,7 @@ func (c *TargetPoolsAddInstanceCall) doRequest(alt string) (*http.Response, erro
 		"region":     c.region,
 		"targetPool": c.targetPool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.addInstance", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -51726,9 +53102,11 @@ func (c *TargetPoolsAddInstanceCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.addInstance", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -51887,12 +53265,11 @@ func (c *TargetPoolsAggregatedListCall) doRequest(alt string) (*http.Response, e
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/targetPools")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -51900,6 +53277,7 @@ func (c *TargetPoolsAggregatedListCall) doRequest(alt string) (*http.Response, e
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -51935,9 +53313,11 @@ func (c *TargetPoolsAggregatedListCall) Do(opts ...googleapi.CallOption) (*Targe
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -52025,12 +53405,11 @@ func (c *TargetPoolsDeleteCall) Header() http.Header {
 
 func (c *TargetPoolsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetPools/{targetPool}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -52040,6 +53419,7 @@ func (c *TargetPoolsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"region":     c.region,
 		"targetPool": c.targetPool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -52074,9 +53454,11 @@ func (c *TargetPoolsDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -52140,12 +53522,11 @@ func (c *TargetPoolsGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetPools/{targetPool}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -52155,6 +53536,7 @@ func (c *TargetPoolsGetCall) doRequest(alt string) (*http.Response, error) {
 		"region":     c.region,
 		"targetPool": c.targetPool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -52189,9 +53571,11 @@ func (c *TargetPoolsGetCall) Do(opts ...googleapi.CallOption) (*TargetPool, erro
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -52247,8 +53631,7 @@ func (c *TargetPoolsGetHealthCall) Header() http.Header {
 
 func (c *TargetPoolsGetHealthCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.instancereference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.instancereference)
 	if err != nil {
 		return nil, err
 	}
@@ -52266,6 +53649,7 @@ func (c *TargetPoolsGetHealthCall) doRequest(alt string) (*http.Response, error)
 		"region":     c.region,
 		"targetPool": c.targetPool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.getHealth", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -52301,9 +53685,11 @@ func (c *TargetPoolsGetHealthCall) Do(opts ...googleapi.CallOption) (*TargetPool
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.getHealth", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -52370,8 +53756,7 @@ func (c *TargetPoolsInsertCall) Header() http.Header {
 
 func (c *TargetPoolsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetpool)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetpool)
 	if err != nil {
 		return nil, err
 	}
@@ -52388,6 +53773,7 @@ func (c *TargetPoolsInsertCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -52422,9 +53808,11 @@ func (c *TargetPoolsInsertCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -52564,12 +53952,11 @@ func (c *TargetPoolsListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetPools")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -52578,6 +53965,7 @@ func (c *TargetPoolsListCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -52612,9 +54000,11 @@ func (c *TargetPoolsListCall) Do(opts ...googleapi.CallOption) (*TargetPoolList,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -52704,8 +54094,7 @@ func (c *TargetPoolsRemoveHealthCheckCall) Header() http.Header {
 
 func (c *TargetPoolsRemoveHealthCheckCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetpoolsremovehealthcheckrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetpoolsremovehealthcheckrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -52723,6 +54112,7 @@ func (c *TargetPoolsRemoveHealthCheckCall) doRequest(alt string) (*http.Response
 		"region":     c.region,
 		"targetPool": c.targetPool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.removeHealthCheck", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -52757,9 +54147,11 @@ func (c *TargetPoolsRemoveHealthCheckCall) Do(opts ...googleapi.CallOption) (*Op
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.removeHealthCheck", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -52828,8 +54220,7 @@ func (c *TargetPoolsRemoveInstanceCall) Header() http.Header {
 
 func (c *TargetPoolsRemoveInstanceCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetpoolsremoveinstancerequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetpoolsremoveinstancerequest)
 	if err != nil {
 		return nil, err
 	}
@@ -52847,6 +54238,7 @@ func (c *TargetPoolsRemoveInstanceCall) doRequest(alt string) (*http.Response, e
 		"region":     c.region,
 		"targetPool": c.targetPool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.removeInstance", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -52881,9 +54273,11 @@ func (c *TargetPoolsRemoveInstanceCall) Do(opts ...googleapi.CallOption) (*Opera
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.removeInstance", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -52959,8 +54353,7 @@ func (c *TargetPoolsSetBackupCall) Header() http.Header {
 
 func (c *TargetPoolsSetBackupCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetreference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetreference)
 	if err != nil {
 		return nil, err
 	}
@@ -52978,6 +54371,7 @@ func (c *TargetPoolsSetBackupCall) doRequest(alt string) (*http.Response, error)
 		"region":     c.region,
 		"targetPool": c.targetPool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.setBackup", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -53012,9 +54406,11 @@ func (c *TargetPoolsSetBackupCall) Do(opts ...googleapi.CallOption) (*Operation,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.setBackup", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -53085,8 +54481,7 @@ func (c *TargetPoolsSetSecurityPolicyCall) Header() http.Header {
 
 func (c *TargetPoolsSetSecurityPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.securitypolicyreference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.securitypolicyreference)
 	if err != nil {
 		return nil, err
 	}
@@ -53104,6 +54499,7 @@ func (c *TargetPoolsSetSecurityPolicyCall) doRequest(alt string) (*http.Response
 		"region":     c.region,
 		"targetPool": c.targetPool,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.setSecurityPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -53138,9 +54534,11 @@ func (c *TargetPoolsSetSecurityPolicyCall) Do(opts ...googleapi.CallOption) (*Op
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.setSecurityPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -53195,8 +54593,7 @@ func (c *TargetPoolsTestIamPermissionsCall) Header() http.Header {
 
 func (c *TargetPoolsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -53214,6 +54611,7 @@ func (c *TargetPoolsTestIamPermissionsCall) doRequest(alt string) (*http.Respons
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetPools.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -53249,9 +54647,11 @@ func (c *TargetPoolsTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*T
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetPools.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -53315,12 +54715,11 @@ func (c *TargetSslProxiesDeleteCall) Header() http.Header {
 
 func (c *TargetSslProxiesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetSslProxies/{targetSslProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -53329,6 +54728,7 @@ func (c *TargetSslProxiesDeleteCall) doRequest(alt string) (*http.Response, erro
 		"project":        c.project,
 		"targetSslProxy": c.targetSslProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetSslProxies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -53363,9 +54763,11 @@ func (c *TargetSslProxiesDeleteCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetSslProxies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -53426,12 +54828,11 @@ func (c *TargetSslProxiesGetCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetSslProxies/{targetSslProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -53440,6 +54841,7 @@ func (c *TargetSslProxiesGetCall) doRequest(alt string) (*http.Response, error) 
 		"project":        c.project,
 		"targetSslProxy": c.targetSslProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetSslProxies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -53474,9 +54876,11 @@ func (c *TargetSslProxiesGetCall) Do(opts ...googleapi.CallOption) (*TargetSslPr
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetSslProxies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -53540,8 +54944,7 @@ func (c *TargetSslProxiesInsertCall) Header() http.Header {
 
 func (c *TargetSslProxiesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetsslproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetsslproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -53557,6 +54960,7 @@ func (c *TargetSslProxiesInsertCall) doRequest(alt string) (*http.Response, erro
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetSslProxies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -53591,9 +54995,11 @@ func (c *TargetSslProxiesInsertCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetSslProxies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -53730,12 +55136,11 @@ func (c *TargetSslProxiesListCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetSslProxies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -53743,6 +55148,7 @@ func (c *TargetSslProxiesListCall) doRequest(alt string) (*http.Response, error)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetSslProxies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -53778,9 +55184,11 @@ func (c *TargetSslProxiesListCall) Do(opts ...googleapi.CallOption) (*TargetSslP
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetSslProxies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -53868,8 +55276,7 @@ func (c *TargetSslProxiesSetBackendServiceCall) Header() http.Header {
 
 func (c *TargetSslProxiesSetBackendServiceCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetsslproxiessetbackendservicerequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetsslproxiessetbackendservicerequest)
 	if err != nil {
 		return nil, err
 	}
@@ -53886,6 +55293,7 @@ func (c *TargetSslProxiesSetBackendServiceCall) doRequest(alt string) (*http.Res
 		"project":        c.project,
 		"targetSslProxy": c.targetSslProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetSslProxies.setBackendService", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -53920,9 +55328,11 @@ func (c *TargetSslProxiesSetBackendServiceCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetSslProxies.setBackendService", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -53990,8 +55400,7 @@ func (c *TargetSslProxiesSetCertificateMapCall) Header() http.Header {
 
 func (c *TargetSslProxiesSetCertificateMapCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetsslproxiessetcertificatemaprequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetsslproxiessetcertificatemaprequest)
 	if err != nil {
 		return nil, err
 	}
@@ -54008,6 +55417,7 @@ func (c *TargetSslProxiesSetCertificateMapCall) doRequest(alt string) (*http.Res
 		"project":        c.project,
 		"targetSslProxy": c.targetSslProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetSslProxies.setCertificateMap", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -54042,9 +55452,11 @@ func (c *TargetSslProxiesSetCertificateMapCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetSslProxies.setCertificateMap", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -54111,8 +55523,7 @@ func (c *TargetSslProxiesSetProxyHeaderCall) Header() http.Header {
 
 func (c *TargetSslProxiesSetProxyHeaderCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetsslproxiessetproxyheaderrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetsslproxiessetproxyheaderrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -54129,6 +55540,7 @@ func (c *TargetSslProxiesSetProxyHeaderCall) doRequest(alt string) (*http.Respon
 		"project":        c.project,
 		"targetSslProxy": c.targetSslProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetSslProxies.setProxyHeader", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -54163,9 +55575,11 @@ func (c *TargetSslProxiesSetProxyHeaderCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetSslProxies.setProxyHeader", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -54232,8 +55646,7 @@ func (c *TargetSslProxiesSetSslCertificatesCall) Header() http.Header {
 
 func (c *TargetSslProxiesSetSslCertificatesCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetsslproxiessetsslcertificatesrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetsslproxiessetsslcertificatesrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -54250,6 +55663,7 @@ func (c *TargetSslProxiesSetSslCertificatesCall) doRequest(alt string) (*http.Re
 		"project":        c.project,
 		"targetSslProxy": c.targetSslProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetSslProxies.setSslCertificates", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -54284,9 +55698,11 @@ func (c *TargetSslProxiesSetSslCertificatesCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetSslProxies.setSslCertificates", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -54356,8 +55772,7 @@ func (c *TargetSslProxiesSetSslPolicyCall) Header() http.Header {
 
 func (c *TargetSslProxiesSetSslPolicyCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.sslpolicyreference)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.sslpolicyreference)
 	if err != nil {
 		return nil, err
 	}
@@ -54374,6 +55789,7 @@ func (c *TargetSslProxiesSetSslPolicyCall) doRequest(alt string) (*http.Response
 		"project":        c.project,
 		"targetSslProxy": c.targetSslProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetSslProxies.setSslPolicy", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -54408,9 +55824,11 @@ func (c *TargetSslProxiesSetSslPolicyCall) Do(opts ...googleapi.CallOption) (*Op
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetSslProxies.setSslPolicy", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -54462,8 +55880,7 @@ func (c *TargetSslProxiesTestIamPermissionsCall) Header() http.Header {
 
 func (c *TargetSslProxiesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -54480,6 +55897,7 @@ func (c *TargetSslProxiesTestIamPermissionsCall) doRequest(alt string) (*http.Re
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetSslProxies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -54515,9 +55933,11 @@ func (c *TargetSslProxiesTestIamPermissionsCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetSslProxies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -54676,12 +56096,11 @@ func (c *TargetTcpProxiesAggregatedListCall) doRequest(alt string) (*http.Respon
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/targetTcpProxies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -54689,6 +56108,7 @@ func (c *TargetTcpProxiesAggregatedListCall) doRequest(alt string) (*http.Respon
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -54724,9 +56144,11 @@ func (c *TargetTcpProxiesAggregatedListCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -54811,12 +56233,11 @@ func (c *TargetTcpProxiesDeleteCall) Header() http.Header {
 
 func (c *TargetTcpProxiesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetTcpProxies/{targetTcpProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -54825,6 +56246,7 @@ func (c *TargetTcpProxiesDeleteCall) doRequest(alt string) (*http.Response, erro
 		"project":        c.project,
 		"targetTcpProxy": c.targetTcpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -54859,9 +56281,11 @@ func (c *TargetTcpProxiesDeleteCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -54922,12 +56346,11 @@ func (c *TargetTcpProxiesGetCall) doRequest(alt string) (*http.Response, error) 
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetTcpProxies/{targetTcpProxy}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -54936,6 +56359,7 @@ func (c *TargetTcpProxiesGetCall) doRequest(alt string) (*http.Response, error) 
 		"project":        c.project,
 		"targetTcpProxy": c.targetTcpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -54970,9 +56394,11 @@ func (c *TargetTcpProxiesGetCall) Do(opts ...googleapi.CallOption) (*TargetTcpPr
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -55036,8 +56462,7 @@ func (c *TargetTcpProxiesInsertCall) Header() http.Header {
 
 func (c *TargetTcpProxiesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targettcpproxy)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targettcpproxy)
 	if err != nil {
 		return nil, err
 	}
@@ -55053,6 +56478,7 @@ func (c *TargetTcpProxiesInsertCall) doRequest(alt string) (*http.Response, erro
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -55087,9 +56513,11 @@ func (c *TargetTcpProxiesInsertCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -55226,12 +56654,11 @@ func (c *TargetTcpProxiesListCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/targetTcpProxies")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -55239,6 +56666,7 @@ func (c *TargetTcpProxiesListCall) doRequest(alt string) (*http.Response, error)
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -55274,9 +56702,11 @@ func (c *TargetTcpProxiesListCall) Do(opts ...googleapi.CallOption) (*TargetTcpP
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -55364,8 +56794,7 @@ func (c *TargetTcpProxiesSetBackendServiceCall) Header() http.Header {
 
 func (c *TargetTcpProxiesSetBackendServiceCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targettcpproxiessetbackendservicerequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targettcpproxiessetbackendservicerequest)
 	if err != nil {
 		return nil, err
 	}
@@ -55382,6 +56811,7 @@ func (c *TargetTcpProxiesSetBackendServiceCall) doRequest(alt string) (*http.Res
 		"project":        c.project,
 		"targetTcpProxy": c.targetTcpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.setBackendService", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -55416,9 +56846,11 @@ func (c *TargetTcpProxiesSetBackendServiceCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.setBackendService", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -55485,8 +56917,7 @@ func (c *TargetTcpProxiesSetProxyHeaderCall) Header() http.Header {
 
 func (c *TargetTcpProxiesSetProxyHeaderCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targettcpproxiessetproxyheaderrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targettcpproxiessetproxyheaderrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -55503,6 +56934,7 @@ func (c *TargetTcpProxiesSetProxyHeaderCall) doRequest(alt string) (*http.Respon
 		"project":        c.project,
 		"targetTcpProxy": c.targetTcpProxy,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.setProxyHeader", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -55537,9 +56969,11 @@ func (c *TargetTcpProxiesSetProxyHeaderCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.setProxyHeader", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -55591,8 +57025,7 @@ func (c *TargetTcpProxiesTestIamPermissionsCall) Header() http.Header {
 
 func (c *TargetTcpProxiesTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -55609,6 +57042,7 @@ func (c *TargetTcpProxiesTestIamPermissionsCall) doRequest(alt string) (*http.Re
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -55644,9 +57078,11 @@ func (c *TargetTcpProxiesTestIamPermissionsCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetTcpProxies.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -55805,12 +57241,11 @@ func (c *TargetVpnGatewaysAggregatedListCall) doRequest(alt string) (*http.Respo
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/targetVpnGateways")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -55818,6 +57253,7 @@ func (c *TargetVpnGatewaysAggregatedListCall) doRequest(alt string) (*http.Respo
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -55853,9 +57289,11 @@ func (c *TargetVpnGatewaysAggregatedListCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -55943,12 +57381,11 @@ func (c *TargetVpnGatewaysDeleteCall) Header() http.Header {
 
 func (c *TargetVpnGatewaysDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetVpnGateways/{targetVpnGateway}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -55958,6 +57395,7 @@ func (c *TargetVpnGatewaysDeleteCall) doRequest(alt string) (*http.Response, err
 		"region":           c.region,
 		"targetVpnGateway": c.targetVpnGateway,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -55992,9 +57430,11 @@ func (c *TargetVpnGatewaysDeleteCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -56058,12 +57498,11 @@ func (c *TargetVpnGatewaysGetCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetVpnGateways/{targetVpnGateway}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -56073,6 +57512,7 @@ func (c *TargetVpnGatewaysGetCall) doRequest(alt string) (*http.Response, error)
 		"region":           c.region,
 		"targetVpnGateway": c.targetVpnGateway,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -56108,9 +57548,11 @@ func (c *TargetVpnGatewaysGetCall) Do(opts ...googleapi.CallOption) (*TargetVpnG
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -56177,8 +57619,7 @@ func (c *TargetVpnGatewaysInsertCall) Header() http.Header {
 
 func (c *TargetVpnGatewaysInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.targetvpngateway)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.targetvpngateway)
 	if err != nil {
 		return nil, err
 	}
@@ -56195,6 +57636,7 @@ func (c *TargetVpnGatewaysInsertCall) doRequest(alt string) (*http.Response, err
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -56229,9 +57671,11 @@ func (c *TargetVpnGatewaysInsertCall) Do(opts ...googleapi.CallOption) (*Operati
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -56371,12 +57815,11 @@ func (c *TargetVpnGatewaysListCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/targetVpnGateways")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -56385,6 +57828,7 @@ func (c *TargetVpnGatewaysListCall) doRequest(alt string) (*http.Response, error
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -56420,9 +57864,11 @@ func (c *TargetVpnGatewaysListCall) Do(opts ...googleapi.CallOption) (*TargetVpn
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -56513,8 +57959,7 @@ func (c *TargetVpnGatewaysSetLabelsCall) Header() http.Header {
 
 func (c *TargetVpnGatewaysSetLabelsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetlabelsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetlabelsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -56532,6 +57977,7 @@ func (c *TargetVpnGatewaysSetLabelsCall) doRequest(alt string) (*http.Response, 
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.setLabels", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -56566,9 +58012,11 @@ func (c *TargetVpnGatewaysSetLabelsCall) Do(opts ...googleapi.CallOption) (*Oper
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.setLabels", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -56623,8 +58071,7 @@ func (c *TargetVpnGatewaysTestIamPermissionsCall) Header() http.Header {
 
 func (c *TargetVpnGatewaysTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -56642,6 +58089,7 @@ func (c *TargetVpnGatewaysTestIamPermissionsCall) doRequest(alt string) (*http.R
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -56677,9 +58125,11 @@ func (c *TargetVpnGatewaysTestIamPermissionsCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.targetVpnGateways.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -56838,12 +58288,11 @@ func (c *UrlMapsAggregatedListCall) doRequest(alt string) (*http.Response, error
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/urlMaps")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -56851,6 +58300,7 @@ func (c *UrlMapsAggregatedListCall) doRequest(alt string) (*http.Response, error
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.urlMaps.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -56886,9 +58336,11 @@ func (c *UrlMapsAggregatedListCall) Do(opts ...googleapi.CallOption) (*UrlMapsAg
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.urlMaps.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -56973,12 +58425,11 @@ func (c *UrlMapsDeleteCall) Header() http.Header {
 
 func (c *UrlMapsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/urlMaps/{urlMap}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -56987,6 +58438,7 @@ func (c *UrlMapsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.urlMaps.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -57021,9 +58473,11 @@ func (c *UrlMapsDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.urlMaps.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -57084,12 +58538,11 @@ func (c *UrlMapsGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/urlMaps/{urlMap}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -57098,6 +58551,7 @@ func (c *UrlMapsGetCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.urlMaps.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -57132,9 +58586,11 @@ func (c *UrlMapsGetCall) Do(opts ...googleapi.CallOption) (*UrlMap, error) {
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.urlMaps.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -57198,8 +58654,7 @@ func (c *UrlMapsInsertCall) Header() http.Header {
 
 func (c *UrlMapsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.urlmap)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.urlmap)
 	if err != nil {
 		return nil, err
 	}
@@ -57215,6 +58670,7 @@ func (c *UrlMapsInsertCall) doRequest(alt string) (*http.Response, error) {
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.urlMaps.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -57249,9 +58705,11 @@ func (c *UrlMapsInsertCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.urlMaps.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -57319,8 +58777,7 @@ func (c *UrlMapsInvalidateCacheCall) Header() http.Header {
 
 func (c *UrlMapsInvalidateCacheCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.cacheinvalidationrule)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.cacheinvalidationrule)
 	if err != nil {
 		return nil, err
 	}
@@ -57337,6 +58794,7 @@ func (c *UrlMapsInvalidateCacheCall) doRequest(alt string) (*http.Response, erro
 		"project": c.project,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.urlMaps.invalidateCache", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -57371,9 +58829,11 @@ func (c *UrlMapsInvalidateCacheCall) Do(opts ...googleapi.CallOption) (*Operatio
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.urlMaps.invalidateCache", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -57510,12 +58970,11 @@ func (c *UrlMapsListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/urlMaps")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -57523,6 +58982,7 @@ func (c *UrlMapsListCall) doRequest(alt string) (*http.Response, error) {
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.urlMaps.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -57557,9 +59017,11 @@ func (c *UrlMapsListCall) Do(opts ...googleapi.CallOption) (*UrlMapList, error) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.urlMaps.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -57648,8 +59110,7 @@ func (c *UrlMapsPatchCall) Header() http.Header {
 
 func (c *UrlMapsPatchCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.urlmap)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.urlmap)
 	if err != nil {
 		return nil, err
 	}
@@ -57666,6 +59127,7 @@ func (c *UrlMapsPatchCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.urlMaps.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -57700,9 +59162,11 @@ func (c *UrlMapsPatchCall) Do(opts ...googleapi.CallOption) (*Operation, error) 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.urlMaps.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -57754,8 +59218,7 @@ func (c *UrlMapsTestIamPermissionsCall) Header() http.Header {
 
 func (c *UrlMapsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -57772,6 +59235,7 @@ func (c *UrlMapsTestIamPermissionsCall) doRequest(alt string) (*http.Response, e
 		"project":  c.project,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.urlMaps.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -57807,9 +59271,11 @@ func (c *UrlMapsTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*TestP
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.urlMaps.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -57876,8 +59342,7 @@ func (c *UrlMapsUpdateCall) Header() http.Header {
 
 func (c *UrlMapsUpdateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.urlmap)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.urlmap)
 	if err != nil {
 		return nil, err
 	}
@@ -57894,6 +59359,7 @@ func (c *UrlMapsUpdateCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.urlMaps.update", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -57928,9 +59394,11 @@ func (c *UrlMapsUpdateCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.urlMaps.update", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -57983,8 +59451,7 @@ func (c *UrlMapsValidateCall) Header() http.Header {
 
 func (c *UrlMapsValidateCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.urlmapsvalidaterequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.urlmapsvalidaterequest)
 	if err != nil {
 		return nil, err
 	}
@@ -58001,6 +59468,7 @@ func (c *UrlMapsValidateCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"urlMap":  c.urlMap,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.urlMaps.validate", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -58036,9 +59504,11 @@ func (c *UrlMapsValidateCall) Do(opts ...googleapi.CallOption) (*UrlMapsValidate
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.urlMaps.validate", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -58197,12 +59667,11 @@ func (c *VpnGatewaysAggregatedListCall) doRequest(alt string) (*http.Response, e
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/vpnGateways")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -58210,6 +59679,7 @@ func (c *VpnGatewaysAggregatedListCall) doRequest(alt string) (*http.Response, e
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnGateways.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -58245,9 +59715,11 @@ func (c *VpnGatewaysAggregatedListCall) Do(opts ...googleapi.CallOption) (*VpnGa
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnGateways.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -58335,12 +59807,11 @@ func (c *VpnGatewaysDeleteCall) Header() http.Header {
 
 func (c *VpnGatewaysDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/vpnGateways/{vpnGateway}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -58350,6 +59821,7 @@ func (c *VpnGatewaysDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"region":     c.region,
 		"vpnGateway": c.vpnGateway,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnGateways.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -58384,9 +59856,11 @@ func (c *VpnGatewaysDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnGateways.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -58450,12 +59924,11 @@ func (c *VpnGatewaysGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/vpnGateways/{vpnGateway}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -58465,6 +59938,7 @@ func (c *VpnGatewaysGetCall) doRequest(alt string) (*http.Response, error) {
 		"region":     c.region,
 		"vpnGateway": c.vpnGateway,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnGateways.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -58499,9 +59973,11 @@ func (c *VpnGatewaysGetCall) Do(opts ...googleapi.CallOption) (*VpnGateway, erro
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnGateways.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -58565,12 +60041,11 @@ func (c *VpnGatewaysGetStatusCall) doRequest(alt string) (*http.Response, error)
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/vpnGateways/{vpnGateway}/getStatus")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -58580,6 +60055,7 @@ func (c *VpnGatewaysGetStatusCall) doRequest(alt string) (*http.Response, error)
 		"region":     c.region,
 		"vpnGateway": c.vpnGateway,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnGateways.getStatus", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -58615,9 +60091,11 @@ func (c *VpnGatewaysGetStatusCall) Do(opts ...googleapi.CallOption) (*VpnGateway
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnGateways.getStatus", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -58684,8 +60162,7 @@ func (c *VpnGatewaysInsertCall) Header() http.Header {
 
 func (c *VpnGatewaysInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.vpngateway)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.vpngateway)
 	if err != nil {
 		return nil, err
 	}
@@ -58702,6 +60179,7 @@ func (c *VpnGatewaysInsertCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnGateways.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -58736,9 +60214,11 @@ func (c *VpnGatewaysInsertCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnGateways.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -58878,12 +60358,11 @@ func (c *VpnGatewaysListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/vpnGateways")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -58892,6 +60371,7 @@ func (c *VpnGatewaysListCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnGateways.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -58926,9 +60406,11 @@ func (c *VpnGatewaysListCall) Do(opts ...googleapi.CallOption) (*VpnGatewayList,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnGateways.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -59019,8 +60501,7 @@ func (c *VpnGatewaysSetLabelsCall) Header() http.Header {
 
 func (c *VpnGatewaysSetLabelsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetlabelsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetlabelsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -59038,6 +60519,7 @@ func (c *VpnGatewaysSetLabelsCall) doRequest(alt string) (*http.Response, error)
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnGateways.setLabels", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -59072,9 +60554,11 @@ func (c *VpnGatewaysSetLabelsCall) Do(opts ...googleapi.CallOption) (*Operation,
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnGateways.setLabels", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -59129,8 +60613,7 @@ func (c *VpnGatewaysTestIamPermissionsCall) Header() http.Header {
 
 func (c *VpnGatewaysTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -59148,6 +60631,7 @@ func (c *VpnGatewaysTestIamPermissionsCall) doRequest(alt string) (*http.Respons
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnGateways.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -59183,9 +60667,11 @@ func (c *VpnGatewaysTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*T
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnGateways.testIamPermissions", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -59344,12 +60830,11 @@ func (c *VpnTunnelsAggregatedListCall) doRequest(alt string) (*http.Response, er
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/vpnTunnels")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -59357,6 +60842,7 @@ func (c *VpnTunnelsAggregatedListCall) doRequest(alt string) (*http.Response, er
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnTunnels.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -59392,9 +60878,11 @@ func (c *VpnTunnelsAggregatedListCall) Do(opts ...googleapi.CallOption) (*VpnTun
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnTunnels.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -59482,12 +60970,11 @@ func (c *VpnTunnelsDeleteCall) Header() http.Header {
 
 func (c *VpnTunnelsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/vpnTunnels/{vpnTunnel}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -59497,6 +60984,7 @@ func (c *VpnTunnelsDeleteCall) doRequest(alt string) (*http.Response, error) {
 		"region":    c.region,
 		"vpnTunnel": c.vpnTunnel,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnTunnels.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -59531,9 +61019,11 @@ func (c *VpnTunnelsDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, err
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnTunnels.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -59597,12 +61087,11 @@ func (c *VpnTunnelsGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/vpnTunnels/{vpnTunnel}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -59612,6 +61101,7 @@ func (c *VpnTunnelsGetCall) doRequest(alt string) (*http.Response, error) {
 		"region":    c.region,
 		"vpnTunnel": c.vpnTunnel,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnTunnels.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -59646,9 +61136,11 @@ func (c *VpnTunnelsGetCall) Do(opts ...googleapi.CallOption) (*VpnTunnel, error)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnTunnels.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -59715,8 +61207,7 @@ func (c *VpnTunnelsInsertCall) Header() http.Header {
 
 func (c *VpnTunnelsInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.vpntunnel)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.vpntunnel)
 	if err != nil {
 		return nil, err
 	}
@@ -59733,6 +61224,7 @@ func (c *VpnTunnelsInsertCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnTunnels.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -59767,9 +61259,11 @@ func (c *VpnTunnelsInsertCall) Do(opts ...googleapi.CallOption) (*Operation, err
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnTunnels.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -59909,12 +61403,11 @@ func (c *VpnTunnelsListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/regions/{region}/vpnTunnels")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -59923,6 +61416,7 @@ func (c *VpnTunnelsListCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"region":  c.region,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnTunnels.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -59957,9 +61451,11 @@ func (c *VpnTunnelsListCall) Do(opts ...googleapi.CallOption) (*VpnTunnelList, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnTunnels.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -60050,8 +61546,7 @@ func (c *VpnTunnelsSetLabelsCall) Header() http.Header {
 
 func (c *VpnTunnelsSetLabelsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.regionsetlabelsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.regionsetlabelsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -60069,6 +61564,7 @@ func (c *VpnTunnelsSetLabelsCall) doRequest(alt string) (*http.Response, error) 
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnTunnels.setLabels", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -60103,9 +61599,11 @@ func (c *VpnTunnelsSetLabelsCall) Do(opts ...googleapi.CallOption) (*Operation, 
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnTunnels.setLabels", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -60160,8 +61658,7 @@ func (c *VpnTunnelsTestIamPermissionsCall) Header() http.Header {
 
 func (c *VpnTunnelsTestIamPermissionsCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.testpermissionsrequest)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.testpermissionsrequest)
 	if err != nil {
 		return nil, err
 	}
@@ -60179,6 +61676,7 @@ func (c *VpnTunnelsTestIamPermissionsCall) doRequest(alt string) (*http.Response
 		"region":   c.region,
 		"resource": c.resource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.vpnTunnels.testIamPermissions", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -60214,9 +61712,735 @@ func (c *VpnTunnelsTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*Te
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.vpnTunnels.testIamPermissions", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type WireGroupsDeleteCall struct {
+	s                *Service
+	project          string
+	crossSiteNetwork string
+	wireGroup        string
+	urlParams_       gensupport.URLParams
+	ctx_             context.Context
+	header_          http.Header
+}
+
+// Delete: Deletes the specified wire group in the given scope.
+//
+// - crossSiteNetwork: .
+// - project: Project ID for this request.
+// - wireGroup: Name of the wire group resource to delete.
+func (r *WireGroupsService) Delete(project string, crossSiteNetwork string, wireGroup string) *WireGroupsDeleteCall {
+	c := &WireGroupsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.crossSiteNetwork = crossSiteNetwork
+	c.wireGroup = wireGroup
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional request ID to
+// identify requests. Specify a unique request ID so that if you must retry
+// your request, the server will know to ignore the request if it has already
+// been completed. For example, consider a situation where you make an initial
+// request and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the same
+// request ID was received, and if so, will ignore the second request. This
+// prevents clients from accidentally creating duplicate commitments. The
+// request ID must be a valid UUID with the exception that zero UUID is not
+// supported ( 00000000-0000-0000-0000-000000000000). end_interface:
+// MixerMutationRequestBuilder
+func (c *WireGroupsDeleteCall) RequestId(requestId string) *WireGroupsDeleteCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *WireGroupsDeleteCall) Fields(s ...googleapi.Field) *WireGroupsDeleteCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *WireGroupsDeleteCall) Context(ctx context.Context) *WireGroupsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *WireGroupsDeleteCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *WireGroupsDeleteCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/crossSiteNetworks/{crossSiteNetwork}/wireGroups/{wireGroup}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("DELETE", urls, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":          c.project,
+		"crossSiteNetwork": c.crossSiteNetwork,
+		"wireGroup":        c.wireGroup,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.wireGroups.delete", "request", internallog.HTTPRequest(req, nil))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.wireGroups.delete" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *WireGroupsDeleteCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.wireGroups.delete", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type WireGroupsGetCall struct {
+	s                *Service
+	project          string
+	crossSiteNetwork string
+	wireGroup        string
+	urlParams_       gensupport.URLParams
+	ifNoneMatch_     string
+	ctx_             context.Context
+	header_          http.Header
+}
+
+// Get: Gets the specified wire group resource in the given scope.
+//
+// - crossSiteNetwork: .
+// - project: Project ID for this request.
+// - wireGroup: Name of the wire group resource to return.
+func (r *WireGroupsService) Get(project string, crossSiteNetwork string, wireGroup string) *WireGroupsGetCall {
+	c := &WireGroupsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.crossSiteNetwork = crossSiteNetwork
+	c.wireGroup = wireGroup
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *WireGroupsGetCall) Fields(s ...googleapi.Field) *WireGroupsGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets an optional parameter which makes the operation fail if the
+// object's ETag matches the given value. This is useful for getting updates
+// only after the object has changed since the last request.
+func (c *WireGroupsGetCall) IfNoneMatch(entityTag string) *WireGroupsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *WireGroupsGetCall) Context(ctx context.Context) *WireGroupsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *WireGroupsGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *WireGroupsGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/crossSiteNetworks/{crossSiteNetwork}/wireGroups/{wireGroup}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":          c.project,
+		"crossSiteNetwork": c.crossSiteNetwork,
+		"wireGroup":        c.wireGroup,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.wireGroups.get", "request", internallog.HTTPRequest(req, nil))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.wireGroups.get" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *WireGroup.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *WireGroupsGetCall) Do(opts ...googleapi.CallOption) (*WireGroup, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &WireGroup{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.wireGroups.get", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type WireGroupsInsertCall struct {
+	s                *Service
+	project          string
+	crossSiteNetwork string
+	wiregroup        *WireGroup
+	urlParams_       gensupport.URLParams
+	ctx_             context.Context
+	header_          http.Header
+}
+
+// Insert: Creates a wire group in the specified project in the given scope
+// using the parameters that are included in the request.
+//
+// - crossSiteNetwork: .
+// - project: Project ID for this request.
+func (r *WireGroupsService) Insert(project string, crossSiteNetwork string, wiregroup *WireGroup) *WireGroupsInsertCall {
+	c := &WireGroupsInsertCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.crossSiteNetwork = crossSiteNetwork
+	c.wiregroup = wiregroup
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional request ID to
+// identify requests. Specify a unique request ID so that if you must retry
+// your request, the server will know to ignore the request if it has already
+// been completed. For example, consider a situation where you make an initial
+// request and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the same
+// request ID was received, and if so, will ignore the second request. This
+// prevents clients from accidentally creating duplicate commitments. The
+// request ID must be a valid UUID with the exception that zero UUID is not
+// supported ( 00000000-0000-0000-0000-000000000000). end_interface:
+// MixerMutationRequestBuilder
+func (c *WireGroupsInsertCall) RequestId(requestId string) *WireGroupsInsertCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// ValidateOnly sets the optional parameter "validateOnly": [Input Only]
+// Validate the new configuration, but don't create it.
+func (c *WireGroupsInsertCall) ValidateOnly(validateOnly bool) *WireGroupsInsertCall {
+	c.urlParams_.Set("validateOnly", fmt.Sprint(validateOnly))
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *WireGroupsInsertCall) Fields(s ...googleapi.Field) *WireGroupsInsertCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *WireGroupsInsertCall) Context(ctx context.Context) *WireGroupsInsertCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *WireGroupsInsertCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *WireGroupsInsertCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.wiregroup)
+	if err != nil {
+		return nil, err
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/crossSiteNetworks/{crossSiteNetwork}/wireGroups")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":          c.project,
+		"crossSiteNetwork": c.crossSiteNetwork,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.wireGroups.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.wireGroups.insert" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *WireGroupsInsertCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.wireGroups.insert", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+type WireGroupsListCall struct {
+	s                *Service
+	project          string
+	crossSiteNetwork string
+	urlParams_       gensupport.URLParams
+	ifNoneMatch_     string
+	ctx_             context.Context
+	header_          http.Header
+}
+
+// List: Lists the wire groups for a project in the given scope.
+//
+// - crossSiteNetwork: .
+// - project: Project ID for this request.
+func (r *WireGroupsService) List(project string, crossSiteNetwork string) *WireGroupsListCall {
+	c := &WireGroupsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.crossSiteNetwork = crossSiteNetwork
+	return c
+}
+
+// Filter sets the optional parameter "filter": A filter expression that
+// filters resources listed in the response. Most Compute resources support two
+// types of filter expressions: expressions that support regular expressions
+// and expressions that follow API improvement proposal AIP-160. These two
+// types of filter expressions cannot be mixed in one request. If you want to
+// use AIP-160, your expression must specify the field name, an operator, and
+// the value that you want to use for filtering. The value must be a string, a
+// number, or a boolean. The operator must be either `=`, `!=`, `>`, `<`, `<=`,
+// `>=` or `:`. For example, if you are filtering Compute Engine instances, you
+// can exclude instances named `example-instance` by specifying `name !=
+// example-instance`. The `:*` comparison can be used to test whether a key has
+// been defined. For example, to find all objects with `owner` label use: ```
+// labels.owner:* ``` You can also filter nested fields. For example, you could
+// specify `scheduling.automaticRestart = false` to include instances only if
+// they are not scheduled for automatic restarts. You can use filtering on
+// nested fields to filter based on resource labels. To filter on multiple
+// expressions, provide each separate expression within parentheses. For
+// example: ``` (scheduling.automaticRestart = true) (cpuPlatform = "Intel
+// Skylake") ``` By default, each expression is an `AND` expression. However,
+// you can include `AND` and `OR` expressions explicitly. For example: ```
+// (cpuPlatform = "Intel Skylake") OR (cpuPlatform = "Intel Broadwell") AND
+// (scheduling.automaticRestart = true) ``` If you want to use a regular
+// expression, use the `eq` (equal) or `ne` (not equal) operator against a
+// single un-parenthesized expression with or without quotes or against
+// multiple parenthesized expressions. Examples: `fieldname eq unquoted
+// literal` `fieldname eq 'single quoted literal'` `fieldname eq "double quoted
+// literal" `(fieldname1 eq literal) (fieldname2 ne "literal")` The literal
+// value is interpreted as a regular expression using Google RE2 library
+// syntax. The literal value must match the entire field. For example, to
+// filter for instances that do not end with name "instance", you would use
+// `name ne .*instance`. You cannot combine constraints on multiple fields
+// using regular expressions.
+func (c *WireGroupsListCall) Filter(filter string) *WireGroupsListCall {
+	c.urlParams_.Set("filter", filter)
+	return c
+}
+
+// MaxResults sets the optional parameter "maxResults": The maximum number of
+// results per page that should be returned. If the number of available results
+// is larger than `maxResults`, Compute Engine returns a `nextPageToken` that
+// can be used to get the next page of results in subsequent list requests.
+// Acceptable values are `0` to `500`, inclusive. (Default: `500`)
+func (c *WireGroupsListCall) MaxResults(maxResults int64) *WireGroupsListCall {
+	c.urlParams_.Set("maxResults", fmt.Sprint(maxResults))
+	return c
+}
+
+// OrderBy sets the optional parameter "orderBy": Sorts list results by a
+// certain order. By default, results are returned in alphanumerical order
+// based on the resource name. You can also sort results in descending order
+// based on the creation timestamp using `orderBy="creationTimestamp desc".
+// This sorts results based on the `creationTimestamp` field in reverse
+// chronological order (newest result first). Use this to sort resources like
+// operations so that the newest operation is returned first. Currently, only
+// sorting by `name` or `creationTimestamp desc` is supported.
+func (c *WireGroupsListCall) OrderBy(orderBy string) *WireGroupsListCall {
+	c.urlParams_.Set("orderBy", orderBy)
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": Specifies a page token to
+// use. Set `pageToken` to the `nextPageToken` returned by a previous list
+// request to get the next page of results.
+func (c *WireGroupsListCall) PageToken(pageToken string) *WireGroupsListCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// ReturnPartialSuccess sets the optional parameter "returnPartialSuccess":
+// Opt-in for partial success behavior which provides partial results in case
+// of failure. The default value is false. For example, when partial success
+// behavior is enabled, aggregatedList for a single zone scope either returns
+// all resources in the zone or no resources, with an error code.
+func (c *WireGroupsListCall) ReturnPartialSuccess(returnPartialSuccess bool) *WireGroupsListCall {
+	c.urlParams_.Set("returnPartialSuccess", fmt.Sprint(returnPartialSuccess))
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *WireGroupsListCall) Fields(s ...googleapi.Field) *WireGroupsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets an optional parameter which makes the operation fail if the
+// object's ETag matches the given value. This is useful for getting updates
+// only after the object has changed since the last request.
+func (c *WireGroupsListCall) IfNoneMatch(entityTag string) *WireGroupsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *WireGroupsListCall) Context(ctx context.Context) *WireGroupsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *WireGroupsListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *WireGroupsListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/crossSiteNetworks/{crossSiteNetwork}/wireGroups")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("GET", urls, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":          c.project,
+		"crossSiteNetwork": c.crossSiteNetwork,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.wireGroups.list", "request", internallog.HTTPRequest(req, nil))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.wireGroups.list" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *WireGroupList.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *WireGroupsListCall) Do(opts ...googleapi.CallOption) (*WireGroupList, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &WireGroupList{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.wireGroups.list", "response", internallog.HTTPResponse(res, b))
+	return ret, nil
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *WireGroupsListCall) Pages(ctx context.Context, f func(*WireGroupList) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken"))
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
+type WireGroupsPatchCall struct {
+	s                *Service
+	project          string
+	crossSiteNetwork string
+	wireGroup        string
+	wiregroup        *WireGroup
+	urlParams_       gensupport.URLParams
+	ctx_             context.Context
+	header_          http.Header
+}
+
+// Patch: Updates the specified wire group resource with the data included in
+// the request. This method supports PATCH semantics and uses JSON merge patch
+// format and processing rules.
+//
+// - crossSiteNetwork: .
+// - project: Project ID for this request.
+// - wireGroup: Name of the WireGroups resource to patch.
+func (r *WireGroupsService) Patch(project string, crossSiteNetwork string, wireGroup string, wiregroup *WireGroup) *WireGroupsPatchCall {
+	c := &WireGroupsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.project = project
+	c.crossSiteNetwork = crossSiteNetwork
+	c.wireGroup = wireGroup
+	c.wiregroup = wiregroup
+	return c
+}
+
+// RequestId sets the optional parameter "requestId": An optional request ID to
+// identify requests. Specify a unique request ID so that if you must retry
+// your request, the server will know to ignore the request if it has already
+// been completed. For example, consider a situation where you make an initial
+// request and the request times out. If you make the request again with the
+// same request ID, the server can check if original operation with the same
+// request ID was received, and if so, will ignore the second request. This
+// prevents clients from accidentally creating duplicate commitments. The
+// request ID must be a valid UUID with the exception that zero UUID is not
+// supported ( 00000000-0000-0000-0000-000000000000). end_interface:
+// MixerMutationRequestBuilder
+func (c *WireGroupsPatchCall) RequestId(requestId string) *WireGroupsPatchCall {
+	c.urlParams_.Set("requestId", requestId)
+	return c
+}
+
+// UpdateMask sets the optional parameter "updateMask": update_mask indicates
+// fields to be updated as part of this request.
+func (c *WireGroupsPatchCall) UpdateMask(updateMask string) *WireGroupsPatchCall {
+	c.urlParams_.Set("updateMask", updateMask)
+	return c
+}
+
+// ValidateOnly sets the optional parameter "validateOnly": [Input Only]
+// Validate the new configuration, but don't update it.
+func (c *WireGroupsPatchCall) ValidateOnly(validateOnly bool) *WireGroupsPatchCall {
+	c.urlParams_.Set("validateOnly", fmt.Sprint(validateOnly))
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse for more
+// details.
+func (c *WireGroupsPatchCall) Fields(s ...googleapi.Field) *WireGroupsPatchCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method.
+func (c *WireGroupsPatchCall) Context(ctx context.Context) *WireGroupsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns a http.Header that can be modified by the caller to add
+// headers to the request.
+func (c *WireGroupsPatchCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *WireGroupsPatchCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.wiregroup)
+	if err != nil {
+		return nil, err
+	}
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/global/crossSiteNetworks/{crossSiteNetwork}/wireGroups/{wireGroup}")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("PATCH", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"project":          c.project,
+		"crossSiteNetwork": c.crossSiteNetwork,
+		"wireGroup":        c.wireGroup,
+	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.wireGroups.patch", "request", internallog.HTTPRequest(req, body.Bytes()))
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "compute.wireGroups.patch" call.
+// Any non-2xx status code is an error. Response headers are in either
+// *Operation.ServerResponse.Header or (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was returned.
+func (c *WireGroupsPatchCall) Do(opts ...googleapi.CallOption) (*Operation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, gensupport.WrapError(&googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		})
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, gensupport.WrapError(err)
+	}
+	ret := &Operation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
+		return nil, err
+	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.wireGroups.patch", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -60269,12 +62493,11 @@ func (c *ZoneOperationsDeleteCall) Header() http.Header {
 
 func (c *ZoneOperationsDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/operations/{operation}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60284,6 +62507,7 @@ func (c *ZoneOperationsDeleteCall) doRequest(alt string) (*http.Response, error)
 		"zone":      c.zone,
 		"operation": c.operationid,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zoneOperations.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -60298,6 +62522,7 @@ func (c *ZoneOperationsDeleteCall) Do(opts ...googleapi.CallOption) error {
 	if err := googleapi.CheckResponse(res); err != nil {
 		return gensupport.WrapError(err)
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zoneOperations.delete", "response", internallog.HTTPResponse(res, nil))
 	return nil
 }
 
@@ -60362,12 +62587,11 @@ func (c *ZoneOperationsGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/operations/{operation}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60377,6 +62601,7 @@ func (c *ZoneOperationsGetCall) doRequest(alt string) (*http.Response, error) {
 		"zone":      c.zone,
 		"operation": c.operationid,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zoneOperations.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -60411,9 +62636,11 @@ func (c *ZoneOperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, er
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zoneOperations.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -60553,12 +62780,11 @@ func (c *ZoneOperationsListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/operations")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60567,6 +62793,7 @@ func (c *ZoneOperationsListCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"zone":    c.zone,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zoneOperations.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -60601,9 +62828,11 @@ func (c *ZoneOperationsListCall) Do(opts ...googleapi.CallOption) (*OperationLis
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zoneOperations.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -60686,12 +62915,11 @@ func (c *ZoneOperationsWaitCall) Header() http.Header {
 
 func (c *ZoneOperationsWaitCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/operations/{operation}/wait")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60701,6 +62929,7 @@ func (c *ZoneOperationsWaitCall) doRequest(alt string) (*http.Response, error) {
 		"zone":      c.zone,
 		"operation": c.operationid,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zoneOperations.wait", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -60735,9 +62964,11 @@ func (c *ZoneOperationsWaitCall) Do(opts ...googleapi.CallOption) (*Operation, e
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zoneOperations.wait", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -60896,12 +63127,11 @@ func (c *ZoneQueuedResourcesAggregatedListCall) doRequest(alt string) (*http.Res
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/aggregated/queuedResources")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60909,6 +63139,7 @@ func (c *ZoneQueuedResourcesAggregatedListCall) doRequest(alt string) (*http.Res
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.aggregatedList", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -60944,9 +63175,11 @@ func (c *ZoneQueuedResourcesAggregatedListCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.aggregatedList", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -61035,12 +63268,11 @@ func (c *ZoneQueuedResourcesCancelCall) Header() http.Header {
 
 func (c *ZoneQueuedResourcesCancelCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/queuedResources/{queuedResource}/cancel")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("POST", urls, body)
+	req, err := http.NewRequest("POST", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61050,6 +63282,7 @@ func (c *ZoneQueuedResourcesCancelCall) doRequest(alt string) (*http.Response, e
 		"zone":           c.zone,
 		"queuedResource": c.queuedResource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.cancel", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -61084,9 +63317,11 @@ func (c *ZoneQueuedResourcesCancelCall) Do(opts ...googleapi.CallOption) (*Opera
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.cancel", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -61157,12 +63392,11 @@ func (c *ZoneQueuedResourcesDeleteCall) Header() http.Header {
 
 func (c *ZoneQueuedResourcesDeleteCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "", c.header_)
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/queuedResources/{queuedResource}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("DELETE", urls, body)
+	req, err := http.NewRequest("DELETE", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61172,6 +63406,7 @@ func (c *ZoneQueuedResourcesDeleteCall) doRequest(alt string) (*http.Response, e
 		"zone":           c.zone,
 		"queuedResource": c.queuedResource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.delete", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -61206,9 +63441,11 @@ func (c *ZoneQueuedResourcesDeleteCall) Do(opts ...googleapi.CallOption) (*Opera
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.delete", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -61272,12 +63509,11 @@ func (c *ZoneQueuedResourcesGetCall) doRequest(alt string) (*http.Response, erro
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/queuedResources/{queuedResource}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61287,6 +63523,7 @@ func (c *ZoneQueuedResourcesGetCall) doRequest(alt string) (*http.Response, erro
 		"zone":           c.zone,
 		"queuedResource": c.queuedResource,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -61321,9 +63558,11 @@ func (c *ZoneQueuedResourcesGetCall) Do(opts ...googleapi.CallOption) (*QueuedRe
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -61389,8 +63628,7 @@ func (c *ZoneQueuedResourcesInsertCall) Header() http.Header {
 
 func (c *ZoneQueuedResourcesInsertCall) doRequest(alt string) (*http.Response, error) {
 	reqHeaders := gensupport.SetHeaders(c.s.userAgent(), "application/json", c.header_)
-	var body io.Reader = nil
-	body, err := googleapi.WithoutDataWrapper.JSONReader(c.queuedresource)
+	body, err := googleapi.WithoutDataWrapper.JSONBuffer(c.queuedresource)
 	if err != nil {
 		return nil, err
 	}
@@ -61407,6 +63645,7 @@ func (c *ZoneQueuedResourcesInsertCall) doRequest(alt string) (*http.Response, e
 		"project": c.project,
 		"zone":    c.zone,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.insert", "request", internallog.HTTPRequest(req, body.Bytes()))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -61441,9 +63680,11 @@ func (c *ZoneQueuedResourcesInsertCall) Do(opts ...googleapi.CallOption) (*Opera
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.insert", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -61582,12 +63823,11 @@ func (c *ZoneQueuedResourcesListCall) doRequest(alt string) (*http.Response, err
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}/queuedResources")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61596,6 +63836,7 @@ func (c *ZoneQueuedResourcesListCall) doRequest(alt string) (*http.Response, err
 		"project": c.project,
 		"zone":    c.zone,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -61631,9 +63872,11 @@ func (c *ZoneQueuedResourcesListCall) Do(opts ...googleapi.CallOption) (*QueuedR
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zoneQueuedResources.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -61715,12 +63958,11 @@ func (c *ZonesGetCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones/{zone}")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61729,6 +63971,7 @@ func (c *ZonesGetCall) doRequest(alt string) (*http.Response, error) {
 		"project": c.project,
 		"zone":    c.zone,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zones.get", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -61763,9 +64006,11 @@ func (c *ZonesGetCall) Do(opts ...googleapi.CallOption) (*Zone, error) {
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zones.get", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 
@@ -61902,12 +64147,11 @@ func (c *ZonesListCall) doRequest(alt string) (*http.Response, error) {
 	if c.ifNoneMatch_ != "" {
 		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
 	}
-	var body io.Reader = nil
 	c.urlParams_.Set("alt", alt)
 	c.urlParams_.Set("prettyPrint", "false")
 	urls := googleapi.ResolveRelative(c.s.BasePath, "projects/{project}/zones")
 	urls += "?" + c.urlParams_.Encode()
-	req, err := http.NewRequest("GET", urls, body)
+	req, err := http.NewRequest("GET", urls, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61915,6 +64159,7 @@ func (c *ZonesListCall) doRequest(alt string) (*http.Response, error) {
 	googleapi.Expand(req.URL, map[string]string{
 		"project": c.project,
 	})
+	c.s.logger.DebugContext(c.ctx_, "api request", "serviceName", apiName, "rpcName", "compute.zones.list", "request", internallog.HTTPRequest(req, nil))
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
 }
 
@@ -61949,9 +64194,11 @@ func (c *ZonesListCall) Do(opts ...googleapi.CallOption) (*ZoneList, error) {
 		},
 	}
 	target := &ret
-	if err := gensupport.DecodeResponse(target, res); err != nil {
+	b, err := gensupport.DecodeResponseBytes(target, res)
+	if err != nil {
 		return nil, err
 	}
+	c.s.logger.DebugContext(c.ctx_, "api response", "serviceName", apiName, "rpcName", "compute.zones.list", "response", internallog.HTTPResponse(res, b))
 	return ret, nil
 }
 

@@ -5,7 +5,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.16.3
+        controller-gen.kubebuilder.io/version: v0.17.1
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -205,12 +205,20 @@ data:
                     type: array
                   confidentialCompute:
                     description: |-
-                      ConfidentialCompute Defines whether the instance should have confidential compute enabled.
-                      If enabled OnHostMaintenance is required to be set to "Terminate".
+                      ConfidentialCompute Defines whether the instance should have confidential compute enabled or not, and the confidential computing technology of choice.
+                      If Disabled, the machine will not be configured to be a confidential computing instance.
+                      If Enabled, confidential computing will be configured and AMD Secure Encrypted Virtualization will be configured by default. That is subject to change over time. If using AMD Secure Encrypted Virtualization is vital, use AMDEncryptedVirtualization explicitly instead.
+                      If AMDEncryptedVirtualization, it will configure AMD Secure Encrypted Virtualization (AMD SEV) as the confidential computing technology.
+                      If AMDEncryptedVirtualizationNestedPaging, it will configure AMD Secure Encrypted Virtualization Secure Nested Paging (AMD SEV-SNP) as the confidential computing technology.
+                      If IntelTrustedDomainExtensions, it will configure Intel TDX as the confidential computing technology.
+                      If enabled (any value other than Disabled) OnHostMaintenance is required to be set to "Terminate".
                       If omitted, the platform chooses a default, which is subject to change over time, currently that default is false.
                     enum:
                     - Enabled
                     - Disabled
+                    - AMDEncryptedVirtualization
+                    - AMDEncryptedVirtualizationNestedPaging
+                    - IntelTrustedDomainExtensions
                     type: string
                   image:
                     description: |-
@@ -532,7 +540,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.16.3
+        controller-gen.kubebuilder.io/version: v0.17.1
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -863,6 +871,36 @@ data:
                       - value
                       type: object
                     type: array
+                  serviceEndpoints:
+                    description: |-
+                      ServiceEndpoints contains the custom GCP Service Endpoint urls for each applicable service.
+                      For instance, the user can specify a new endpoint for the compute service.
+                    properties:
+                      compute:
+                        description: ComputeServiceEndpoint is the custom endpoint url
+                          for the Compute Service
+                        format: uri
+                        pattern: ^https://
+                        type: string
+                      container:
+                        description: ContainerServiceEndpoint is the custom endpoint url
+                          for the Container Service
+                        format: uri
+                        pattern: ^https://
+                        type: string
+                      iam:
+                        description: IAMServiceEndpoint is the custom endpoint url for
+                          the IAM Service
+                        format: uri
+                        pattern: ^https://
+                        type: string
+                      resourceManager:
+                        description: ResourceManagerServiceEndpoint is the custom endpoint
+                          url for the Resource Manager Service
+                        format: uri
+                        pattern: ^https://
+                        type: string
+                    type: object
                 required:
                 - project
                 - region
@@ -879,11 +917,11 @@ data:
                         attributes:
                           additionalProperties:
                             type: string
-                          description: Attributes is a free form map of attributes an
+                          description: attributes is a free form map of attributes an
                             infrastructure provider might use or require.
                           type: object
                         controlPlane:
-                          description: ControlPlane determines if this failure domain
+                          description: controlPlane determines if this failure domain
                             is suitable for use by control plane machines.
                           type: boolean
                       type: object
@@ -982,7 +1020,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.16.3
+        controller-gen.kubebuilder.io/version: v0.17.1
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -1044,7 +1082,7 @@ data:
                             additionalProperties:
                               type: string
                             description: |-
-                              Annotations is an unstructured key value map stored with a resource that may be
+                              annotations is an unstructured key value map stored with a resource that may be
                               set by external tools to store and retrieve arbitrary metadata. They are not
                               queryable and should be preserved when modifying objects.
                               More info: http://kubernetes.io/docs/user-guide/annotations
@@ -1197,12 +1235,20 @@ data:
                             type: array
                           confidentialCompute:
                             description: |-
-                              ConfidentialCompute Defines whether the instance should have confidential compute enabled.
-                              If enabled OnHostMaintenance is required to be set to "Terminate".
+                              ConfidentialCompute Defines whether the instance should have confidential compute enabled or not, and the confidential computing technology of choice.
+                              If Disabled, the machine will not be configured to be a confidential computing instance.
+                              If Enabled, confidential computing will be configured and AMD Secure Encrypted Virtualization will be configured by default. That is subject to change over time. If using AMD Secure Encrypted Virtualization is vital, use AMDEncryptedVirtualization explicitly instead.
+                              If AMDEncryptedVirtualization, it will configure AMD Secure Encrypted Virtualization (AMD SEV) as the confidential computing technology.
+                              If AMDEncryptedVirtualizationNestedPaging, it will configure AMD Secure Encrypted Virtualization Secure Nested Paging (AMD SEV-SNP) as the confidential computing technology.
+                              If IntelTrustedDomainExtensions, it will configure Intel TDX as the confidential computing technology.
+                              If enabled (any value other than Disabled) OnHostMaintenance is required to be set to "Terminate".
                               If omitted, the platform chooses a default, which is subject to change over time, currently that default is false.
                             enum:
                             - Enabled
                             - Disabled
+                            - AMDEncryptedVirtualization
+                            - AMDEncryptedVirtualizationNestedPaging
+                            - IntelTrustedDomainExtensions
                             type: string
                           image:
                             description: |-
@@ -1464,7 +1510,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.16.3
+        controller-gen.kubebuilder.io/version: v0.17.1
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -1527,7 +1573,7 @@ data:
                             additionalProperties:
                               type: string
                             description: |-
-                              Annotations is an unstructured key value map stored with a resource that may be
+                              annotations is an unstructured key value map stored with a resource that may be
                               set by external tools to store and retrieve arbitrary metadata. They are not
                               queryable and should be preserved when modifying objects.
                               More info: http://kubernetes.io/docs/user-guide/annotations
@@ -1812,6 +1858,36 @@ data:
                               - value
                               type: object
                             type: array
+                          serviceEndpoints:
+                            description: |-
+                              ServiceEndpoints contains the custom GCP Service Endpoint urls for each applicable service.
+                              For instance, the user can specify a new endpoint for the compute service.
+                            properties:
+                              compute:
+                                description: ComputeServiceEndpoint is the custom endpoint
+                                  url for the Compute Service
+                                format: uri
+                                pattern: ^https://
+                                type: string
+                              container:
+                                description: ContainerServiceEndpoint is the custom endpoint
+                                  url for the Container Service
+                                format: uri
+                                pattern: ^https://
+                                type: string
+                              iam:
+                                description: IAMServiceEndpoint is the custom endpoint
+                                  url for the IAM Service
+                                format: uri
+                                pattern: ^https://
+                                type: string
+                              resourceManager:
+                                description: ResourceManagerServiceEndpoint is the custom
+                                  endpoint url for the Resource Manager Service
+                                format: uri
+                                pattern: ^https://
+                                type: string
+                            type: object
                         required:
                         - project
                         - region
@@ -1836,7 +1912,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.16.3
+        controller-gen.kubebuilder.io/version: v0.17.1
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -2162,6 +2238,36 @@ data:
                       - value
                       type: object
                     type: array
+                  serviceEndpoints:
+                    description: |-
+                      ServiceEndpoints contains the custom GCP Service Endpoint urls for each applicable service.
+                      For instance, the user can specify a new endpoint for the compute service.
+                    properties:
+                      compute:
+                        description: ComputeServiceEndpoint is the custom endpoint url
+                          for the Compute Service
+                        format: uri
+                        pattern: ^https://
+                        type: string
+                      container:
+                        description: ContainerServiceEndpoint is the custom endpoint url
+                          for the Container Service
+                        format: uri
+                        pattern: ^https://
+                        type: string
+                      iam:
+                        description: IAMServiceEndpoint is the custom endpoint url for
+                          the IAM Service
+                        format: uri
+                        pattern: ^https://
+                        type: string
+                      resourceManager:
+                        description: ResourceManagerServiceEndpoint is the custom endpoint
+                          url for the Resource Manager Service
+                        format: uri
+                        pattern: ^https://
+                        type: string
+                    type: object
                 required:
                 - project
                 - region
@@ -2192,20 +2298,20 @@ data:
                           description: |-
                             The reason for the condition's last transition in CamelCase.
                             The specific API may choose whether or not this field is considered a guaranteed API.
-                            This field may not be empty.
+                            This field may be empty.
                           type: string
                         severity:
                           description: |-
-                            Severity provides an explicit classification of Reason code, so the users or machines can immediately
+                            severity provides an explicit classification of Reason code, so the users or machines can immediately
                             understand the current situation and act accordingly.
                             The Severity field MUST be set only when Status=False.
                           type: string
                         status:
-                          description: Status of the condition, one of True, False, Unknown.
+                          description: status of the condition, one of True, False, Unknown.
                           type: string
                         type:
                           description: |-
-                            Type of condition in CamelCase or in foo.example.com/CamelCase.
+                            type of condition in CamelCase or in foo.example.com/CamelCase.
                             Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
                             can be useful (see .node.status.conditions), the ability to deconflict is important.
                           type: string
@@ -2224,11 +2330,11 @@ data:
                         attributes:
                           additionalProperties:
                             type: string
-                          description: Attributes is a free form map of attributes an
+                          description: attributes is a free form map of attributes an
                             infrastructure provider might use or require.
                           type: object
                         controlPlane:
-                          description: ControlPlane determines if this failure domain
+                          description: controlPlane determines if this failure domain
                             is suitable for use by control plane machines.
                           type: boolean
                       type: object
@@ -2326,7 +2432,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.16.3
+        controller-gen.kubebuilder.io/version: v0.17.1
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -2362,6 +2468,10 @@ data:
         - description: The current Kubernetes version
           jsonPath: .status.currentVersion
           name: CurrentVersion
+          type: string
+        - description: The Kubernetes version of the GKE control plane
+          jsonPath: .status.version
+          name: Version
           type: string
         - description: API Endpoint
           jsonPath: .spec.endpoint
@@ -2465,6 +2575,8 @@ data:
                       ControlPlaneVersion represents the control plane version of the GKE cluster.
                       If not specified, the default version currently supported by GKE will be
                       used.
+
+                      Deprecated: This field will soon be removed and you are expected to use Version instead.
                     type: string
                   description:
                     description: Description describe the cluster.
@@ -2472,6 +2584,10 @@ data:
                   enableAutopilot:
                     description: EnableAutopilot indicates whether to enable autopilot
                       for this GKE cluster.
+                    type: boolean
+                  enableIdentityService:
+                    description: EnableIdentityService indicates whether to enable Identity
+                      Service component for this GKE cluster.
                     type: boolean
                   endpoint:
                     description: Endpoint represents the endpoint used to communicate
@@ -2492,6 +2608,12 @@ data:
                     description: |-
                       Location represents the location (region or zone) in which the GKE cluster
                       will be created.
+                    type: string
+                  loggingService:
+                    description: |-
+                      LoggingService represents configuration of logging service feature of the GKE cluster.
+                      Possible values: none, logging.googleapis.com/kubernetes (default).
+                      Value is ignored when enableAutopilot = true.
                     type: string
                   master_authorized_networks_config:
                     description: |-
@@ -2521,6 +2643,12 @@ data:
                           Public IP addresses.
                         type: boolean
                     type: object
+                  monitoringService:
+                    description: |-
+                      MonitoringService represents configuration of monitoring service feature of the GKE cluster.
+                      Possible values: none, monitoring.googleapis.com/kubernetes (default).
+                      Value is ignored when enableAutopilot = true.
+                    type: string
                   project:
                     description: Project is the name of the project to deploy the cluster
                       to.
@@ -2532,6 +2660,12 @@ data:
                     - rapid
                     - regular
                     - stable
+                    type: string
+                  version:
+                    description: |-
+                      Version represents the control plane version of the GKE cluster.
+                      If not specified, the default version currently supported by GKE will be
+                      used.
                     type: string
                 required:
                 - location
@@ -2564,20 +2698,20 @@ data:
                           description: |-
                             The reason for the condition's last transition in CamelCase.
                             The specific API may choose whether or not this field is considered a guaranteed API.
-                            This field may not be empty.
+                            This field may be empty.
                           type: string
                         severity:
                           description: |-
-                            Severity provides an explicit classification of Reason code, so the users or machines can immediately
+                            severity provides an explicit classification of Reason code, so the users or machines can immediately
                             understand the current situation and act accordingly.
                             The Severity field MUST be set only when Status=False.
                           type: string
                         status:
-                          description: Status of the condition, one of True, False, Unknown.
+                          description: status of the condition, one of True, False, Unknown.
                           type: string
                         type:
                           description: |-
-                            Type of condition in CamelCase or in foo.example.com/CamelCase.
+                            type of condition in CamelCase or in foo.example.com/CamelCase.
                             Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
                             can be useful (see .node.status.conditions), the ability to deconflict is important.
                           type: string
@@ -2588,8 +2722,10 @@ data:
                       type: object
                     type: array
                   currentVersion:
-                    description: CurrentVersion shows the current version of the GKE control
-                      plane.
+                    description: |-
+                      CurrentVersion shows the current version of the GKE control plane.
+
+                      Deprecated: This field will soon be removed and you are expected to use Version instead.
                     type: string
                   initialized:
                     description: |-
@@ -2602,6 +2738,9 @@ data:
                       Ready denotes that the GCPManagedControlPlane API Server is ready to
                       receive requests.
                     type: boolean
+                  version:
+                    description: Version represents the version of the GKE control plane.
+                    type: string
                 required:
                 - ready
                 type: object
@@ -2621,7 +2760,7 @@ data:
     kind: CustomResourceDefinition
     metadata:
       annotations:
-        controller-gen.kubebuilder.io/version: v0.16.3
+        controller-gen.kubebuilder.io/version: v0.17.1
         exclude.release.openshift.io/internal-openshift-hosted: "true"
         include.release.openshift.io/self-managed-high-availability: "true"
         include.release.openshift.io/single-node-developer: "true"
@@ -2939,20 +3078,20 @@ data:
                           description: |-
                             The reason for the condition's last transition in CamelCase.
                             The specific API may choose whether or not this field is considered a guaranteed API.
-                            This field may not be empty.
+                            This field may be empty.
                           type: string
                         severity:
                           description: |-
-                            Severity provides an explicit classification of Reason code, so the users or machines can immediately
+                            severity provides an explicit classification of Reason code, so the users or machines can immediately
                             understand the current situation and act accordingly.
                             The Severity field MUST be set only when Status=False.
                           type: string
                         status:
-                          description: Status of the condition, one of True, False, Unknown.
+                          description: status of the condition, one of True, False, Unknown.
                           type: string
                         type:
                           description: |-
-                            Type of condition in CamelCase or in foo.example.com/CamelCase.
+                            type of condition in CamelCase or in foo.example.com/CamelCase.
                             Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
                             can be useful (see .node.status.conditions), the ability to deconflict is important.
                           type: string
@@ -3636,6 +3775,9 @@ data:
       - major: 1
         minor: 8
         contract: v1beta1
+      - major: 1
+        minor: 9
+        contract: v1beta1
 kind: ConfigMap
 metadata:
   annotations:
@@ -3647,6 +3789,6 @@ metadata:
   labels:
     provider.cluster.x-k8s.io/name: gcp
     provider.cluster.x-k8s.io/type: infrastructure
-    provider.cluster.x-k8s.io/version: 1.8.1
+    provider.cluster.x-k8s.io/version: 1.9.0
   name: gcp
   namespace: openshift-cluster-api
