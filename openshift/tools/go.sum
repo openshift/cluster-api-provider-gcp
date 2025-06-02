@@ -118,6 +118,8 @@ github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20250319005016-c5a5e4ef8e20 h1:InKgBPzU4anIcTnzQEAD5jzWQVbYFqSAStfbw82eIRs=
 github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20250319005016-c5a5e4ef8e20/go.mod h1:4+57eaR8Pv6wpuhZhmImQOixmRMUgVN/ugesZddG8xc=
+github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20250529172926-ee69183571b5 h1:Eg8k6UeP9Ejj9UdPLlBWY2L0pwEtdEXm0XlLE5tbUik=
+github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20250529172926-ee69183571b5/go.mod h1:4+57eaR8Pv6wpuhZhmImQOixmRMUgVN/ugesZddG8xc=
 github.com/pelletier/go-toml/v2 v2.2.2 h1:aYUidT7k73Pcl9nb2gScu7NSrKCSHIDE89b3+6Wq+LM=
 github.com/pelletier/go-toml/v2 v2.2.2/go.mod h1:1t835xjRzz80PqgE6HHgN2JOsmgYu/h4qDAS4n929Rs=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
