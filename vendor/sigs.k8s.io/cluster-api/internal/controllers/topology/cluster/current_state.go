@@ -19,6 +19,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -84,7 +85,7 @@ func (r *Reconciler) getCurrentState(ctx context.Context, s *scope.Scope) (*scop
 // getCurrentInfrastructureClusterState looks for the state of the InfrastructureCluster. If a reference is set but not
 // found, either from an error or the object not being found, an error is thrown.
 func (r *Reconciler) getCurrentInfrastructureClusterState(ctx context.Context, blueprintInfrastructureClusterTemplate *unstructured.Unstructured, cluster *clusterv1.Cluster) (*unstructured.Unstructured, error) {
-	ref, err := alignRefAPIVersion(blueprintInfrastructureClusterTemplate, cluster.Spec.InfrastructureRef)
+	ref, err := alignRefAPIVersion(blueprintInfrastructureClusterTemplate, cluster.Spec.InfrastructureRef, false)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read %s %s", cluster.Spec.InfrastructureRef.Kind, klog.KRef(cluster.Spec.InfrastructureRef.Namespace, cluster.Spec.InfrastructureRef.Name))
 	}
@@ -109,7 +110,7 @@ func (r *Reconciler) getCurrentControlPlaneState(ctx context.Context, blueprintC
 	res := &scope.ControlPlaneState{}
 
 	// Get the control plane object.
-	ref, err := alignRefAPIVersion(blueprintControlPlane.Template, cluster.Spec.ControlPlaneRef)
+	ref, err := alignRefAPIVersion(blueprintControlPlane.Template, cluster.Spec.ControlPlaneRef, false)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read %s %s", cluster.Spec.ControlPlaneRef.Kind, klog.KRef(cluster.Spec.ControlPlaneRef.Namespace, cluster.Spec.ControlPlaneRef.Name))
 	}
@@ -134,7 +135,7 @@ func (r *Reconciler) getCurrentControlPlaneState(ctx context.Context, blueprintC
 	if err != nil {
 		return res, errors.Wrapf(err, "failed to get InfrastructureMachineTemplate reference for %s %s", res.Object.GetKind(), klog.KObj(res.Object))
 	}
-	ref, err = alignRefAPIVersion(blueprintControlPlane.InfrastructureMachineTemplate, machineInfrastructureRef)
+	ref, err = alignRefAPIVersion(blueprintControlPlane.InfrastructureMachineTemplate, machineInfrastructureRef, true)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get InfrastructureMachineTemplate for %s %s", res.Object.GetKind(), klog.KObj(res.Object))
 	}
@@ -204,58 +205,64 @@ func (r *Reconciler) getCurrentMachineDeploymentState(ctx context.Context, bluep
 			return nil, fmt.Errorf("duplicate MachineDeployment %s found for label %s: %s", klog.KObj(m), clusterv1.ClusterTopologyMachineDeploymentNameLabel, mdTopologyName)
 		}
 
-		// Gets the bootstrapRef.
-		bootstrapRef := m.Spec.Template.Spec.Bootstrap.ConfigRef
-		if bootstrapRef == nil {
-			return nil, fmt.Errorf("MachineDeployment %s does not have a reference to a Bootstrap Config", klog.KObj(m))
-		}
-		// Gets the infraRef.
-		infraRef := &m.Spec.Template.Spec.InfrastructureRef
-		if infraRef.Name == "" {
-			return nil, fmt.Errorf("MachineDeployment %s does not have a reference to a InfrastructureMachineTemplate", klog.KObj(m))
-		}
-
-		// If the mdTopology exists in the Cluster, lookup the corresponding mdBluePrint and align
-		// the apiVersions in the bootstrapRef and infraRef.
-		// If the mdTopology doesn't exist, do nothing (this can happen if the mdTopology was deleted).
-		// **Note** We can't check if the MachineDeployment has a DeletionTimestamp, because at this point it could not be set yet.
-		if mdTopologyExistsInCluster, mdClassName := getMDClassName(cluster, mdTopologyName); mdTopologyExistsInCluster {
-			mdBluePrint, ok := blueprintMachineDeployments[mdClassName]
-			if !ok {
-				return nil, fmt.Errorf("failed to find MachineDeployment class %s in ClusterClass", mdClassName)
+		// Skip getting templates for MachineDeployments that are in deleting.
+		// Note: We don't need these templates for deleting MDs, but also this would likely fail because usually
+		// the MachineDeployment topology controller deletes the templates as soon as the MD is in deleting.
+		var bootstrapTemplate, infraMachineTemplate *unstructured.Unstructured
+		if m.DeletionTimestamp.IsZero() {
+			// Gets the bootstrapRef.
+			bootstrapRef := m.Spec.Template.Spec.Bootstrap.ConfigRef
+			if bootstrapRef == nil {
+				return nil, fmt.Errorf("MachineDeployment %s does not have a reference to a Bootstrap Config", klog.KObj(m))
 			}
-			bootstrapRef, err = alignRefAPIVersion(mdBluePrint.BootstrapTemplate, bootstrapRef)
+			// Gets the infraRef.
+			infraRef := &m.Spec.Template.Spec.InfrastructureRef
+			if infraRef.Name == "" {
+				return nil, fmt.Errorf("MachineDeployment %s does not have a reference to a InfrastructureMachineTemplate", klog.KObj(m))
+			}
+
+			// If the mdTopology exists in the Cluster, lookup the corresponding mdBluePrint and align
+			// the apiVersions in the bootstrapRef and infraRef.
+			// If the mdTopology doesn't exist, do nothing (this can happen if the mdTopology was deleted).
+			// **Note** We can't check if the MachineDeployment has a DeletionTimestamp, because at this point it could not be set yet.
+			if mdTopologyExistsInCluster, mdClassName := getMDClassName(cluster, mdTopologyName); mdTopologyExistsInCluster {
+				mdBluePrint, ok := blueprintMachineDeployments[mdClassName]
+				if !ok {
+					return nil, fmt.Errorf("failed to find MachineDeployment class %s in ClusterClass", mdClassName)
+				}
+				bootstrapRef, err = alignRefAPIVersion(mdBluePrint.BootstrapTemplate, bootstrapRef, true)
+				if err != nil {
+					return nil, errors.Wrap(err, fmt.Sprintf("MachineDeployment %s Bootstrap reference could not be retrieved", klog.KObj(m)))
+				}
+				infraRef, err = alignRefAPIVersion(mdBluePrint.InfrastructureMachineTemplate, infraRef, true)
+				if err != nil {
+					return nil, errors.Wrap(err, fmt.Sprintf("MachineDeployment %s Infrastructure reference could not be retrieved", klog.KObj(m)))
+				}
+			}
+
+			// Get the BootstrapTemplate.
+			bootstrapTemplate, err = r.getReference(ctx, bootstrapRef)
 			if err != nil {
 				return nil, errors.Wrap(err, fmt.Sprintf("MachineDeployment %s Bootstrap reference could not be retrieved", klog.KObj(m)))
 			}
-			infraRef, err = alignRefAPIVersion(mdBluePrint.InfrastructureMachineTemplate, infraRef)
+			// check that the referenced object has the ClusterTopologyOwnedLabel label.
+			// Nb. This is to make sure that a managed topology cluster does not have a reference to an object that is not
+			// owned by the topology.
+			if !labels.IsTopologyOwned(bootstrapTemplate) {
+				return nil, fmt.Errorf("%s %s referenced from MachineDeployment %s is not topology owned", bootstrapTemplate.GetKind(), klog.KObj(bootstrapTemplate), klog.KObj(m))
+			}
+
+			// Get the InfraMachineTemplate.
+			infraMachineTemplate, err = r.getReference(ctx, infraRef)
 			if err != nil {
 				return nil, errors.Wrap(err, fmt.Sprintf("MachineDeployment %s Infrastructure reference could not be retrieved", klog.KObj(m)))
 			}
-		}
-
-		// Get the BootstrapTemplate.
-		bootstrapTemplate, err := r.getReference(ctx, bootstrapRef)
-		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("MachineDeployment %s Bootstrap reference could not be retrieved", klog.KObj(m)))
-		}
-		// check that the referenced object has the ClusterTopologyOwnedLabel label.
-		// Nb. This is to make sure that a managed topology cluster does not have a reference to an object that is not
-		// owned by the topology.
-		if !labels.IsTopologyOwned(bootstrapTemplate) {
-			return nil, fmt.Errorf("%s %s referenced from MachineDeployment %s is not topology owned", bootstrapTemplate.GetKind(), klog.KObj(bootstrapTemplate), klog.KObj(m))
-		}
-
-		// Get the InfraMachineTemplate.
-		infraMachineTemplate, err := r.getReference(ctx, infraRef)
-		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("MachineDeployment %s Infrastructure reference could not be retrieved", klog.KObj(m)))
-		}
-		// check that the referenced object has the ClusterTopologyOwnedLabel label.
-		// Nb. This is to make sure that a managed topology cluster does not have a reference to an object that is not
-		// owned by the topology.
-		if !labels.IsTopologyOwned(infraMachineTemplate) {
-			return nil, fmt.Errorf("%s %s referenced from MachineDeployment %s is not topology owned", infraMachineTemplate.GetKind(), klog.KObj(infraMachineTemplate), klog.KObj(m))
+			// check that the referenced object has the ClusterTopologyOwnedLabel label.
+			// Nb. This is to make sure that a managed topology cluster does not have a reference to an object that is not
+			// owned by the topology.
+			if !labels.IsTopologyOwned(infraMachineTemplate) {
+				return nil, fmt.Errorf("%s %s referenced from MachineDeployment %s is not topology owned", infraMachineTemplate.GetKind(), klog.KObj(infraMachineTemplate), klog.KObj(m))
+			}
 		}
 
 		// Gets the MachineHealthCheck.
@@ -343,11 +350,11 @@ func (r *Reconciler) getCurrentMachinePoolState(ctx context.Context, blueprintMa
 			if !ok {
 				return nil, fmt.Errorf("failed to find MachinePool class %s in ClusterClass", mpClassName)
 			}
-			bootstrapRef, err = alignRefAPIVersion(mpBluePrint.BootstrapTemplate, bootstrapRef)
+			bootstrapRef, err = alignRefAPIVersion(mpBluePrint.BootstrapTemplate, bootstrapRef, false)
 			if err != nil {
 				return nil, errors.Wrap(err, fmt.Sprintf("MachinePool %s Bootstrap reference could not be retrieved", klog.KObj(m)))
 			}
-			infraRef, err = alignRefAPIVersion(mpBluePrint.InfrastructureMachinePoolTemplate, infraRef)
+			infraRef, err = alignRefAPIVersion(mpBluePrint.InfrastructureMachinePoolTemplate, infraRef, false)
 			if err != nil {
 				return nil, errors.Wrap(err, fmt.Sprintf("MachinePool %s Infrastructure reference could not be retrieved", klog.KObj(m)))
 			}
@@ -392,7 +399,7 @@ func (r *Reconciler) getCurrentMachinePoolState(ctx context.Context, blueprintMa
 // If group or kind was changed in the ClusterClass, an exact copy of the currentRef is returned because
 // it will end up in a diff and a rollout anyway.
 // Only bootstrap template refs in a ClusterClass can change their group and kind.
-func alignRefAPIVersion(templateFromClusterClass *unstructured.Unstructured, currentRef *corev1.ObjectReference) (*corev1.ObjectReference, error) {
+func alignRefAPIVersion(templateFromClusterClass *unstructured.Unstructured, currentRef *corev1.ObjectReference, isCurrentTemplate bool) (*corev1.ObjectReference, error) {
 	currentGV, err := schema.ParseGroupVersion(currentRef.APIVersion)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse apiVersion: %q", currentRef.APIVersion)
@@ -400,9 +407,19 @@ func alignRefAPIVersion(templateFromClusterClass *unstructured.Unstructured, cur
 
 	apiVersion := currentRef.APIVersion
 	// Use apiVersion from ClusterClass if group and kind is the same.
-	if templateFromClusterClass.GroupVersionKind().Group == currentGV.Group &&
-		templateFromClusterClass.GetKind() == currentRef.Kind {
-		apiVersion = templateFromClusterClass.GetAPIVersion()
+	if templateFromClusterClass.GroupVersionKind().Group == currentGV.Group {
+		if isCurrentTemplate {
+			// If the current object is a template, kind has to be identical.
+			if templateFromClusterClass.GetKind() == currentRef.Kind {
+				apiVersion = templateFromClusterClass.GetAPIVersion()
+			}
+		} else {
+			// If the current object is not a template, currentRef.Kind should be the kind from CC without the Template suffix,
+			// e.g. KubeadmControlPlaneTemplate == KubeadmControlPlane
+			if strings.TrimSuffix(templateFromClusterClass.GetKind(), "Template") == currentRef.Kind {
+				apiVersion = templateFromClusterClass.GetAPIVersion()
+			}
+		}
 	}
 
 	return &corev1.ObjectReference{
