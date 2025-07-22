@@ -6,14 +6,14 @@ approvers:
 - RadekManak
 - damdo
 - nrb
+- racheljpg
+- theobarberbany
 reviewers:
-- JoelSpeed
 - RadekManak
 - damdo
-- elmiko
+- mdbooth
 - nrb
 - racheljpg
-- sub-mod
 - theobarberbany
 component: Cloud Compute
-subcomponent: Other Provider
+subcomponent: Cluster API Providers
