@@ -106,6 +106,8 @@ func processObjects(objs []unstructured.Unstructured, providerName string) map[r
 			providerConfigMapObjs = append(providerConfigMapObjs, obj)
 		case "ValidatingAdmissionPolicyBinding":
 			providerConfigMapObjs = append(providerConfigMapObjs, obj)
+		case "ConfigMap":
+			providerConfigMapObjs = append(providerConfigMapObjs, obj)
 		case "Certificate", "Issuer", "Namespace", "Secret": // skip
 		}
 	}
@@ -339,7 +341,7 @@ func mergeMaps[K comparable, V any](maps ...map[K]V) map[K]V {
 func addInfraClusterProtectionPolicy(objs []unstructured.Unstructured, providerName string) []unstructured.Unstructured {
 	policy := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "admissionregistration.k8s.io/v1beta1",
+			"apiVersion": "admissionregistration.k8s.io/v1",
 			"kind":       "ValidatingAdmissionPolicy",
 			"metadata": map[string]interface{}{
 				"name": "openshift-cluster-api-protect-" + providerName + "cluster",
@@ -372,7 +374,7 @@ func addInfraClusterProtectionPolicy(objs []unstructured.Unstructured, providerN
 
 	binding := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "admissionregistration.k8s.io/v1beta1",
+			"apiVersion": "admissionregistration.k8s.io/v1",
 			"kind":       "ValidatingAdmissionPolicyBinding",
 			"metadata": map[string]interface{}{
 				"name": "openshift-cluster-api-protect-" + providerName + "cluster",
