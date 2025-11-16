@@ -22,7 +22,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/strings/slices"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 const (
@@ -113,8 +113,34 @@ type AuthenticatorGroupConfig struct {
 	SecurityGroups string `json:"securityGroups,omitempty"`
 }
 
+// BinaryAuthorization is the Binary Authorization evaluation mode of the GKE cluster
+// +kubebuilder:validation:Enum=disabled;project_singleton_policy_enforce
+type BinaryAuthorization string
+
+const (
+	// EvaluationModeDisabled disables BinaryAuthorization.
+	EvaluationModeDisabled BinaryAuthorization = "disabled"
+	// EvaluationModeProjectSingletonPolicyEnforce enforces Kubernetes admission requests with BinaryAuthorization using the
+	// project's singleton policy. This is equivalent to setting the
+	EvaluationModeProjectSingletonPolicyEnforce BinaryAuthorization = "project_singleton_policy_enforce"
+)
+
+// ClusterSecurity defines the cluster security options.
+type ClusterSecurity struct {
+	// WorkloadIdentityConfig allows workloads in your GKE clusters to impersonate Identity and Access Management (IAM)
+	// service accounts to access Google Cloud services
+	// +optional
+	WorkloadIdentityConfig *WorkloadIdentityConfig `json:"workloadIdentityConfig,omitempty"`
+
+	// AuthenticatorGroupConfig is RBAC security group for use with Google security groups in Kubernetes RBAC.
+	// +optional
+	AuthenticatorGroupConfig *AuthenticatorGroupConfig `json:"authenticatorGroupConfig,omitempty"`
+}
+
 // GCPManagedControlPlaneSpec defines the desired state of GCPManagedControlPlane.
 type GCPManagedControlPlaneSpec struct {
+	GCPManagedControlPlaneClassSpec `json:",inline"`
+
 	// ClusterName allows you to specify the name of the GKE cluster.
 	// If you don't specify a name then a default name will be created
 	// based on the namespace and name of the managed control plane.
@@ -125,24 +151,6 @@ type GCPManagedControlPlaneSpec struct {
 	// +optional
 	Description string `json:"description,omitempty"`
 
-	// ClusterNetwork define the cluster network.
-	// +optional
-	ClusterNetwork *ClusterNetwork `json:"clusterNetwork,omitempty"`
-
-	// Project is the name of the project to deploy the cluster to.
-	Project string `json:"project"`
-	// Location represents the location (region or zone) in which the GKE cluster
-	// will be created.
-	Location string `json:"location"`
-	// EnableAutopilot indicates whether to enable autopilot for this GKE cluster.
-	// +optional
-	EnableAutopilot bool `json:"enableAutopilot"`
-	// EnableIdentityService indicates whether to enable Identity Service component for this GKE cluster.
-	// +optional
-	EnableIdentityService bool `json:"enableIdentityService"`
-	// ReleaseChannel represents the release channel of the GKE cluster.
-	// +optional
-	ReleaseChannel *ReleaseChannel `json:"releaseChannel,omitempty"`
 	// ControlPlaneVersion represents the control plane version of the GKE cluster.
 	// If not specified, the default version currently supported by GKE will be
 	// used.
@@ -151,28 +159,16 @@ type GCPManagedControlPlaneSpec struct {
 	//
 	// +optional
 	ControlPlaneVersion *string `json:"controlPlaneVersion,omitempty"`
+
 	// Version represents the control plane version of the GKE cluster.
 	// If not specified, the default version currently supported by GKE will be
 	// used.
 	// +optional
 	Version *string `json:"version,omitempty"`
+
 	// Endpoint represents the endpoint used to communicate with the control plane.
 	// +optional
-	Endpoint clusterv1.APIEndpoint `json:"endpoint"`
-	// MasterAuthorizedNetworksConfig represents configuration options for master authorized networks feature of the GKE cluster.
-	// This feature is disabled if this field is not specified.
-	// +optional
-	MasterAuthorizedNetworksConfig *MasterAuthorizedNetworksConfig `json:"master_authorized_networks_config,omitempty"`
-	// LoggingService represents configuration of logging service feature of the GKE cluster.
-	// Possible values: none, logging.googleapis.com/kubernetes (default).
-	// Value is ignored when enableAutopilot = true.
-	// +optional
-	LoggingService *LoggingService `json:"loggingService,omitempty"`
-	// MonitoringService represents configuration of monitoring service feature of the GKE cluster.
-	// Possible values: none, monitoring.googleapis.com/kubernetes (default).
-	// Value is ignored when enableAutopilot = true.
-	// +optional
-	MonitoringService *MonitoringService `json:"monitoringService,omitempty"`
+	Endpoint clusterv1beta1.APIEndpoint `json:"endpoint"`
 }
 
 // GCPManagedControlPlaneStatus defines the observed state of GCPManagedControlPlane.
@@ -188,7 +184,7 @@ type GCPManagedControlPlaneStatus struct {
 	Initialized bool `json:"initialized,omitempty"`
 
 	// Conditions specifies the conditions for the managed control plane
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions clusterv1beta1.Conditions `json:"conditions,omitempty"`
 
 	// CurrentVersion shows the current version of the GKE control plane.
 	//
@@ -231,7 +227,7 @@ type GCPManagedControlPlaneList struct {
 }
 
 // ReleaseChannel is the release channel of the GKE cluster
-// +kubebuilder:validation:Enum=rapid;regular;stable
+// +kubebuilder:validation:Enum=rapid;regular;stable;extended
 type ReleaseChannel string
 
 const (
@@ -241,6 +237,8 @@ const (
 	Regular ReleaseChannel = "regular"
 	// Stable release channel.
 	Stable ReleaseChannel = "stable"
+	// Extended release channel.
+	Extended ReleaseChannel = "extended"
 )
 
 // MasterAuthorizedNetworksConfig contains configuration options for the master authorized networks feature.
@@ -303,12 +301,12 @@ func (m MonitoringService) String() string {
 }
 
 // GetConditions returns the control planes conditions.
-func (r *GCPManagedControlPlane) GetConditions() clusterv1.Conditions {
+func (r *GCPManagedControlPlane) GetConditions() clusterv1beta1.Conditions {
 	return r.Status.Conditions
 }
 
 // SetConditions sets the status conditions for the GCPManagedControlPlane.
-func (r *GCPManagedControlPlane) SetConditions(conditions clusterv1.Conditions) {
+func (r *GCPManagedControlPlane) SetConditions(conditions clusterv1beta1.Conditions) {
 	r.Status.Conditions = conditions
 }
 

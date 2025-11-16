@@ -22,16 +22,16 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-gcp/util/location"
 
-	"sigs.k8s.io/cluster-api/util/conditions"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 
 	container "cloud.google.com/go/container/apiv1"
 	credentials "cloud.google.com/go/iam/credentials/apiv1"
 	resourcemanager "cloud.google.com/go/resourcemanager/apiv3"
 	"github.com/pkg/errors"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/patch"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -92,7 +92,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		params.CredentialsClient = credentialsClient
 	}
 
-	helper, err := patch.NewHelper(params.GCPManagedControlPlane, params.Client)
+	helper, err := v1beta1patch.NewHelper(params.GCPManagedControlPlane, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
@@ -113,7 +113,7 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 // ManagedControlPlaneScope defines the basic context for an actuator to operate upon.
 type ManagedControlPlaneScope struct {
 	client      client.Client
-	patchHelper *patch.Helper
+	patchHelper *v1beta1patch.Helper
 
 	Cluster                *clusterv1.Cluster
 	GCPManagedCluster      *infrav1exp.GCPManagedCluster
@@ -123,7 +123,7 @@ type ManagedControlPlaneScope struct {
 	credentialsClient      *credentials.IamCredentialsClient
 	credential             *Credential
 
-	AllMachinePools        []clusterv1exp.MachinePool
+	AllMachinePools        []clusterv1.MachinePool
 	AllManagedMachinePools []infrav1exp.GCPManagedMachinePool
 }
 
@@ -132,7 +132,7 @@ func (s *ManagedControlPlaneScope) PatchObject() error {
 	return s.patchHelper.Patch(
 		context.TODO(),
 		s.GCPManagedControlPlane,
-		patch.WithOwnedConditions{Conditions: []clusterv1.ConditionType{
+		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
 			infrav1exp.GKEControlPlaneReadyCondition,
 			infrav1exp.GKEControlPlaneCreatingCondition,
 			infrav1exp.GKEControlPlaneUpdatingCondition,
@@ -149,7 +149,7 @@ func (s *ManagedControlPlaneScope) Close() error {
 }
 
 // ConditionSetter return a condition setter (which is GCPManagedControlPlane itself).
-func (s *ManagedControlPlaneScope) ConditionSetter() conditions.Setter {
+func (s *ManagedControlPlaneScope) ConditionSetter() v1beta1conditions.Setter {
 	return s.GCPManagedControlPlane
 }
 
@@ -179,14 +179,14 @@ func (s *ManagedControlPlaneScope) GetCredential() *Credential {
 }
 
 // GetAllNodePools gets all node pools for the control plane.
-func (s *ManagedControlPlaneScope) GetAllNodePools(ctx context.Context) ([]infrav1exp.GCPManagedMachinePool, []clusterv1exp.MachinePool, error) {
+func (s *ManagedControlPlaneScope) GetAllNodePools(ctx context.Context) ([]infrav1exp.GCPManagedMachinePool, []clusterv1.MachinePool, error) {
 	if len(s.AllManagedMachinePools) == 0 {
 		listOptions := []client.ListOption{
 			client.InNamespace(s.GCPManagedControlPlane.Namespace),
 			client.MatchingLabels(map[string]string{clusterv1.ClusterNameLabel: s.Cluster.Name}),
 		}
 
-		machinePoolList := &clusterv1exp.MachinePoolList{}
+		machinePoolList := &clusterv1.MachinePoolList{}
 		if err := s.client.List(ctx, machinePoolList, listOptions...); err != nil {
 			return nil, nil, err
 		}
@@ -227,7 +227,7 @@ func (s *ManagedControlPlaneScope) ClusterName() string {
 
 // SetEndpoint sets the Endpoint of GCPManagedControlPlane.
 func (s *ManagedControlPlaneScope) SetEndpoint(host string) {
-	s.GCPManagedControlPlane.Spec.Endpoint = clusterv1.APIEndpoint{
+	s.GCPManagedControlPlane.Spec.Endpoint = clusterv1beta1.APIEndpoint{
 		Host: host,
 		Port: APIServerPort,
 	}
