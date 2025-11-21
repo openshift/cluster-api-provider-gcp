@@ -27,7 +27,8 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-gcp/cloud"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -129,6 +130,14 @@ func (s *ManagedClusterScope) NetworkProject() string {
 	return ptr.Deref(s.GCPManagedCluster.Spec.Network.HostProject, s.Project())
 }
 
+// SkipFirewallRuleCreation returns whether the spec indicates that firewall rules
+// should be created or not. If the RulesManagement for the default firewall rules is
+// set to unmanaged or when the cluster will include a shared VPC, the default firewall
+// rule creation will be skipped.
+func (s *ManagedClusterScope) SkipFirewallRuleCreation() bool {
+	return (s.GCPManagedCluster.Spec.Network.Firewall.DefaultRulesManagement == infrav1.RulesManagementUnmanaged) || s.IsSharedVpc()
+}
+
 // IsSharedVpc returns true If sharedVPC used else , returns false.
 func (s *ManagedClusterScope) IsSharedVpc() bool {
 	return s.NetworkProject() != s.Project()
@@ -165,14 +174,23 @@ func (s *ManagedClusterScope) ResourceManagerTags() infrav1.ResourceManagerTags 
 
 // ControlPlaneEndpoint returns the cluster control-plane endpoint.
 func (s *ManagedClusterScope) ControlPlaneEndpoint() clusterv1.APIEndpoint {
-	endpoint := s.GCPManagedCluster.Spec.ControlPlaneEndpoint
-	endpoint.Port = ptr.Deref(s.Cluster.Spec.ClusterNetwork.APIServerPort, 443)
+	endpoint := clusterv1.APIEndpoint{
+		Host: s.GCPManagedCluster.Spec.ControlPlaneEndpoint.Host,
+		Port: 443,
+	}
+	if s.Cluster.Spec.ClusterNetwork.APIServerPort != 0 {
+		endpoint.Port = s.Cluster.Spec.ClusterNetwork.APIServerPort
+	}
 	return endpoint
 }
 
 // FailureDomains returns the cluster failure domains.
-func (s *ManagedClusterScope) FailureDomains() clusterv1.FailureDomains {
-	return s.GCPManagedCluster.Status.FailureDomains
+func (s *ManagedClusterScope) FailureDomains() []string {
+	failureDomains := []string{}
+	for failureDomainName := range s.GCPManagedCluster.Status.FailureDomains {
+		failureDomains = append(failureDomains, failureDomainName)
+	}
+	return failureDomains
 }
 
 // ANCHOR_END: ClusterGetter
@@ -185,13 +203,16 @@ func (s *ManagedClusterScope) SetReady() {
 }
 
 // SetFailureDomains sets cluster failure domains.
-func (s *ManagedClusterScope) SetFailureDomains(fd clusterv1.FailureDomains) {
+func (s *ManagedClusterScope) SetFailureDomains(fd clusterv1beta1.FailureDomains) {
 	s.GCPManagedCluster.Status.FailureDomains = fd
 }
 
 // SetControlPlaneEndpoint sets cluster control-plane endpoint.
 func (s *ManagedClusterScope) SetControlPlaneEndpoint(endpoint clusterv1.APIEndpoint) {
-	s.GCPManagedCluster.Spec.ControlPlaneEndpoint = endpoint
+	s.GCPManagedCluster.Spec.ControlPlaneEndpoint = clusterv1beta1.APIEndpoint{
+		Host: endpoint.Host,
+		Port: endpoint.Port,
+	}
 }
 
 // ANCHOR_END: ClusterSetter
@@ -221,6 +242,7 @@ func (s *ManagedClusterScope) NatRouterSpec() *compute.Router {
 				Name:                          fmt.Sprintf("%s-%s", networkSpec.Name, "nat"),
 				NatIpAllocateOption:           "AUTO_ONLY",
 				SourceSubnetworkIpRangesToNat: "ALL_SUBNETWORKS_ALL_IP_RANGES",
+				MinPortsPerVm:                 s.GCPManagedCluster.Spec.Network.MinPortsPerVM,
 			},
 		},
 	}

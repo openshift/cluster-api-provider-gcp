@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -47,24 +46,30 @@ func TestGCPManagedMachinePoolValidatingWebhookCreate(t *testing.T) {
 		{
 			name: "valid node pool name",
 			spec: GCPManagedMachinePoolSpec{
-				NodePoolName: "nodepool1",
+				GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+				},
 			},
 			expectError: false,
 		},
 		{
 			name: "node pool name is too long",
 			spec: GCPManagedMachinePoolSpec{
-				NodePoolName: strings.Repeat("A", maxNodePoolNameLength+1),
+				GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+					NodePoolName: strings.Repeat("A", maxNodePoolNameLength+1),
+				},
 			},
 			expectError: true,
 		},
 		{
 			name: "scaling with valid min/max count",
 			spec: GCPManagedMachinePoolSpec{
-				NodePoolName: "nodepool1",
-				Scaling: &NodePoolAutoScaling{
-					MinCount: &minCount,
-					MaxCount: &maxCount,
+				GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					Scaling: &NodePoolAutoScaling{
+						MinCount: &minCount,
+						MaxCount: &maxCount,
+					},
 				},
 			},
 			expectError: false,
@@ -72,10 +77,12 @@ func TestGCPManagedMachinePoolValidatingWebhookCreate(t *testing.T) {
 		{
 			name: "scaling with invalid min/max count",
 			spec: GCPManagedMachinePoolSpec{
-				NodePoolName: "nodepool1",
-				Scaling: &NodePoolAutoScaling{
-					MinCount: &invalidMinCount,
-					MaxCount: &maxCount,
+				GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					Scaling: &NodePoolAutoScaling{
+						MinCount: &invalidMinCount,
+						MaxCount: &maxCount,
+					},
 				},
 			},
 			expectError: true,
@@ -83,10 +90,12 @@ func TestGCPManagedMachinePoolValidatingWebhookCreate(t *testing.T) {
 		{
 			name: "scaling with max < min count",
 			spec: GCPManagedMachinePoolSpec{
-				NodePoolName: "nodepool1",
-				Scaling: &NodePoolAutoScaling{
-					MinCount: &maxCount,
-					MaxCount: &minCount,
+				GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					Scaling: &NodePoolAutoScaling{
+						MinCount: &maxCount,
+						MaxCount: &minCount,
+					},
 				},
 			},
 			expectError: true,
@@ -94,11 +103,13 @@ func TestGCPManagedMachinePoolValidatingWebhookCreate(t *testing.T) {
 		{
 			name: "autoscaling disabled and min/max provided",
 			spec: GCPManagedMachinePoolSpec{
-				NodePoolName: "nodepool1",
-				Scaling: &NodePoolAutoScaling{
-					EnableAutoscaling: &enableAutoscaling,
-					MinCount:          &minCount,
-					MaxCount:          &maxCount,
+				GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					Scaling: &NodePoolAutoScaling{
+						EnableAutoscaling: &enableAutoscaling,
+						MinCount:          &minCount,
+						MaxCount:          &maxCount,
+					},
 				},
 			},
 			expectError: true,
@@ -106,20 +117,24 @@ func TestGCPManagedMachinePoolValidatingWebhookCreate(t *testing.T) {
 		{
 			name: "valid non-negative values",
 			spec: GCPManagedMachinePoolSpec{
-				NodePoolName:   "nodepool1",
-				DiskSizeGb:     &diskSizeGb,
-				MaxPodsPerNode: &maxPods,
-				LocalSsdCount:  &localSsds,
+				GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+					NodePoolName:   "nodepool1",
+					DiskSizeGb:     &diskSizeGb,
+					MaxPodsPerNode: &maxPods,
+					LocalSsdCount:  &localSsds,
+				},
 			},
 			expectError: false,
 		},
 		{
 			name: "invalid negative values",
 			spec: GCPManagedMachinePoolSpec{
-				NodePoolName:   "nodepool1",
-				DiskSizeGb:     &invalidDiskSizeGb,
-				MaxPodsPerNode: &invalidMaxPods,
-				LocalSsdCount:  &invalidLocalSsds,
+				GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+					NodePoolName:   "nodepool1",
+					DiskSizeGb:     &invalidDiskSizeGb,
+					MaxPodsPerNode: &invalidMaxPods,
+					LocalSsdCount:  &invalidLocalSsds,
+				},
 			},
 			expectError: true,
 		},
@@ -132,7 +147,7 @@ func TestGCPManagedMachinePoolValidatingWebhookCreate(t *testing.T) {
 			mmp := &GCPManagedMachinePool{
 				Spec: tc.spec,
 			}
-			warn, err := (&gcpManagedMachinePoolWebhook{}).ValidateCreate(context.Background(), mmp)
+			warn, err := (&gcpManagedMachinePoolWebhook{}).ValidateCreate(t.Context(), mmp)
 
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())
@@ -154,16 +169,20 @@ func TestGCPManagedMachinePoolValidatingWebhookUpdate(t *testing.T) {
 		{
 			name: "node pool is not mutated",
 			spec: GCPManagedMachinePoolSpec{
-				NodePoolName: "nodepool1",
+				GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+				},
 			},
 			expectError: false,
 		},
 		{
 			name: "mutable fields are mutated",
 			spec: GCPManagedMachinePoolSpec{
-				NodePoolName: "nodepool1",
-				AdditionalLabels: infrav1.Labels{
-					"testKey": "testVal",
+				GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					AdditionalLabels: infrav1.Labels{
+						"testKey": "testVal",
+					},
 				},
 			},
 			expectError: false,
@@ -171,8 +190,10 @@ func TestGCPManagedMachinePoolValidatingWebhookUpdate(t *testing.T) {
 		{
 			name: "immutable field disk size is mutated",
 			spec: GCPManagedMachinePoolSpec{
-				NodePoolName: "nodepool1",
-				DiskSizeGb:   &diskSizeGb,
+				GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					DiskSizeGb:   &diskSizeGb,
+				},
 			},
 			expectError: true,
 		},
@@ -187,11 +208,13 @@ func TestGCPManagedMachinePoolValidatingWebhookUpdate(t *testing.T) {
 			}
 			oldMMP := &GCPManagedMachinePool{
 				Spec: GCPManagedMachinePoolSpec{
-					NodePoolName: "nodepool1",
+					GCPManagedMachinePoolClassSpec: GCPManagedMachinePoolClassSpec{
+						NodePoolName: "nodepool1",
+					},
 				},
 			}
 
-			warn, err := (&gcpManagedMachinePoolWebhook{}).ValidateUpdate(context.Background(), oldMMP, newMMP)
+			warn, err := (&gcpManagedMachinePoolWebhook{}).ValidateUpdate(t.Context(), oldMMP, newMMP)
 
 			if tc.expectError {
 				g.Expect(err).To(HaveOccurred())

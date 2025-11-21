@@ -31,7 +31,8 @@ import (
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-gcp/cloud/scope"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -75,8 +76,8 @@ func getBaseClusterScope() (*scope.ClusterScope, error) {
 			},
 		},
 		Status: infrav1.GCPClusterStatus{
-			FailureDomains: clusterv1.FailureDomains{
-				"us-central1-a": clusterv1.FailureDomainSpec{ControlPlane: true},
+			FailureDomains: clusterv1beta1.FailureDomains{
+				"us-central1-a": clusterv1beta1.FailureDomainSpec{ControlPlane: true},
 			},
 		},
 	}
@@ -123,9 +124,8 @@ func getBaseClusterScopeWithPortSet() (*scope.ClusterScope, error) {
 		return nil, err
 	}
 
-	port := int32(6443)
-	clusterScope.Cluster.Spec.ClusterNetwork = &clusterv1.ClusterNetwork{
-		APIServerPort: &port,
+	clusterScope.Cluster.Spec.ClusterNetwork = clusterv1.ClusterNetwork{
+		APIServerPort: 6443,
 	}
 	return clusterScope, nil
 }
@@ -536,6 +536,23 @@ func TestService_createOrGetAddress(t *testing.T) {
 }
 
 func TestService_createOrGetInternalAddress(t *testing.T) {
+	address := &compute.Address{
+		IpVersion:   "IPV4",
+		Name:        "my-cluster-api-internal",
+		Region:      "us-central1",
+		SelfLink:    "https://www.googleapis.com/compute/v1/projects/proj-id/regions/us-central1/addresses/my-cluster-api-internal",
+		AddressType: "INTERNAL",
+		Purpose:     "GCE_ENDPOINT",
+	}
+	staticAddress := &compute.Address{
+		Address:     "10.0.0.10",
+		IpVersion:   "IPV4",
+		Name:        "my-cluster-api-internal",
+		Region:      "us-central1",
+		SelfLink:    "https://www.googleapis.com/compute/v1/projects/proj-id/regions/us-central1/addresses/my-cluster-api-internal",
+		AddressType: "INTERNAL",
+		Purpose:     "GCE_ENDPOINT",
+	}
 	tests := []struct {
 		name            string
 		scope           func(s *scope.ClusterScope) Scope
@@ -565,17 +582,10 @@ func TestService_createOrGetInternalAddress(t *testing.T) {
 					*meta.RegionalKey("control-plane", "us-central1"): {},
 				},
 			},
-			want: &compute.Address{
-				IpVersion:   "IPV4",
-				Name:        "my-cluster-api-internal",
-				Region:      "us-central1",
-				SelfLink:    "https://www.googleapis.com/compute/v1/projects/proj-id/regions/us-central1/addresses/my-cluster-api-internal",
-				AddressType: "INTERNAL",
-				Purpose:     "GCE_ENDPOINT",
-			},
+			want: address,
 		},
 		{
-			name: "address does not exist for internal load balancer using SharedVPC subnet (should create address)",
+			name: "address does not exist for internal load balancer using SharedVPC subnet",
 			scope: func(s *scope.ClusterScope) Scope {
 				s.GCPCluster.Spec.LoadBalancer = infrav1.LoadBalancerSpec{
 					LoadBalancerType: &lbTypeInternal,
@@ -593,14 +603,57 @@ func TestService_createOrGetInternalAddress(t *testing.T) {
 					*meta.RegionalKey("control-plane", "us-central1"): {},
 				},
 			},
-			want: &compute.Address{
-				IpVersion:   "IPV4",
-				Name:        "my-cluster-api-internal",
-				Region:      "us-central1",
-				SelfLink:    "https://www.googleapis.com/compute/v1/projects/proj-id/regions/us-central1/addresses/my-cluster-api-internal",
-				AddressType: "INTERNAL",
-				Purpose:     "GCE_ENDPOINT",
+			want:      address,
+			sharedVPC: true,
+		},
+		{
+			name: "static address set for internal load balancer",
+			scope: func(s *scope.ClusterScope) Scope {
+				s.GCPCluster.Spec.LoadBalancer = infrav1.LoadBalancerSpec{
+					LoadBalancerType: &lbTypeInternal,
+					InternalLoadBalancer: &infrav1.LoadBalancer{
+						IPAddress: ptr.To("10.0.0.10"),
+					},
+				}
+				return s
 			},
+			lbName: infrav1.InternalRoleTagValue,
+			mockAddress: &cloud.MockAddresses{
+				ProjectRouter: &cloud.SingleProjectRouter{ID: "proj-id"},
+				Objects:       map[meta.Key]*cloud.MockAddressesObj{},
+			},
+			mockSubnetworks: &cloud.MockSubnetworks{
+				ProjectRouter: &cloud.SingleProjectRouter{ID: "my-proj"},
+				Objects: map[meta.Key]*cloud.MockSubnetworksObj{
+					*meta.RegionalKey("control-plane", "us-central1"): {},
+				},
+			},
+			want: staticAddress,
+		},
+		{
+			name: "static address set for internal load balancer using SharedVPC subnet",
+			scope: func(s *scope.ClusterScope) Scope {
+				s.GCPCluster.Spec.LoadBalancer = infrav1.LoadBalancerSpec{
+					LoadBalancerType: &lbTypeInternal,
+					InternalLoadBalancer: &infrav1.LoadBalancer{
+						IPAddress: ptr.To("10.0.0.10"),
+					},
+				}
+
+				return s
+			},
+			lbName: infrav1.InternalRoleTagValue,
+			mockAddress: &cloud.MockAddresses{
+				ProjectRouter: &cloud.SingleProjectRouter{ID: "proj-id"},
+				Objects:       map[meta.Key]*cloud.MockAddressesObj{},
+			},
+			mockSubnetworks: &cloud.MockSubnetworks{
+				ProjectRouter: &cloud.SingleProjectRouter{ID: "proj-id"},
+				Objects: map[meta.Key]*cloud.MockSubnetworksObj{
+					*meta.RegionalKey("control-plane", "us-central1"): {},
+				},
+			},
+			want:      staticAddress,
 			sharedVPC: true,
 		},
 	}
