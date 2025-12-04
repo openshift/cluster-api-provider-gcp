@@ -79,6 +79,27 @@ type Mapping struct {
 var preBuiltMappings = []Mapping{
 
 	// TODO: Add pre-built images for newer Kind versions on top
+	// Pre-built images for Kind v0.29.
+	{
+		KubernetesVersion: semver.MustParse("1.33.1"),
+		Mode:              Mode0_20,
+		Image:             "kindest/node:v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f",
+	},
+	{
+		KubernetesVersion: semver.MustParse("1.32.5"),
+		Mode:              Mode0_20,
+		Image:             "kindest/node:v1.32.5@sha256:e3b2327e3a5ab8c76f5ece68936e4cafaa82edf58486b769727ab0b3b97a5b0d",
+	},
+	{
+		KubernetesVersion: semver.MustParse("1.31.9"),
+		Mode:              Mode0_20,
+		Image:             "kindest/node:v1.31.9@sha256:b94a3a6c06198d17f59cca8c6f486236fa05e2fb359cbd75dabbfc348a10b211",
+	},
+	{
+		KubernetesVersion: semver.MustParse("1.30.13"),
+		Mode:              Mode0_20,
+		Image:             "kindest/node:v1.30.13@sha256:397209b3d947d154f6641f2d0ce8d473732bd91c87d9575ade99049aa33cd648",
+	},
 	// Pre-built images for Kind v0.27.
 	{
 		KubernetesVersion: semver.MustParse("1.33.0"),
@@ -542,7 +563,7 @@ func GetMapping(k8sVersion semver.Version, customImage string) Mapping {
 	}
 	for _, m := range preBuiltMappings {
 		// If the mapping isn't for the right Major/Minor, ignore it.
-		if !(k8sVersion.Major == m.KubernetesVersion.Major && k8sVersion.Minor == m.KubernetesVersion.Minor) {
+		if k8sVersion.Major != m.KubernetesVersion.Major || k8sVersion.Minor != m.KubernetesVersion.Minor {
 			continue
 		}
 

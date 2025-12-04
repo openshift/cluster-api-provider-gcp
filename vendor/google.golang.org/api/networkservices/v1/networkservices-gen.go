@@ -569,6 +569,9 @@ type AuthzExtension struct {
 	// backend service for the extension must use HTTP2 or H2C as the protocol. All
 	// `supported_events` for a client request are sent as part of the same gRPC
 	// stream.
+	//   "EXT_AUTHZ_GRPC" - The extension service uses Envoy's `ext_authz` gRPC
+	// API. The backend service for the extension must use HTTP2, or H2C as the
+	// protocol. `EXT_AUTHZ_GRPC` is only supported for `AuthzExtension` resources.
 	WireFormat string `json:"wireFormat,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the server.
@@ -927,7 +930,8 @@ type ExtensionChain struct {
 	// Extensions: Required. A set of extensions to execute for the matching
 	// request. At least one extension is required. Up to 3 extensions can be
 	// defined for each extension chain for `LbTrafficExtension` resource.
-	// `LbRouteExtension` chains are limited to 1 extension per extension chain.
+	// `LbRouteExtension` and `LbEdgeExtension` chains are limited to 1 extension
+	// per extension chain.
 	Extensions []*ExtensionChainExtension `json:"extensions,omitempty"`
 	// MatchCondition: Required. Conditions under which this chain is invoked for a
 	// request.
@@ -1017,12 +1021,15 @@ type ExtensionChainExtension struct {
 	// `projects/{project}/locations/{location}/wasmPlugins/{plugin}` or
 	// `//networkservices.googleapis.com/projects/{project}/locations/{location}/was
 	// mPlugins/{wasmPlugin}`. Plugin extensions are currently supported for the
-	// `LbTrafficExtension` and the `LbRouteExtension` resources.
+	// `LbTrafficExtension`, the `LbRouteExtension`, and the `LbEdgeExtension`
+	// resources.
 	Service string `json:"service,omitempty"`
 	// SupportedEvents: Optional. A set of events during request or response
-	// processing for which this extension is called. This field is required for
-	// the `LbTrafficExtension` resource. It is optional for the `LbRouteExtension`
-	// resource. If unspecified `REQUEST_HEADERS` event is assumed as supported.
+	// processing for which this extension is called. For the `LbTrafficExtension`
+	// resource, this field is required. For the `LbRouteExtension` resource, this
+	// field is optional. If unspecified, `REQUEST_HEADERS` event is assumed as
+	// supported. For the `LbEdgeExtension` resource, this field is required and
+	// must only contain `REQUEST_HEADERS` event.
 	//
 	// Possible values:
 	//   "EVENT_TYPE_UNSPECIFIED" - Unspecified value. Do not use.
@@ -1148,7 +1155,7 @@ type Gateway struct {
 	Network string `json:"network,omitempty"`
 	// Ports: Required. One or more port numbers (1-65535), on which the Gateway
 	// will receive traffic. The proxy binds to the specified ports. Gateways of
-	// type 'SECURE_WEB_GATEWAY' are limited to 1 port. Gateways of type
+	// type 'SECURE_WEB_GATEWAY' are limited to 5 ports. Gateways of type
 	// 'OPEN_MESH' listen on 0.0.0.0 for IPv4 and :: for IPv6 and support multiple
 	// ports.
 	Ports []int64 `json:"ports,omitempty"`
@@ -1221,8 +1228,8 @@ func (s Gateway) MarshalJSON() ([]byte, error) {
 type GatewayRouteView struct {
 	// Name: Output only. Identifier. Full path name of the GatewayRouteView
 	// resource. Format:
-	// projects/{project_number}/locations/{location}/gateways/{gateway_name}/routeV
-	// iews/{route_view_name}
+	// projects/{project_number}/locations/{location}/gateways/{gateway}/routeViews/
+	// {route_view}
 	Name string `json:"name,omitempty"`
 	// RouteId: Output only. The resource id for the route.
 	RouteId string `json:"routeId,omitempty"`
@@ -2150,6 +2157,7 @@ func (s HttpRouteRedirect) MarshalJSON() ([]byte, error) {
 // shadowed to a separate mirrored destination service. The proxy does not wait
 // for responses from the shadow service. Prior to sending traffic to the
 // shadow service, the host/authority header is suffixed with -shadow.
+// Mirroring is currently not supported for Cloud Run destinations.
 type HttpRouteRequestMirrorPolicy struct {
 	// Destination: The destination the requests will be mirrored to. The weight of
 	// the destination will be ignored.
@@ -3326,8 +3334,8 @@ func (s Mesh) MarshalJSON() ([]byte, error) {
 type MeshRouteView struct {
 	// Name: Output only. Identifier. Full path name of the MeshRouteView resource.
 	// Format:
-	// projects/{project_number}/locations/{location}/meshes/{mesh_name}/routeViews/
-	// {route_view_name}
+	// projects/{project_number}/locations/{location}/meshes/{mesh}/routeViews/{rout
+	// e_view}
 	Name string `json:"name,omitempty"`
 	// RouteId: Output only. The resource id for the route.
 	RouteId string `json:"routeId,omitempty"`
@@ -3621,6 +3629,9 @@ type ServiceLbPolicy struct {
 	Description string `json:"description,omitempty"`
 	// FailoverConfig: Optional. Configuration related to health based failover.
 	FailoverConfig *ServiceLbPolicyFailoverConfig `json:"failoverConfig,omitempty"`
+	// IsolationConfig: Optional. Configuration to provide isolation support for
+	// the associated Backend Service.
+	IsolationConfig *ServiceLbPolicyIsolationConfig `json:"isolationConfig,omitempty"`
 	// Labels: Optional. Set of label tags associated with the ServiceLbPolicy
 	// resource.
 	Labels map[string]string `json:"labels,omitempty"`
@@ -3721,6 +3732,45 @@ type ServiceLbPolicyFailoverConfig struct {
 
 func (s ServiceLbPolicyFailoverConfig) MarshalJSON() ([]byte, error) {
 	type NoMethod ServiceLbPolicyFailoverConfig
+	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
+}
+
+// ServiceLbPolicyIsolationConfig: Configuration to provide isolation support
+// for the associated Backend Service.
+type ServiceLbPolicyIsolationConfig struct {
+	// IsolationGranularity: Optional. The isolation granularity of the load
+	// balancer.
+	//
+	// Possible values:
+	//   "ISOLATION_GRANULARITY_UNSPECIFIED" - No isolation is configured for the
+	// backend service. Traffic can overflow based on the load balancing algorithm.
+	//   "REGION" - Traffic for this service will be isolated at the cloud region
+	// level.
+	IsolationGranularity string `json:"isolationGranularity,omitempty"`
+	// IsolationMode: Optional. The isolation mode of the load balancer.
+	//
+	// Possible values:
+	//   "ISOLATION_MODE_UNSPECIFIED" - No isolation mode is configured for the
+	// backend service.
+	//   "NEAREST" - Traffic will be sent to the nearest region.
+	//   "STRICT" - Traffic will fail if no serving backends are available in the
+	// same region as the load balancer.
+	IsolationMode string `json:"isolationMode,omitempty"`
+	// ForceSendFields is a list of field names (e.g. "IsolationGranularity") to
+	// unconditionally include in API requests. By default, fields with empty or
+	// default values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-ForceSendFields for more
+	// details.
+	ForceSendFields []string `json:"-"`
+	// NullFields is a list of field names (e.g. "IsolationGranularity") to include
+	// in API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. See
+	// https://pkg.go.dev/google.golang.org/api#hdr-NullFields for more details.
+	NullFields []string `json:"-"`
+}
+
+func (s ServiceLbPolicyIsolationConfig) MarshalJSON() ([]byte, error) {
+	type NoMethod ServiceLbPolicyIsolationConfig
 	return gensupport.MarshalJSON(NoMethod(s), s.ForceSendFields, s.NullFields)
 }
 
@@ -4283,7 +4333,7 @@ type WasmPluginLogConfig struct {
 	// Enable: Optional. Specifies whether to enable logging for activity by this
 	// plugin. Defaults to `false`.
 	Enable bool `json:"enable,omitempty"`
-	// MinLogLevel: Non-empty default. Specificies the lowest level of the plugin
+	// MinLogLevel: Non-empty default. Specifies the lowest level of the plugin
 	// logs that are exported to Cloud Logging. This setting relates to the logs
 	// generated by using logging statements in your Wasm code. This field is can
 	// be set only if logging is enabled for the plugin. If the field is not
@@ -4370,16 +4420,26 @@ type WasmPluginVersion struct {
 	CreateTime string `json:"createTime,omitempty"`
 	// Description: Optional. A human-readable description of the resource.
 	Description string `json:"description,omitempty"`
-	// ImageDigest: Output only. The resolved digest for the image specified in the
-	// `image` field. The digest is resolved during the creation of
-	// `WasmPluginVersion` resource. This field holds the digest value, regardless
-	// of whether a tag or digest was originally specified in the `image` field.
+	// ImageDigest: Output only. This field holds the digest (usually checksum)
+	// value for the plugin image. The value is calculated based on the `image_uri`
+	// field. If the `image_uri` field refers to a container image, the digest
+	// value is obtained from the container image. If the `image_uri` field refers
+	// to a generic artifact, the digest value is calculated based on the contents
+	// of the file.
 	ImageDigest string `json:"imageDigest,omitempty"`
-	// ImageUri: Optional. URI of the container image containing the plugin, stored
-	// in the Artifact Registry. When a new `WasmPluginVersion` resource is
-	// created, the digest of the container image is saved in the `image_digest`
-	// field. When downloading an image, the digest value is used instead of an
-	// image tag.
+	// ImageUri: Optional. URI of the image containing the Wasm module, stored in
+	// Artifact Registry. The URI can refer to one of the following repository
+	// formats: * Container images: the `image_uri` must point to a container that
+	// contains a single file with the name `plugin.wasm`. When a new
+	// `WasmPluginVersion` resource is created, the digest of the image is saved in
+	// the `image_digest` field. When pulling a container image from Artifact
+	// Registry, the digest value is used instead of an image tag. * Generic
+	// artifacts: the `image_uri` must be in this format:
+	// `projects/{project}/locations/{location}/repositories/{repository}/
+	// genericArtifacts/{package}:{version}`. The specified package and version
+	// must contain a file with the name `plugin.wasm`. When a new
+	// `WasmPluginVersion` resource is created, the checksum of the contents of the
+	// file is saved in the `image_digest` field.
 	ImageUri string `json:"imageUri,omitempty"`
 	// Labels: Optional. Set of labels associated with the `WasmPluginVersion`
 	// resource.
@@ -4395,15 +4455,23 @@ type WasmPluginVersion struct {
 	PluginConfigData string `json:"pluginConfigData,omitempty"`
 	// PluginConfigDigest: Output only. This field holds the digest (usually
 	// checksum) value for the plugin configuration. The value is calculated based
-	// on the contents of `plugin_config_data` or the container image defined by
-	// the `plugin_config_uri` field.
+	// on the contents of `plugin_config_data` field or the image defined by the
+	// `plugin_config_uri` field.
 	PluginConfigDigest string `json:"pluginConfigDigest,omitempty"`
 	// PluginConfigUri: URI of the plugin configuration stored in the Artifact
 	// Registry. The configuration is provided to the plugin at runtime through the
-	// `ON_CONFIGURE` callback. The container image must contain only a single file
-	// with the name `plugin.config`. When a new `WasmPluginVersion` resource is
-	// created, the digest of the container image is saved in the
-	// `plugin_config_digest` field.
+	// `ON_CONFIGURE` callback. The URI can refer to one of the following
+	// repository formats: * Container images: the `plugin_config_uri` must point
+	// to a container that contains a single file with the name `plugin.config`.
+	// When a new `WasmPluginVersion` resource is created, the digest of the image
+	// is saved in the `plugin_config_digest` field. When pulling a container image
+	// from Artifact Registry, the digest value is used instead of an image tag. *
+	// Generic artifacts: the `plugin_config_uri` must be in this format:
+	// `projects/{project}/locations/{location}/repositories/{repository}/
+	// genericArtifacts/{package}:{version}`. The specified package and version
+	// must contain a file with the name `plugin.config`. When a new
+	// `WasmPluginVersion` resource is created, the checksum of the contents of the
+	// file is saved in the `plugin_config_digest` field.
 	PluginConfigUri string `json:"pluginConfigUri,omitempty"`
 	// UpdateTime: Output only. The timestamp when the resource was updated.
 	UpdateTime string `json:"updateTime,omitempty"`
@@ -4435,16 +4503,26 @@ type WasmPluginVersionDetails struct {
 	CreateTime string `json:"createTime,omitempty"`
 	// Description: Optional. A human-readable description of the resource.
 	Description string `json:"description,omitempty"`
-	// ImageDigest: Output only. The resolved digest for the image specified in
-	// `image`. The digest is resolved during the creation of a `WasmPluginVersion`
-	// resource. This field holds the digest value regardless of whether a tag or
-	// digest was originally specified in the `image` field.
+	// ImageDigest: Output only. This field holds the digest (usually checksum)
+	// value for the plugin image. The value is calculated based on the `image_uri`
+	// field. If the `image_uri` field refers to a container image, the digest
+	// value is obtained from the container image. If the `image_uri` field refers
+	// to a generic artifact, the digest value is calculated based on the contents
+	// of the file.
 	ImageDigest string `json:"imageDigest,omitempty"`
-	// ImageUri: Optional. URI of the container image containing the Wasm module,
-	// stored in the Artifact Registry. The container image must contain only a
-	// single file with the name `plugin.wasm`. When a new `WasmPluginVersion`
-	// resource is created, the URI gets resolved to an image digest and saved in
-	// the `image_digest` field.
+	// ImageUri: Optional. URI of the image containing the Wasm module, stored in
+	// Artifact Registry. The URI can refer to one of the following repository
+	// formats: * Container images: the `image_uri` must point to a container that
+	// contains a single file with the name `plugin.wasm`. When a new
+	// `WasmPluginVersion` resource is created, the digest of the image is saved in
+	// the `image_digest` field. When pulling a container image from Artifact
+	// Registry, the digest value is used instead of an image tag. * Generic
+	// artifacts: the `image_uri` must be in this format:
+	// `projects/{project}/locations/{location}/repositories/{repository}/
+	// genericArtifacts/{package}:{version}`. The specified package and version
+	// must contain a file with the name `plugin.wasm`. When a new
+	// `WasmPluginVersion` resource is created, the checksum of the contents of the
+	// file is saved in the `image_digest` field.
 	ImageUri string `json:"imageUri,omitempty"`
 	// Labels: Optional. Set of labels associated with the `WasmPluginVersion`
 	// resource.
@@ -4456,15 +4534,23 @@ type WasmPluginVersionDetails struct {
 	PluginConfigData string `json:"pluginConfigData,omitempty"`
 	// PluginConfigDigest: Output only. This field holds the digest (usually
 	// checksum) value for the plugin configuration. The value is calculated based
-	// on the contents of the `plugin_config_data` field or the container image
-	// defined by the `plugin_config_uri` field.
+	// on the contents of `plugin_config_data` field or the image defined by the
+	// `plugin_config_uri` field.
 	PluginConfigDigest string `json:"pluginConfigDigest,omitempty"`
 	// PluginConfigUri: URI of the plugin configuration stored in the Artifact
 	// Registry. The configuration is provided to the plugin at runtime through the
-	// `ON_CONFIGURE` callback. The container image must contain only a single file
-	// with the name `plugin.config`. When a new `WasmPluginVersion` resource is
-	// created, the digest of the container image is saved in the
-	// `plugin_config_digest` field.
+	// `ON_CONFIGURE` callback. The URI can refer to one of the following
+	// repository formats: * Container images: the `plugin_config_uri` must point
+	// to a container that contains a single file with the name `plugin.config`.
+	// When a new `WasmPluginVersion` resource is created, the digest of the image
+	// is saved in the `plugin_config_digest` field. When pulling a container image
+	// from Artifact Registry, the digest value is used instead of an image tag. *
+	// Generic artifacts: the `plugin_config_uri` must be in this format:
+	// `projects/{project}/locations/{location}/repositories/{repository}/
+	// genericArtifacts/{package}:{version}`. The specified package and version
+	// must contain a file with the name `plugin.config`. When a new
+	// `WasmPluginVersion` resource is created, the checksum of the contents of the
+	// file is saved in the `plugin_config_digest` field.
 	PluginConfigUri string `json:"pluginConfigUri,omitempty"`
 	// UpdateTime: Output only. The timestamp when the resource was updated.
 	UpdateTime string `json:"updateTime,omitempty"`
@@ -7629,8 +7715,8 @@ type ProjectsLocationsGatewaysRouteViewsGetCall struct {
 // Get: Get a single RouteView of a Gateway.
 //
 //   - name: Name of the GatewayRouteView resource. Formats:
-//     projects/{project_number}/locations/{location}/gateways/{gateway_name}/rout
-//     eViews/{route_view_name}.
+//     projects/{project_number}/locations/{location}/gateways/{gateway}/routeView
+//     s/{route_view}.
 func (r *ProjectsLocationsGatewaysRouteViewsService) Get(name string) *ProjectsLocationsGatewaysRouteViewsGetCall {
 	c := &ProjectsLocationsGatewaysRouteViewsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -7741,7 +7827,7 @@ type ProjectsLocationsGatewaysRouteViewsListCall struct {
 // List: Lists RouteViews
 //
 //   - parent: The Gateway to which a Route is associated. Formats:
-//     projects/{project_number}/locations/{location}/gateways/{gateway_name}.
+//     projects/{project_number}/locations/{location}/gateways/{gateway}.
 func (r *ProjectsLocationsGatewaysRouteViewsService) List(parent string) *ProjectsLocationsGatewaysRouteViewsListCall {
 	c := &ProjectsLocationsGatewaysRouteViewsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -10956,8 +11042,8 @@ type ProjectsLocationsMeshesRouteViewsGetCall struct {
 // Get: Get a single RouteView of a Mesh.
 //
 //   - name: Name of the MeshRouteView resource. Format:
-//     projects/{project_number}/locations/{location}/meshes/{mesh_name}/routeView
-//     s/{route_view_name}.
+//     projects/{project_number}/locations/{location}/meshes/{mesh}/routeViews/{ro
+//     ute_view}.
 func (r *ProjectsLocationsMeshesRouteViewsService) Get(name string) *ProjectsLocationsMeshesRouteViewsGetCall {
 	c := &ProjectsLocationsMeshesRouteViewsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -11067,7 +11153,7 @@ type ProjectsLocationsMeshesRouteViewsListCall struct {
 // List: Lists RouteViews
 //
 //   - parent: The Mesh to which a Route is associated. Format:
-//     projects/{project_number}/locations/{location}/meshes/{mesh_name}.
+//     projects/{project_number}/locations/{location}/meshes/{mesh}.
 func (r *ProjectsLocationsMeshesRouteViewsService) List(parent string) *ProjectsLocationsMeshesRouteViewsListCall {
 	c := &ProjectsLocationsMeshesRouteViewsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent

@@ -33,7 +33,7 @@ const (
 
 // MachinePoolSpec defines the desired state of MachinePool.
 type MachinePoolSpec struct {
-	// clusterName is the name of the Cluster this object belongs to.
+	// ClusterName is the name of the Cluster this object belongs to.
 	// +kubebuilder:validation:MinLength=1
 	ClusterName string `json:"clusterName"`
 
@@ -42,7 +42,7 @@ type MachinePoolSpec struct {
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty"`
 
-	// template describes the machines that will be created.
+	// Template describes the machines that will be created.
 	Template clusterv1.MachineTemplateSpec `json:"template"`
 
 	// Minimum number of seconds for which a newly created machine instances should
@@ -52,12 +52,12 @@ type MachinePoolSpec struct {
 	// +optional
 	MinReadySeconds *int32 `json:"minReadySeconds,omitempty"`
 
-	// providerIDList are the identification IDs of machine instances provided by the provider.
+	// ProviderIDList are the identification IDs of machine instances provided by the provider.
 	// This field must match the provider IDs as seen on the node objects corresponding to a machine pool's machine instances.
 	// +optional
 	ProviderIDList []string `json:"providerIDList,omitempty"`
 
-	// failureDomains is the list of failure domains this MachinePool should be attached to.
+	// FailureDomains is the list of failure domains this MachinePool should be attached to.
 	// +optional
 	FailureDomains []string `json:"failureDomains,omitempty"`
 }
@@ -68,11 +68,11 @@ type MachinePoolSpec struct {
 
 // MachinePoolStatus defines the observed state of MachinePool.
 type MachinePoolStatus struct {
-	// nodeRefs will point to the corresponding Nodes if it they exist.
+	// NodeRefs will point to the corresponding Nodes if it they exist.
 	// +optional
 	NodeRefs []corev1.ObjectReference `json:"nodeRefs,omitempty"`
 
-	// replicas is the most recently observed number of replicas.
+	// Replicas is the most recently observed number of replicas.
 	// +optional
 	Replicas int32 `json:"replicas"`
 
@@ -89,77 +89,39 @@ type MachinePoolStatus struct {
 	// the machine pool to have 100% available capacity. They may either
 	// be machine instances that are running but not yet available or machine instances
 	// that still have not been created.
-	//
-	// Deprecated: This field is deprecated and is going to be removed in the next apiVersion. Please see https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more details.
-	//
 	// +optional
 	UnavailableReplicas int32 `json:"unavailableReplicas,omitempty"`
 
-	// failureReason indicates that there is a problem reconciling the state, and
+	// FailureReason indicates that there is a problem reconciling the state, and
 	// will be set to a token value suitable for programmatic interpretation.
-	//
-	// Deprecated: This field is deprecated and is going to be removed in the next apiVersion. Please see https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more details.
-	//
 	// +optional
 	FailureReason *capierrors.MachinePoolStatusFailure `json:"failureReason,omitempty"`
 
-	// failureMessage indicates that there is a problem reconciling the state,
+	// FailureMessage indicates that there is a problem reconciling the state,
 	// and will be set to a descriptive error message.
-	//
-	// Deprecated: This field is deprecated and is going to be removed in the next apiVersion. Please see https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more details.
-	//
 	// +optional
 	FailureMessage *string `json:"failureMessage,omitempty"`
 
-	// phase represents the current phase of cluster actuation.
+	// Phase represents the current phase of cluster actuation.
 	// E.g. Pending, Running, Terminating, Failed etc.
 	// +optional
 	Phase string `json:"phase,omitempty"`
 
-	// bootstrapReady is the state of the bootstrap provider.
+	// BootstrapReady is the state of the bootstrap provider.
 	// +optional
 	BootstrapReady bool `json:"bootstrapReady"`
 
-	// infrastructureReady is the state of the infrastructure provider.
+	// InfrastructureReady is the state of the infrastructure provider.
 	// +optional
 	InfrastructureReady bool `json:"infrastructureReady"`
 
-	// observedGeneration is the latest generation observed by the controller.
+	// ObservedGeneration is the latest generation observed by the controller.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// conditions define the current service state of the MachinePool.
+	// Conditions define the current service state of the MachinePool.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
-
-	// v1beta2 groups all the fields that will be added or modified in MachinePool's status with the V1Beta2 version.
-	// +optional
-	V1Beta2 *MachinePoolV1Beta2Status `json:"v1beta2,omitempty"`
-}
-
-// MachinePoolV1Beta2Status groups all the fields that will be added or modified in MachinePoolStatus with the V1Beta2 version.
-// See https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more context.
-type MachinePoolV1Beta2Status struct {
-	// conditions represents the observations of a MachinePool's current state.
-	// Known condition types are Available, BootstrapConfigReady, InfrastructureReady, MachinesReady, MachinesUpToDate,
-	// ScalingUp, ScalingDown, Remediating, Deleting, Paused.
-	// +optional
-	// +listType=map
-	// +listMapKey=type
-	// +kubebuilder:validation:MaxItems=32
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-
-	// readyReplicas is the number of ready replicas for this MachinePool. A machine is considered ready when Machine's Ready condition is true.
-	// +optional
-	ReadyReplicas *int32 `json:"readyReplicas,omitempty"`
-
-	// availableReplicas is the number of available replicas for this MachinePool. A machine is considered available when Machine's Available condition is true.
-	// +optional
-	AvailableReplicas *int32 `json:"availableReplicas,omitempty"`
-
-	// upToDateReplicas is the number of up-to-date replicas targeted by this MachinePool. A machine is considered up-to-date when Machine's UpToDate condition is true.
-	// +optional
-	UpToDateReplicas *int32 `json:"upToDateReplicas,omitempty"`
 }
 
 // ANCHOR_END: MachinePoolStatus
@@ -274,22 +236,6 @@ func (m *MachinePool) GetConditions() clusterv1.Conditions {
 // SetConditions sets the conditions on this object.
 func (m *MachinePool) SetConditions(conditions clusterv1.Conditions) {
 	m.Status.Conditions = conditions
-}
-
-// GetV1Beta2Conditions returns the set of conditions for this object.
-func (m *MachinePool) GetV1Beta2Conditions() []metav1.Condition {
-	if m.Status.V1Beta2 == nil {
-		return nil
-	}
-	return m.Status.V1Beta2.Conditions
-}
-
-// SetV1Beta2Conditions sets conditions for an API object.
-func (m *MachinePool) SetV1Beta2Conditions(conditions []metav1.Condition) {
-	if m.Status.V1Beta2 == nil {
-		m.Status.V1Beta2 = &MachinePoolV1Beta2Status{}
-	}
-	m.Status.V1Beta2.Conditions = conditions
 }
 
 // +kubebuilder:object:root=true

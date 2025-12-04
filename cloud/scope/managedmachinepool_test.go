@@ -8,12 +8,12 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-gcp/cloud"
 	"sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
-	clusterv1exp "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 var (
 	TestGCPMMP      *v1beta1.GCPManagedMachinePool
-	TestMP          *clusterv1exp.MachinePool
+	TestMP          *clusterv1.MachinePool
 	TestClusterName string
 )
 
@@ -31,11 +31,13 @@ var _ = Describe("GCPManagedMachinePool Scope", func() {
 				Namespace: namespace,
 			},
 			Spec: v1beta1.GCPManagedMachinePoolSpec{
-				NodePoolName: nodePoolName,
+				GCPManagedMachinePoolClassSpec: v1beta1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: nodePoolName,
+				},
 			},
 		}
-		TestMP = &clusterv1exp.MachinePool{
-			Spec: clusterv1exp.MachinePoolSpec{
+		TestMP = &clusterv1.MachinePool{
+			Spec: clusterv1.MachinePoolSpec{
 				Replicas: &replicas,
 			},
 		}
@@ -49,6 +51,32 @@ var _ = Describe("GCPManagedMachinePool Scope", func() {
 				"test-key":                             "test-value",
 				infrav1.ClusterTagKey(TestClusterName): string(infrav1.ResourceLifecycleOwned),
 			}))
+		})
+	})
+
+	Context("Test MachinePool InfrastructureMachineKind", func() {
+		It("should set infrastructure machine kind when empty", func() {
+			TestGCPMMP.Status = v1beta1.GCPManagedMachinePoolStatus{}
+			machinePoolScope := ManagedMachinePoolScope{
+				GCPManagedMachinePool: TestGCPMMP,
+			}
+
+			update := machinePoolScope.SetInfrastructureMachineKind()
+			Expect(machinePoolScope.GCPManagedMachinePool.Status.InfrastructureMachineKind).To(Equal(v1beta1.GCPManagedMachinePoolMachineKind))
+			Expect(update).To(BeTrue())
+		})
+
+		It("should not update infrastructure machine kind if already set", func() {
+			TestGCPMMP.Status = v1beta1.GCPManagedMachinePoolStatus{
+				InfrastructureMachineKind: v1beta1.GCPManagedMachinePoolMachineKind,
+			}
+			machinePoolScope := ManagedMachinePoolScope{
+				GCPManagedMachinePool: TestGCPMMP,
+			}
+
+			update := machinePoolScope.SetInfrastructureMachineKind()
+			Expect(machinePoolScope.GCPManagedMachinePool.Status.InfrastructureMachineKind).To(Equal(v1beta1.GCPManagedMachinePoolMachineKind))
+			Expect(update).To(BeFalse())
 		})
 	})
 

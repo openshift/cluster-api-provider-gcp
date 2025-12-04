@@ -70,22 +70,22 @@ type KubeadmControlPlaneTemplateResource struct {
 // because they are calculated by the Cluster topology reconciler during reconciliation and thus cannot
 // be configured on the KubeadmControlPlaneTemplate.
 type KubeadmControlPlaneTemplateResourceSpec struct {
-	// machineTemplate contains information about how machines
+	// MachineTemplate contains information about how machines
 	// should be shaped when creating or updating a control plane.
 	// +optional
 	MachineTemplate *KubeadmControlPlaneTemplateMachineTemplate `json:"machineTemplate,omitempty"`
 
-	// kubeadmConfigSpec is a KubeadmConfigSpec
+	// KubeadmConfigSpec is a KubeadmConfigSpec
 	// to use for initializing and joining machines to the control plane.
 	KubeadmConfigSpec bootstrapv1.KubeadmConfigSpec `json:"kubeadmConfigSpec"`
 
-	// rolloutBefore is a field to indicate a rollout should be performed
+	// RolloutBefore is a field to indicate a rollout should be performed
 	// if the specified criteria is met.
 	//
 	// +optional
 	RolloutBefore *RolloutBefore `json:"rolloutBefore,omitempty"`
 
-	// rolloutAfter is a field to indicate a rollout should be performed
+	// RolloutAfter is a field to indicate a rollout should be performed
 	// after the specified time even if no changes have been made to the
 	// KubeadmControlPlane.
 	//
@@ -101,11 +101,6 @@ type KubeadmControlPlaneTemplateResourceSpec struct {
 	// The RemediationStrategy that controls how control plane machine remediation happens.
 	// +optional
 	RemediationStrategy *RemediationStrategy `json:"remediationStrategy,omitempty"`
-
-	// MachineNamingStrategy allows changing the naming pattern used when creating Machines.
-	// InfraMachines & KubeadmConfigs will use the same name as the corresponding Machines.
-	// +optional
-	MachineNamingStrategy *MachineNamingStrategy `json:"machineNamingStrategy,omitempty"`
 }
 
 // KubeadmControlPlaneTemplateMachineTemplate defines the template for Machines
@@ -120,18 +115,18 @@ type KubeadmControlPlaneTemplateMachineTemplate struct {
 	// +optional
 	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty"`
 
-	// nodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
+	// NodeDrainTimeout is the total amount of time that the controller will spend on draining a controlplane node
 	// The default value is 0, meaning that the node can be drained without any time limitations.
 	// NOTE: NodeDrainTimeout is different from `kubectl drain --timeout`
 	// +optional
 	NodeDrainTimeout *metav1.Duration `json:"nodeDrainTimeout,omitempty"`
 
-	// nodeVolumeDetachTimeout is the total amount of time that the controller will spend on waiting for all volumes
+	// NodeVolumeDetachTimeout is the total amount of time that the controller will spend on waiting for all volumes
 	// to be detached. The default value is 0, meaning that the volumes can be detached without any time limitations.
 	// +optional
 	NodeVolumeDetachTimeout *metav1.Duration `json:"nodeVolumeDetachTimeout,omitempty"`
 
-	// nodeDeletionTimeout defines how long the machine controller will attempt to delete the Node that the Machine
+	// NodeDeletionTimeout defines how long the machine controller will attempt to delete the Node that the Machine
 	// hosts after the Machine is marked for deletion. A duration of 0 will retry deletion indefinitely.
 	// If no value is provided, the default value for this property of the Machine resource will be used.
 	// +optional

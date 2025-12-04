@@ -254,11 +254,7 @@ func (s *Service) createInternalLoadBalancer(ctx context.Context, name string, l
 
 func (s *Service) createOrGetInstanceGroups(ctx context.Context) ([]*compute.InstanceGroup, error) {
 	log := log.FromContext(ctx)
-	fd := s.scope.FailureDomains()
-	zones := make([]string, 0, len(fd))
-	for zone := range fd {
-		zones = append(zones, zone)
-	}
+	zones := s.scope.FailureDomains()
 
 	groups := make([]*compute.InstanceGroup, 0, len(zones))
 	groupsMap := s.scope.Network().APIServerInstanceGroups
@@ -524,6 +520,11 @@ func (s *Service) createOrGetInternalAddress(ctx context.Context, lbname string)
 	if err != nil {
 		log.Error(err, "Error getting subnet for Internal Load Balancer")
 		return nil, err
+	}
+	lbSpec := s.scope.LoadBalancer()
+	if lbSpec.InternalLoadBalancer != nil && lbSpec.InternalLoadBalancer.IPAddress != nil {
+		// If an IP address is configured, use it instead of creating a new one.
+		addrSpec.Address = *lbSpec.InternalLoadBalancer.IPAddress
 	}
 	addrSpec.Subnetwork = subnet.SelfLink
 	addrSpec.Purpose = "GCE_ENDPOINT"
