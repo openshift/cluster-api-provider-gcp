@@ -62,20 +62,13 @@ func processObjects(objs []unstructured.Unstructured, providerName string) map[r
 			setNoUpgradeAnnotations(obj)
 			providerConfigMapObjs = append(providerConfigMapObjs, obj)
 		case "MutatingWebhookConfiguration":
-			// Explicitly remove defaulting webhooks for the cluster-api provider.
-			// We don't need CAPI to set any default to the cluster object because
-			// we have a custom controller for reconciling it.
-			// For more information: https://issues.redhat.com/browse/OCPCLOUD-1506
-			removeClusterDefaultingWebhooks(&obj)
 			replaceCertManagerAnnotations(&obj)
 			providerConfigMapObjs = append(providerConfigMapObjs, obj)
 		case "ValidatingWebhookConfiguration":
-			removeClusterValidatingWebhooks(&obj)
 			replaceCertManagerAnnotations(&obj)
 			providerConfigMapObjs = append(providerConfigMapObjs, obj)
 		case "CustomResourceDefinition":
 			replaceCertManagerAnnotations(&obj)
-			removeConversionWebhook(&obj)
 			setOpenShiftAnnotations(obj, true)
 			// Apply NoUpgrade annotations unless IPAM CRDs,
 			// as those are in General Availability.
@@ -276,17 +269,6 @@ func replaceCertMangerServiceSecret(obj *unstructured.Unstructured, serviceSecre
 	}
 }
 
-func removeConversionWebhook(obj *unstructured.Unstructured) {
-	crd := &apiextensionsv1.CustomResourceDefinition{}
-	if err := scheme.Convert(obj, crd, nil); err != nil {
-		panic(err)
-	}
-	crd.Spec.Conversion = nil
-	if err := scheme.Convert(crd, obj, nil); err != nil {
-		panic(err)
-	}
-}
-
 // isCRDGroup checks whether the object provided is a CRD for the specified API group.
 func isCRDGroup(obj *unstructured.Unstructured, group string) bool {
 	switch obj.GetKind() {
@@ -341,7 +323,7 @@ func mergeMaps[K comparable, V any](maps ...map[K]V) map[K]V {
 func addInfraClusterProtectionPolicy(objs []unstructured.Unstructured, providerName string) []unstructured.Unstructured {
 	policy := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "admissionregistration.k8s.io/v1beta1",
+			"apiVersion": "admissionregistration.k8s.io/v1",
 			"kind":       "ValidatingAdmissionPolicy",
 			"metadata": map[string]interface{}{
 				"name": "openshift-cluster-api-protect-" + providerName + "cluster",
@@ -374,7 +356,7 @@ func addInfraClusterProtectionPolicy(objs []unstructured.Unstructured, providerN
 
 	binding := &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "admissionregistration.k8s.io/v1beta1",
+			"apiVersion": "admissionregistration.k8s.io/v1",
 			"kind":       "ValidatingAdmissionPolicyBinding",
 			"metadata": map[string]interface{}{
 				"name": "openshift-cluster-api-protect-" + providerName + "cluster",
