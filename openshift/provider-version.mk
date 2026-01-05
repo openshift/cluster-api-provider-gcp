@@ -1,0 +1,1 @@
+PROVIDER_VERSION ?= v1.11.0-beta.0
