@@ -15,4 +15,10 @@ update-manifests-gen:
 .PHONY: ocp-manifests
 ocp-manifests: | $(RELEASE_DIR) ## Builds openshift specific manifests.
 	# Generate provider manifests.
-	cd tools && $(MANIFESTS_GEN) --provider-name "gcp" --provider-type "InfrastructureProvider" --provider-version "${PROVIDER_VERSION}" --base-path "../../" --manifests-path "../manifests"
+	cd tools && $(MANIFESTS_GEN) --base-path "../../" --manifests-path "../capi-operator-manifests" --kustomize-dir="openshift" \
+		--provider-name cluster-api-provider-gcp \
+		--provider-type infrastructure \
+		--provider-version "${PROVIDER_VERSION}" \
+		--provider-image-ref registry.ci.openshift.org/openshift:gcp-cluster-api-controllers \
+		--platform GCP \
+		--protect-cluster-resource gcpcluster

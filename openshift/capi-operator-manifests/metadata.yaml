@@ -1,0 +1,5 @@
+ocpPlatform: GCP
+providerImageRef: registry.ci.openshift.org/openshift:gcp-cluster-api-controllers
+providerName: cluster-api-provider-gcp
+providerType: infrastructure
+providerVersion: v1.11.0-beta.0
