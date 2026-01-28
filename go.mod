@@ -1,14 +1,8 @@
 module sigs.k8s.io/cluster-api-provider-gcp
 
-go 1.22
+go 1.24.0
 
-replace (
-	// cel-go should match the version imported by CAPI.
-	github.com/google/cel-go => github.com/google/cel-go v0.17.8
-	// kube-openapi should match the version imported by CAPI.
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.8.4
-)
+toolchain go1.24.6
 
 require (
 	cloud.google.com/go/compute v1.48.0
