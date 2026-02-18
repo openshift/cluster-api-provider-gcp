@@ -1,0 +1,7 @@
+attributes:
+  type: infrastructure
+  version: v1.11.0
+installOrder: 20
+name: cluster-api-provider-gcp
+ocpPlatform: GCP
+selfImageRef: registry.ci.openshift.org/openshift:gcp-cluster-api-controllers
