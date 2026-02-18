@@ -96,7 +96,7 @@ func (t *Token) WithExtra(extra interface{}) *Token {
 }
 
 // Extra returns an extra field.
-// Extra fields are key-value pairs returned by the server as a
+// Extra fields are key-value pairs returned by the server as
 // part of the token retrieval response.
 func (t *Token) Extra(key string) interface{} {
 	if raw, ok := t.raw.(map[string]interface{}); ok {
