@@ -3,9 +3,6 @@ TOOLS_DIR := tools
 
 include provider-version.mk
 
-$(RELEASE_DIR):
-	mkdir -p $(RELEASE_DIR)/
-
 MANIFESTS_GEN := go run ./vendor/github.com/openshift/cluster-capi-operator/manifests-gen/
 
 .PHONY: verify
