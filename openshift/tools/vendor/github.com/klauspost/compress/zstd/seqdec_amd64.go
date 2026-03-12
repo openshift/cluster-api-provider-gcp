@@ -143,7 +143,7 @@ func (s *sequenceDecs) decodeSyncSimple(hist []byte) (bool, error) {
 		return true, fmt.Errorf("output bigger than max block size (%d)", maxBlockSize)
 
 	default:
-		return true, fmt.Errorf("sequenceDecs_decode returned erronous code %d", errCode)
+		return true, fmt.Errorf("sequenceDecs_decode returned erroneous code %d", errCode)
 	}
 
 	s.seqSize += ctx.litRemain
@@ -286,7 +286,7 @@ func (s *sequenceDecs) decode(seqs []seqVals) error {
 			return io.ErrUnexpectedEOF
 		}
 
-		return fmt.Errorf("sequenceDecs_decode_amd64 returned erronous code %d", errCode)
+		return fmt.Errorf("sequenceDecs_decode_amd64 returned erroneous code %d", errCode)
 	}
 
 	if ctx.litRemain < 0 {
