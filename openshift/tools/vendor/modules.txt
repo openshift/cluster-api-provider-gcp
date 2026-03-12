@@ -139,18 +139,17 @@ github.com/opencontainers/go-digest
 ## explicit; go 1.18
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
-# github.com/openshift/api v0.0.0-20260205045418-81371d13d1fc
+# github.com/openshift/api v0.0.0-20260228183123-9b2ee997d297
 ## explicit; go 1.24.0
 github.com/openshift/api/config/v1
-# github.com/openshift/cluster-capi-operator v0.0.0-20260212142421-599f7fc1eb9f
+github.com/openshift/api/operator/v1
+github.com/openshift/api/operator/v1alpha1
+# github.com/openshift/cluster-capi-operator v0.0.0-20260309171208-48b44cd08f85
 ## explicit; go 1.24.0
 github.com/openshift/cluster-capi-operator/pkg/providerimages
-# github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20260212142421-599f7fc1eb9f
+# github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20260309171208-48b44cd08f85
 ## explicit; go 1.24.0
 github.com/openshift/cluster-capi-operator/manifests-gen
-# github.com/pkg/errors v0.9.1
-## explicit
-github.com/pkg/errors
 # github.com/sirupsen/logrus v1.9.3
 ## explicit; go 1.13
 github.com/sirupsen/logrus
@@ -163,7 +162,7 @@ github.com/x448/float16
 # github.com/xlab/treeprint v1.2.0
 ## explicit; go 1.13
 github.com/xlab/treeprint
-# go.yaml.in/yaml/v2 v2.4.2
+# go.yaml.in/yaml/v2 v2.4.3
 ## explicit; go 1.15
 go.yaml.in/yaml/v2
 # go.yaml.in/yaml/v3 v3.0.4
@@ -231,7 +230,7 @@ google.golang.org/protobuf/runtime/protoiface
 google.golang.org/protobuf/runtime/protoimpl
 google.golang.org/protobuf/types/descriptorpb
 google.golang.org/protobuf/types/known/anypb
-# gopkg.in/evanphx/json-patch.v4 v4.12.0
+# gopkg.in/evanphx/json-patch.v4 v4.13.0
 ## explicit
 gopkg.in/evanphx/json-patch.v4
 # gopkg.in/inf.v0 v0.9.1
@@ -394,8 +393,8 @@ k8s.io/klog/v2/internal/dbg
 k8s.io/klog/v2/internal/serialize
 k8s.io/klog/v2/internal/severity
 k8s.io/klog/v2/internal/sloghandler
-# k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b
-## explicit; go 1.23
+# k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912
+## explicit; go 1.23.0
 k8s.io/kube-openapi/pkg/cached
 k8s.io/kube-openapi/pkg/common
 k8s.io/kube-openapi/pkg/handler3
@@ -405,7 +404,7 @@ k8s.io/kube-openapi/pkg/schemaconv
 k8s.io/kube-openapi/pkg/spec3
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/validation/spec
-# k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
+# k8s.io/utils v0.0.0-20251002143259-bc988d571ff4
 ## explicit; go 1.18
 k8s.io/utils/clock
 k8s.io/utils/internal/third_party/forked/golang/net
@@ -419,7 +418,7 @@ sigs.k8s.io/controller-runtime/pkg/log
 # sigs.k8s.io/gateway-api v1.1.0
 ## explicit; go 1.22.0
 sigs.k8s.io/gateway-api/apis/v1
-# sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8
+# sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730
 ## explicit; go 1.23
 sigs.k8s.io/json
 sigs.k8s.io/json/internal/golang/encoding/json
