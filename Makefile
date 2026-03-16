@@ -98,9 +98,7 @@ KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
 
 TIMEOUT := $(shell command -v timeout || command -v gtimeout)
 
-SETUP_ENVTEST_VER := v0.0.0-20211110210527-619e6b92dab9
-SETUP_ENVTEST_BIN := setup-envtest
-SETUP_ENVTEST := $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)
+ENVTEST_ASSETS_DIR ?= /tmp/controller-tools/envtest
 
 GO_APIDIFF_VER := v0.6.0
 GO_APIDIFF_BIN := go-apidiff
@@ -156,11 +154,20 @@ help:  ## Display this help
 ## Testing
 ## --------------------------------------
 
-KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))
+.PHONY: envtest
+envtest: ## Download envtest binaries if not present
+	@[ -f $(ENVTEST_ASSETS_DIR)/kube-apiserver ] || { \
+	set -e ;\
+	ARCH=$$(go env GOARCH) ;\
+	OS=$$(go env GOOS) ;\
+	echo "Downloading envtest binaries for k8s $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION) ($${OS}/$${ARCH})..." ;\
+	curl -fSL "https://github.com/kubernetes-sigs/controller-tools/releases/download/envtest-v$(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION)/envtest-v$(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION)-$${OS}-$${ARCH}.tar.gz" -o /tmp/envtest.tar.gz ;\
+	tar -xzf /tmp/envtest.tar.gz -C /tmp/ ;\
+	}
 
 .PHONY: test
-test: $(SETUP_ENVTEST) ## Run unit and integration tests
-	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
+test: envtest ## Run unit and integration tests
+	KUBEBUILDER_ASSETS="$(ENVTEST_ASSETS_DIR)" go test ./... $(TEST_ARGS)
 
 # Allow overriding the e2e configurations
 GINKGO_FOCUS ?= Workload cluster creation
@@ -193,8 +200,8 @@ test-cover:  ## Run unit and integration tests and generate a coverage report
 	go tool cover -html=coverage.out -o coverage.html
 
 .PHONY: test-junit
-test-junit: $(SETUP_ENVTEST) $(GOTESTSUM) ## Run tests with verbose setting and generate a junit report
-	set +o errexit; (KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test -json ./... $(TEST_ARGS); echo $$? > $(ARTIFACTS)/junit.exitcode) | tee $(ARTIFACTS)/junit.stdout
+test-junit: envtest $(GOTESTSUM) ## Run tests with verbose setting and generate a junit report
+	set +o errexit; (KUBEBUILDER_ASSETS="$(ENVTEST_ASSETS_DIR)" go test -json ./... $(TEST_ARGS); echo $$? > $(ARTIFACTS)/junit.exitcode) | tee $(ARTIFACTS)/junit.stdout
 	$(GOTESTSUM) --junitfile $(ARTIFACTS)/junit.xml --raw-command cat $(ARTIFACTS)/junit.stdout
 	exit $$(cat $(ARTIFACTS)/junit.exitcode)
 
@@ -246,9 +253,6 @@ $(GOTESTSUM): go.mod # Build gotestsum from tools folder.
 
 $(KUSTOMIZE): ## Build kustomize from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kustomize/kustomize/v4 $(KUSTOMIZE_BIN) $(KUSTOMIZE_VER)
-
-$(SETUP_ENVTEST): go.mod # Build setup-envtest from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/controller-runtime/tools/setup-envtest $(SETUP_ENVTEST_BIN) $(SETUP_ENVTEST_VER)
 
 $(CONTROLLER_GEN): ## Build controller-gen from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/controller-tools/cmd/controller-gen $(CONTROLLER_GEN_BIN) $(CONTROLLER_GEN_VER)
