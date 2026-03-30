@@ -1,6 +1,6 @@
 attributes:
   type: infrastructure
-  version: v1.11.0
+  version: v1.11.1
 installOrder: 20
 name: cluster-api-provider-gcp
 ocpPlatform: GCP
