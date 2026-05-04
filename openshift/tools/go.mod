@@ -1,8 +1,8 @@
 module tools
 
-go 1.25.0
+go 1.25.3
 
-require github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20260429150927-40757eb5602c
+require github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20260430103711-4378d2d7de5e
 
 require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.25.5 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/google/go-containerregistry v0.20.7 // indirect
-	github.com/google/pprof v0.0.0-20250820193118-f64d9cf942d6 // indirect
+	github.com/google/pprof v0.0.0-20260115054156-294ebfa9ad83 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
