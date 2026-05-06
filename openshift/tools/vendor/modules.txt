@@ -111,7 +111,7 @@ github.com/opencontainers/go-digest
 # github.com/openshift/api v0.0.0-20260416105050-3c6b218b8a80
 ## explicit; go 1.25.0
 github.com/openshift/api/config/v1
-# github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20260429150927-40757eb5602c
+# github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20260506082208-390a5b10a37c
 ## explicit; go 1.25.0
 github.com/openshift/cluster-capi-operator/manifests-gen
 github.com/openshift/cluster-capi-operator/manifests-gen/providermetadata
