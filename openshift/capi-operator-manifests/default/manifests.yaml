@@ -3437,7 +3437,7 @@ spec:
     listKind: GCPManagedClusterTemplateList
     plural: gcpmanagedclustertemplates
     shortNames:
-    - amct
+    - gcpmct
     singular: gcpmanagedclustertemplate
   scope: Namespaced
   versions:
@@ -3852,7 +3852,7 @@ spec:
     listKind: GCPManagedControlPlaneTemplateList
     plural: gcpmanagedcontrolplanetemplates
     shortNames:
-    - amcpt
+    - gcpmcpt
     singular: gcpmanagedcontrolplanetemplate
   scope: Namespaced
   versions:
@@ -4096,7 +4096,7 @@ spec:
     listKind: GCPManagedMachinePoolTemplateList
     plural: gcpmanagedmachinepooltemplates
     shortNames:
-    - ammpt
+    - gcpmmpt
     singular: gcpmanagedmachinepooltemplate
   scope: Namespaced
   versions:
@@ -4803,6 +4803,7 @@ spec:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
+        openshift.io/required-scc: restricted-v2
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         cluster.x-k8s.io/provider: infrastructure-gcp
@@ -4911,6 +4912,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.gcpcluster.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -4932,6 +4936,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.gcpclustertemplate.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -4953,6 +4960,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.gcpmachine.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -4974,6 +4984,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.gcpmachinetemplate.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -4994,6 +5007,9 @@ webhooks:
       path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedcluster
   failurePolicy: Fail
   name: mgcpmanagedcluster.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5014,6 +5030,9 @@ webhooks:
       path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedcontrolplane
   failurePolicy: Fail
   name: mgcpmanagedcontrolplane.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5035,6 +5054,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: mgcpmanagedcontrolplanetemplate.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5055,6 +5077,9 @@ webhooks:
       path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedmachinepool
   failurePolicy: Fail
   name: mgcpmanagedmachinepool.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5075,6 +5100,9 @@ webhooks:
       path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedmachinepooltemplate
   failurePolicy: Fail
   name: mgcpmanagedmachinepooltemplate.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5106,6 +5134,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.gcpcluster.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5127,6 +5158,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.gcpclustertemplate.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5148,6 +5182,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.gcpmachine.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5169,6 +5206,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.gcpmachinetemplate.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5189,6 +5229,9 @@ webhooks:
       path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedcluster
   failurePolicy: Fail
   name: vgcpmanagedcluster.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5209,6 +5252,9 @@ webhooks:
       path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedclustertemplate
   failurePolicy: Fail
   name: vgcpmanagedclustertemplate.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5228,6 +5274,9 @@ webhooks:
       path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedcontrolplane
   failurePolicy: Fail
   name: vgcpmanagedcontrolplane.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5249,6 +5298,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: vgcpmanagedcontrolplanetemplate.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5269,6 +5321,9 @@ webhooks:
       path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedmachinepool
   failurePolicy: Fail
   name: vgcpmanagedmachinepool.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
