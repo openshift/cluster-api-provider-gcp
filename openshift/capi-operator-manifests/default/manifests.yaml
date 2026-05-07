@@ -3437,7 +3437,7 @@ spec:
     listKind: GCPManagedClusterTemplateList
     plural: gcpmanagedclustertemplates
     shortNames:
-    - amct
+    - gcpmct
     singular: gcpmanagedclustertemplate
   scope: Namespaced
   versions:
@@ -3852,7 +3852,7 @@ spec:
     listKind: GCPManagedControlPlaneTemplateList
     plural: gcpmanagedcontrolplanetemplates
     shortNames:
-    - amcpt
+    - gcpmcpt
     singular: gcpmanagedcontrolplanetemplate
   scope: Namespaced
   versions:
@@ -4096,7 +4096,7 @@ spec:
     listKind: GCPManagedMachinePoolTemplateList
     plural: gcpmanagedmachinepooltemplates
     shortNames:
-    - ammpt
+    - gcpmmpt
     singular: gcpmanagedmachinepooltemplate
   scope: Namespaced
   versions:
