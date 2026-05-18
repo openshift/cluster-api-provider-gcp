@@ -29,6 +29,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
 )
@@ -104,24 +105,14 @@ var _ = Describe("Workload cluster creation", func() {
 			}, result)
 
 			By("Scaling worker node to 3")
-			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
-				ClusterProxy: bootstrapClusterProxy,
-				ConfigCluster: clusterctl.ConfigClusterInput{
-					LogFolder:                clusterctlLogFolder,
-					ClusterctlConfigPath:     clusterctlConfigPath,
-					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
-					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
-					Flavor:                   clusterctl.DefaultFlavor,
-					Namespace:                namespace.Name,
-					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
-					ControlPlaneMachineCount: ptr.To[int64](1),
-					WorkerMachineCount:       ptr.To[int64](3),
-				},
-				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
-				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
-				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-			}, result)
+			Expect(result.MachineDeployments).To(HaveLen(1))
+			framework.ScaleAndWaitMachineDeployment(ctx, framework.ScaleAndWaitMachineDeploymentInput{
+				ClusterProxy:              bootstrapClusterProxy,
+				Cluster:                   result.Cluster,
+				MachineDeployment:         result.MachineDeployments[0],
+				Replicas:                  3,
+				WaitForMachineDeployments: e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+			})
 		})
 	})
 
@@ -188,8 +179,38 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
+	Context("Creating a control-plane cluster with an external and an internal load balancer", func() {
+		It("Should create a cluster with 1 control-plane and 1 worker node with an external and an internal load balancer", func() {
+			clusterName := fmt.Sprintf("%s-internal-lb", clusterNamePrefix)
+			By("Creating a cluster with an internal load balancer and an external load balancer")
+			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+				ClusterProxy: bootstrapClusterProxy,
+				ConfigCluster: clusterctl.ConfigClusterInput{
+					LogFolder:                clusterctlLogFolder,
+					ClusterctlConfigPath:     clusterctlConfigPath,
+					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+					Flavor:                   "ci-with-external-and-internal-lb",
+					Namespace:                namespace.Name,
+					ClusterName:              clusterName,
+					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
+					ControlPlaneMachineCount: ptr.To[int64](1),
+					WorkerMachineCount:       ptr.To[int64](1),
+				},
+				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+			}, result)
+		})
+	})
+
+	// Skipping the test case for now. The internal load balancer test case requires the management cluster
+	// to have access to network that the cluster being created is in.
+	// An option to reach that is to use a GKE cluster as the management cluster.
 	Context("Creating a control-plane cluster with an internal load balancer", func() {
 		It("Should create a cluster with 1 control-plane and 1 worker node with an internal load balancer", func() {
+			Skip("This test requires a bootstrap cluster that has access to the network where the cluster is being created.")
+
 			clusterName := fmt.Sprintf("%s-internal-lb", clusterNamePrefix)
 			By("Creating a cluster with internal load balancer")
 			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
@@ -213,6 +234,36 @@ var _ = Describe("Workload cluster creation", func() {
 		})
 	})
 
+	// Skipping the test case for now. The internal load balancer test case requires the management cluster
+	// to have access to network that the cluster being created is in.
+	// An option to reach that is to use a GKE cluster as the management cluster.
+	Context("Creating a control-plane cluster with three control plane nodes and an internal load balancer", func() {
+		It("Should create a cluster with 3 control-plane and 1 worker node with an internal load balancer", func() {
+			Skip("This test requires a bootstrap cluster that has access to the network where the cluster is being created.")
+
+			clusterName := fmt.Sprintf("%s-internal-lb", clusterNamePrefix)
+			By("Creating a cluster with internal load balancer from GKE bootstrap cluster")
+			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+				ClusterProxy: bootstrapClusterProxy,
+				ConfigCluster: clusterctl.ConfigClusterInput{
+					LogFolder:                clusterctlLogFolder,
+					ClusterctlConfigPath:     clusterctlConfigPath,
+					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+					Flavor:                   "ci-with-internal-lb",
+					Namespace:                namespace.Name,
+					ClusterName:              clusterName,
+					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
+					ControlPlaneMachineCount: ptr.To[int64](3),
+					WorkerMachineCount:       ptr.To[int64](1),
+				},
+				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+			}, result)
+		})
+	})
+
 	Context("Creating a cluster using a cluster class", func() {
 		It("Should create a cluster class and then a cluster based on it", func() {
 			clusterName := fmt.Sprintf("%s-topology", clusterNamePrefix)
@@ -225,6 +276,31 @@ var _ = Describe("Workload cluster creation", func() {
 					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
 					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
 					Flavor:                   "ci-topology",
+					Namespace:                namespace.Name,
+					ClusterName:              clusterName,
+					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
+					ControlPlaneMachineCount: ptr.To[int64](1),
+					WorkerMachineCount:       ptr.To[int64](1),
+				},
+				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
+				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
+				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
+			}, result)
+		})
+	})
+
+	Context("Creating a cluster with firewall rules provided", func() {
+		It("Should create a cluster with the firewall rules provided", func() {
+			clusterName := fmt.Sprintf("%s-firewall-rules", clusterNamePrefix)
+			By("Creating a cluster with firewall rules provided")
+			clusterctl.ApplyClusterTemplateAndWait(ctx, clusterctl.ApplyClusterTemplateAndWaitInput{
+				ClusterProxy: bootstrapClusterProxy,
+				ConfigCluster: clusterctl.ConfigClusterInput{
+					LogFolder:                clusterctlLogFolder,
+					ClusterctlConfigPath:     clusterctlConfigPath,
+					KubeconfigPath:           bootstrapClusterProxy.GetKubeconfigPath(),
+					InfrastructureProvider:   clusterctl.DefaultInfrastructureProvider,
+					Flavor:                   "ci-with-firewall-rules",
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
