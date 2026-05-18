@@ -33,13 +33,20 @@ export GOPROXY
 export GO111MODULE=on
 
 # Go version
-GOLANG_VERSION := 1.24.6
+GOLANG_VERSION := 1.24.8
 GOLANG_DIRECTIVE_VERSION ?= 1.24.0
 
 # Kubebuilder
-export KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.33.0
+export KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.34.0
 export KUBEBUILDER_CONTROLPLANE_START_TIMEOUT ?=60s
 export KUBEBUILDER_CONTROLPLANE_STOP_TIMEOUT ?=60s
+
+# Calico version for e2e tests and dev workflows.
+# When updating, also update test/e2e/data/cni/calico/calico.yaml with the
+# manifest from the new release.
+# Ensure the Calico version is compatible with the Kubernetes version being targeted
+# (see https://docs.tigera.io/calico/latest/getting-started/kubernetes/requirements).
+CALICO_VERSION ?= v3.31.4
 
 # This option is for running docker manifest command
 export DOCKER_CLI_EXPERIMENTAL := enabled
@@ -63,11 +70,11 @@ CONVERSION_VERIFIER:= $(TOOLS_BIN_DIR)/conversion-verifier
 # Binaries.
 CLUSTERCTL := $(BIN_DIR)/clusterctl
 
-CONTROLLER_GEN_VER := v0.17.3
+CONTROLLER_GEN_VER := v0.18.0
 CONTROLLER_GEN_BIN := controller-gen
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER)
 
-CONVERSION_GEN_VER := v0.32.0
+CONVERSION_GEN_VER := v0.34.0
 CONVERSION_GEN_BIN := conversion-gen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/$(CONVERSION_GEN_BIN)-$(CONVERSION_GEN_VER)
 
@@ -77,7 +84,7 @@ ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)
 
 GOLANGCI_LINT_VER := v2.4.0
 
-KIND_VER := v0.29.0
+KIND_VER := v0.30.0
 KIND_BIN := kind
 KIND := $(TOOLS_BIN_DIR)/$(KIND_BIN)-$(KIND_VER)
 
@@ -89,12 +96,12 @@ RELEASE_NOTES_VER := v0.11.0
 RELEASE_NOTES_BIN := release-notes
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
 
-GINKGO_VER := v2.23.3
+GINKGO_VER := v2.27.5
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
 
-KUBECTL_VER := v1.31.5
+KUBECTL_VER := v1.34.0
 KUBECTL_BIN := kubectl
 KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
 
@@ -174,7 +181,6 @@ test: $(SETUP_ENVTEST) ## Run unit and integration tests
 # Allow overriding the e2e configurations
 GINKGO_FOCUS ?= Workload cluster creation
 GINKGO_SKIP ?= API Version Upgrade
-GINKGO_NODES ?= 1
 GINKGO_NOCOLOR ?= false
 GINKGO_ARGS ?=
 GINKGO_TIMEOUT ?= 2h
@@ -188,7 +194,7 @@ SKIP_CREATE_MGMT_CLUSTER ?= false
 test-e2e-run: $(ENVSUBST) $(KUBECTL) $(GINKGO) e2e-image ## Run the end-to-end tests
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
 	time $(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) -poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) \
-	--tags=e2e --focus="$(GINKGO_FOCUS)" -skip="$(GINKGO_SKIP)" --nodes=$(GINKGO_NODES) --no-color=$(GINKGO_NOCOLOR) \
+	--tags=e2e --focus="$(GINKGO_FOCUS)" -skip="$(GINKGO_SKIP)" --no-color=$(GINKGO_NOCOLOR) \
 	--timeout=$(GINKGO_TIMEOUT) --output-dir="$(ARTIFACTS)" --junit-report="junit.e2e_suite.1.xml" $(GINKGO_ARGS) ./test/e2e -- \
 		-e2e.artifacts-folder="$(ARTIFACTS)" \
 		-e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
@@ -533,7 +539,7 @@ create-workload-cluster: $(KUSTOMIZE) $(ENVSUBST) $(KUBECTL)
 	${TIMEOUT} 15m bash -c "while ! kubectl --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) get nodes | grep master; do sleep 1; done"
 
 	# Deploy calico
-	$(KUBECTL) --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.25.0/manifests/calico.yaml
+	$(KUBECTL) --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) apply -f https://raw.githubusercontent.com/projectcalico/calico/$(CALICO_VERSION)/manifests/calico.yaml
 
 	@echo 'run "$(KUBECTL) --kubeconfig=$(CAPG_WORKER_CLUSTER_KUBECONFIG) ..." to work with the new target cluster'
 
