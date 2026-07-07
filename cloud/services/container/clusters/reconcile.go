@@ -512,7 +512,7 @@ func (s *Service) checkDiffAndPrepareUpdate(existingCluster *containerpb.Cluster
 	if specMonitoringService := s.scope.GCPManagedControlPlane.Spec.MonitoringService; specMonitoringService != nil {
 		if existingCluster.GetMonitoringService() != specMonitoringService.String() {
 			needUpdate = true
-			clusterUpdate.DesiredLoggingService = specMonitoringService.String()
+			clusterUpdate.DesiredMonitoringService = specMonitoringService.String()
 			log.V(2).Info("MonitoringService config update required", "current", existingCluster.GetMonitoringService(), "desired", specMonitoringService.String())
 		}
 	}
