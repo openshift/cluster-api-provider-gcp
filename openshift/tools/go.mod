@@ -2,7 +2,7 @@ module tools
 
 go 1.25.3
 
-require github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20260518130250-c585235ee71f
+require github.com/openshift/cluster-capi-operator/manifests-gen v0.0.0-20260703150646-e8d2830a6f46
 
 require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
