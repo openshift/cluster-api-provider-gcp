@@ -119,6 +119,32 @@ func TestCheckDiffAndPrepareUpdate(t *testing.T) {
 			},
 		},
 		{
+			name: "update needed when monitoring service differs",
+			controlPlane: &infrav1exp.GCPManagedControlPlane{
+				Spec: infrav1exp.GCPManagedControlPlaneSpec{
+					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
+						Project:           "test-project",
+						Location:          "us-central1",
+						MonitoringService: ptr.To(infrav1exp.MonitoringService("none")),
+					},
+					ClusterName: "test-cluster",
+				},
+			},
+			existingCluster: &containerpb.Cluster{
+				MonitoringService: "monitoring.googleapis.com/kubernetes",
+			},
+			wantNeedUpdate: true,
+			validateUpdateFunc: func(t *testing.T, req *containerpb.UpdateClusterRequest) {
+				t.Helper()
+				if req.GetUpdate().GetDesiredMonitoringService() != "none" {
+					t.Errorf("expected DesiredMonitoringService to be set to %q, got %q", "none", req.GetUpdate().GetDesiredMonitoringService())
+				}
+				if req.GetUpdate().GetDesiredLoggingService() != "" {
+					t.Errorf("expected DesiredLoggingService to be left unset, got %q", req.GetUpdate().GetDesiredLoggingService())
+				}
+			},
+		},
+		{
 			name: "no panic when existing cluster has nil ControlPlaneEndpointsConfig",
 			controlPlane: &infrav1exp.GCPManagedControlPlane{
 				Spec: infrav1exp.GCPManagedControlPlaneSpec{
