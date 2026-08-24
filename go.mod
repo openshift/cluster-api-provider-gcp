@@ -4,13 +4,13 @@ go 1.18
 
 require (
 	github.com/GoogleCloudPlatform/k8s-cloud-provider v1.20.0
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.22.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/mod v0.8.0
-	golang.org/x/net v0.17.0
+	golang.org/x/mod v0.17.0
+	golang.org/x/net v0.25.0
 	google.golang.org/api v0.103.0
 	k8s.io/api v0.24.9
 	k8s.io/apimachinery v0.24.9
@@ -103,11 +103,11 @@ require (
 	github.com/subosito/gotenv v1.3.0 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -131,3 +131,5 @@ require (
 )
 
 replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.8
+
+replace golang.org/x/net => github.com/openshift-sustaining/net v0.35.0-sec.3
