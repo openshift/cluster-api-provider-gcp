@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"errors"
 	"flag"
 	"fmt"
@@ -16,6 +17,12 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 )
+
+// Transformer YAML is loaded from disk by provider kustomization overlays.
+// Embedding it makes `go mod vendor` copy those files into consumer repos.
+//
+//go:embed transformers/*.yaml
+var _ embed.FS
 
 var (
 	allowedPlatformTypes = []string{
@@ -48,6 +55,7 @@ func init() {
 
 type cmdlineOptions struct {
 	manifestsPath          string
+	manifestsSummary       bool
 	profileName            string
 	kustomizeDir           string
 	name                   string
@@ -78,9 +86,10 @@ func (a attributeFlags) Set(value string) error {
 
 func main() {
 	var (
-		manifestsPath = flag.String("manifests-path", "", "Path to the desired directory where to output the generated manifests. Required.")
-		profileName   = flag.String("profile-name", "default", "Name of the profile, e.g 'featuregate-foo' (default: 'default'.'")
-		kustomizeDir  = flag.String("kustomize-dir", "", "Directory containing kustomization.yaml file used to generate the base resources, relative to the current working directory. Required.")
+		manifestsPath    = flag.String("manifests-path", "", "Path to the desired directory where to output the generated manifests. Required.")
+		profileName      = flag.String("profile-name", "default", "Name of the profile, e.g 'featuregate-foo' (default: 'default'.'")
+		kustomizeDir     = flag.String("kustomize-dir", "", "Directory containing kustomization.yaml file used to generate the base resources, relative to the current working directory. Required.")
+		manifestsSummary = flag.Bool("manifests-summary", false, "If set, output the manifests summary YAML file")
 
 		name = flag.String("name", "", "Name of the provider, e.g. 'cluster-api-provider-aws'. Required.")
 
@@ -97,6 +106,7 @@ func main() {
 
 	opts := cmdlineOptions{
 		manifestsPath:          *manifestsPath,
+		manifestsSummary:       *manifestsSummary,
 		profileName:            *profileName,
 		kustomizeDir:           *kustomizeDir,
 		name:                   *name,

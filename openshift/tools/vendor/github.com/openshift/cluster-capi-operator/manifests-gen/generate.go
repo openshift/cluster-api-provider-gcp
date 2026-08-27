@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sort"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/cluster-capi-operator/pkg/providerimages"
+	"github.com/openshift/cluster-capi-operator/manifests-gen/providermetadata"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/kustomize/api/krusty"
+	"sigs.k8s.io/kustomize/api/types"
 	"sigs.k8s.io/kustomize/kyaml/filesys"
 	"sigs.k8s.io/yaml"
 )
@@ -23,6 +25,8 @@ const (
 
 	// metadataFilename is the name of the file containing provider metadata.
 	metadataFilename = "metadata.yaml"
+
+	manifestsSummaryFilename = "manifests-summary.yaml"
 
 	// capiNamespace is the namespace where capi components are created.
 	capiNamespace = "openshift-cluster-api"
@@ -58,6 +62,10 @@ func generateManifests(opts cmdlineOptions) error {
 		return fmt.Errorf("error writing metadata: %w", err)
 	}
 
+	if err := writeManifestsSummary(opts, resources); err != nil {
+		return fmt.Errorf("error writing manifests summary: %w", err)
+	}
+
 	return nil
 }
 
@@ -66,7 +74,16 @@ func generateKustomizeResources(kustomizeDir string) ([]client.Object, error) {
 	// Compile assets using kustomize.
 	fmt.Printf("> Generating OpenShift manifests based on kustomize.yaml from %q\n", kustomizeDir)
 
-	k := krusty.MakeKustomizer(krusty.MakeDefaultOptions())
+	opts := krusty.MakeDefaultOptions()
+	// EnabledPluginConfig lifts plugin restrictions (PluginRestrictionsNone) so
+	// non-builtin plugins such as container-based KRM functions (e.g. starlark
+	// transformers) are allowed. BploUseStaticallyLinked tells kustomize to
+	// resolve builtin plugins from compiled-in code rather than the filesystem.
+	opts.PluginConfig = types.EnabledPluginConfig(types.BploUseStaticallyLinked)
+	// Run KRM containers as the current user instead of "nobody" to avoid
+	// "crun: setgroups: Invalid argument" in nested rootless podman (OpenShift CI).
+	opts.PluginConfig.FnpLoadingOptions.AsCurrentUser = true
+	k := krusty.MakeKustomizer(opts)
 	fSys := filesys.MakeFsOnDisk()
 
 	res, err := k.Run(fSys, kustomizeDir)
@@ -131,6 +148,58 @@ func writeManifests(opts cmdlineOptions, resources []client.Object) (err error) 
 	return nil
 }
 
+type ManifestMetadata struct {
+	Kind       string `json:"kind,omitempty"`
+	APIVersion string `json:"apiVersion,omitempty"`
+	Name       string `json:"name,omitempty"`
+	Namespace  string `json:"namespace,omitempty"`
+}
+
+type ManifestsSummary []ManifestMetadata
+
+func writeManifestsSummary(opts cmdlineOptions, resources []client.Object) error {
+	if !opts.manifestsSummary {
+		return nil
+	}
+
+	manifestsSummaryPathname := path.Join(opts.manifestsPath, opts.profileName, manifestsSummaryFilename)
+
+	var summary ManifestsSummary
+	for _, resource := range resources {
+		summary = append(summary, ManifestMetadata{
+			Kind:       resource.GetObjectKind().GroupVersionKind().Kind,
+			APIVersion: resource.GetObjectKind().GroupVersionKind().GroupVersion().String(),
+			Name:       resource.GetName(),
+			Namespace:  resource.GetNamespace(),
+		})
+	}
+
+	sort.Slice(summary, func(i, j int) bool {
+		if summary[i].Kind != summary[j].Kind {
+			return summary[i].Kind < summary[j].Kind
+		}
+		if summary[i].APIVersion != summary[j].APIVersion {
+			return summary[i].APIVersion < summary[j].APIVersion
+		}
+		if summary[i].Namespace != summary[j].Namespace {
+			return summary[i].Namespace < summary[j].Namespace
+		}
+
+		return summary[i].Name < summary[j].Name
+	})
+
+	data, err := yaml.Marshal(summary)
+	if err != nil {
+		return fmt.Errorf("failed to marshal: %w", err)
+	}
+
+	if err := os.WriteFile(manifestsSummaryPathname, data, 0600); err != nil {
+		return fmt.Errorf("failed to write manifests summary: %w", err)
+	}
+
+	return nil
+}
+
 func writeMetadata(opts cmdlineOptions) (err error) {
 	metadataPathname := path.Join(opts.manifestsPath, opts.profileName, metadataFilename)
 
@@ -142,7 +211,7 @@ func writeMetadata(opts cmdlineOptions) (err error) {
 		err = errors.Join(err, metadataFile.Close())
 	}()
 
-	metadata := providerimages.ProviderMetadata{
+	metadata := providermetadata.ProviderMetadata{
 		Name:         opts.name,
 		SelfImageRef: opts.selfImageRef,
 		OCPPlatform:  configv1.PlatformType(opts.platform),

@@ -19,14 +19,6 @@ import (
 )
 
 var (
-	// Workload annotations are used by the workload admission webhook to modify pod
-	// resources and correctly schedule them while also pinning them to specific CPUSets.
-	// See for more info:
-	// https://github.com/openshift/enhancements/blob/master/enhancements/workload-partitioning/wide-availability-workload-partitioning.md
-	openshiftWorkloadAnnotation = map[string]string{
-		"target.workload.openshift.io/management": `{"effect": "PreferredDuringScheduling"}`,
-	}
-
 	// The expected registry for images used by the cluster-capi-operator.
 	expectedRegistry = "registry.ci.openshift.org"
 )
@@ -137,7 +129,7 @@ func findWebhookServiceSecretName(objs []client.Object) map[string]string {
 				if !ok {
 					panic("can't find secret from cert: " + certNN)
 				}
-				if crd.Spec.Conversion != nil {
+				if crd.Spec.Conversion != nil && crd.Spec.Conversion.Webhook != nil && crd.Spec.Conversion.Webhook.ClientConfig != nil && crd.Spec.Conversion.Webhook.ClientConfig.Service != nil {
 					serviceSecretNames[crd.Spec.Conversion.Webhook.ClientConfig.Service.Name] = secretName
 				}
 			}
@@ -175,8 +167,6 @@ func customizeDeployment(obj client.Object) (client.Object, error) {
 	mustConvert(obj, deployment)
 
 	deployment.Spec.Template.Spec.PriorityClassName = "system-cluster-critical"
-
-	deployment.Spec.Template.Annotations = mergeMaps(deployment.Spec.Template.Annotations, openshiftWorkloadAnnotation)
 
 	for i := range deployment.Spec.Template.Spec.Containers {
 		container := &deployment.Spec.Template.Spec.Containers[i]
@@ -225,18 +215,6 @@ func replaceCertMangerServiceSecret(obj client.Object, serviceSecretNames map[st
 		anns["service.beta.openshift.io/serving-cert-secret-name"] = name
 		obj.SetAnnotations(anns)
 	}
-}
-
-// Variadic function to merge maps of like kind.
-// Note: keys of next map will override keys in previous map if previous map contains same key.
-func mergeMaps[K comparable, V any](maps ...map[K]V) map[K]V {
-	result := map[K]V{}
-	for _, m := range maps {
-		for k, v := range m {
-			result[k] = v
-		}
-	}
-	return result
 }
 
 // generateInfraClusterProtectionPolicy generates a Validating Admission Policy and Binding for protecting
