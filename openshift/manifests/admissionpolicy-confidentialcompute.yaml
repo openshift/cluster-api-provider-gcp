@@ -1,0 +1,74 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: openshift-cluster-api-reject-gcpmachine-amdsev
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups:
+      - infrastructure.cluster.x-k8s.io
+      apiVersions:
+      - '*'
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - gcpmachines
+  validations:
+  - expression: >
+      !has(object.spec.confidentialCompute) ||
+      (object.spec.confidentialCompute != "Enabled" &&
+       object.spec.confidentialCompute != "AMDEncryptedVirtualization")
+    message: "spec.confidentialCompute must not be set to 'Enabled' or 'AMDEncryptedVirtualization'; use 'AMDEncryptedVirtualizationNestedPaging' or 'IntelTrustedDomainExtensions' instead"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: openshift-cluster-api-reject-gcpmachine-amdsev
+spec:
+  policyName: openshift-cluster-api-reject-gcpmachine-amdsev
+  validationActions:
+  - Deny
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: openshift-cluster-api
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: openshift-cluster-api-reject-gcpmachinetemplate-amdsev
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups:
+      - infrastructure.cluster.x-k8s.io
+      apiVersions:
+      - '*'
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - gcpmachinetemplates
+  validations:
+  - expression: >
+      !has(object.spec.template.spec.confidentialCompute) ||
+      (object.spec.template.spec.confidentialCompute != "Enabled" &&
+       object.spec.template.spec.confidentialCompute != "AMDEncryptedVirtualization")
+    message: "spec.template.spec.confidentialCompute must not be set to 'Enabled' or 'AMDEncryptedVirtualization'; use 'AMDEncryptedVirtualizationNestedPaging' or 'IntelTrustedDomainExtensions' instead"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: openshift-cluster-api-reject-gcpmachinetemplate-amdsev
+spec:
+  policyName: openshift-cluster-api-reject-gcpmachinetemplate-amdsev
+  validationActions:
+  - Deny
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: openshift-cluster-api

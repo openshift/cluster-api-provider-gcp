@@ -6,6 +6,7 @@ components:
 
 resources:
 - ../config/default
+- ./manifests/admissionpolicy-confidentialcompute.yaml
 
 images:
 - name: gcr.io/k8s-staging-cluster-api-gcp/cluster-api-gcp-controller
