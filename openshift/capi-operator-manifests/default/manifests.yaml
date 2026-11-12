@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
     service.beta.openshift.io/inject-cabundle: "true"
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
@@ -42,7 +42,7 @@ spec:
     - description: Machine ready status
       jsonPath: .status.ready
       name: Ready
-      type: string
+      type: boolean
     - description: GCE instance ID
       jsonPath: .spec.providerID
       name: InstanceID
@@ -112,7 +112,7 @@ spec:
                             The maximum length is based on the Service Account ID (max 30), Project (max 30), and a valid gcloud email
                             suffix ("iam.gserviceaccount.com").
                           maxLength: 85
-                          pattern: '[-_[A-Za-z0-9]+@[-_[A-Za-z0-9]+.iam.gserviceaccount.com'
+                          pattern: '[-_.[A-Za-z0-9]+@[-_.[A-Za-z0-9]+.iam.gserviceaccount.com'
                           type: string
                         managedKey:
                           description: ManagedKey references keys managed by the Cloud
@@ -124,7 +124,7 @@ spec:
                                 KMSKeyName is the name of the encryption key that is stored in Google Cloud KMS. For example:
                                 "kmsKeyName": "projects/kms_project_id/locations/region/keyRings/key_region/cryptoKeys/key
                               maxLength: 160
-                              pattern: projects\/[-_[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
+                              pattern: projects\/[-_:[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
                               type: string
                           required:
                           - kmsKeyName
@@ -371,6 +371,17 @@ spec:
                   - value
                   type: object
                 type: array
+              resourcePolicies:
+                description: |-
+                  ResourcePolicies are full or partial URLs of existing regional resource policies
+                  to attach when creating the instance. For example:
+                  projects/my-project/regions/us-central1/resourcePolicies/my-placement-policy.
+                  Policies must be in the same region as the instance. CAPG does not create or
+                  delete these policies. Changing this field requires replacing the machine.
+                items:
+                  type: string
+                type: array
+                x-kubernetes-list-type: set
               rootDeviceSize:
                 description: |-
                   RootDeviceSize is the size of the root volume in GB.
@@ -407,7 +418,7 @@ spec:
                       The maximum length is based on the Service Account ID (max 30), Project (max 30), and a valid gcloud email
                       suffix ("iam.gserviceaccount.com").
                     maxLength: 85
-                    pattern: '[-_[A-Za-z0-9]+@[-_[A-Za-z0-9]+.iam.gserviceaccount.com'
+                    pattern: '[-_.[A-Za-z0-9]+@[-_.[A-Za-z0-9]+.iam.gserviceaccount.com'
                     type: string
                   managedKey:
                     description: ManagedKey references keys managed by the Cloud Key
@@ -418,7 +429,7 @@ spec:
                           KMSKeyName is the name of the encryption key that is stored in Google Cloud KMS. For example:
                           "kmsKeyName": "projects/kms_project_id/locations/region/keyRings/key_region/cryptoKeys/key
                         maxLength: 160
-                        pattern: projects\/[-_[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
+                        pattern: projects\/[-_:[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
                         type: string
                     required:
                     - kmsKeyName
@@ -531,6 +542,58 @@ spec:
                   - type
                   type: object
                 type: array
+              conditions:
+                description: conditions defines current service state of the GCPMachine.
+                items:
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed. If that is not known, then using the time when
+                        the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This field may be empty.
+                      maxLength: 10240
+                      minLength: 1
+                      type: string
+                    reason:
+                      description: |-
+                        reason is the reason for the condition's last transition in CamelCase.
+                        The specific API may choose whether or not this field is considered a guaranteed API.
+                        This field may be empty.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                    severity:
+                      description: |-
+                        severity provides an explicit classification of Reason code, so the users or machines can immediately
+                        understand the current situation and act accordingly.
+                        The Severity field MUST be set only when Status=False.
+                      maxLength: 32
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: |-
+                        type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+                        can be useful (see .node.status.conditions), the ability to deconflict is important.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - status
+                  - type
+                  type: object
+                type: array
               failureMessage:
                 description: |-
                   FailureMessage will be set in the event that there is a terminal problem
@@ -576,6 +639,76 @@ spec:
               ready:
                 description: Ready is true when the provider resource is ready.
                 type: boolean
+              v1beta2:
+                description: |-
+                  v1beta2 groups all the fields that will be added or modified in GCPMachine's status
+                  with the v1beta2 version of the Cluster API contract.
+                properties:
+                  conditions:
+                    description: |-
+                      conditions represents the observations of a GCPMachine's current state.
+                      Known condition types are Ready.
+                    items:
+                      description: Condition contains details for one aspect of the
+                        current state of this API Resource.
+                      properties:
+                        lastTransitionTime:
+                          description: |-
+                            lastTransitionTime is the last time the condition transitioned from one status to another.
+                            This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                          format: date-time
+                          type: string
+                        message:
+                          description: |-
+                            message is a human readable message indicating details about the transition.
+                            This may be an empty string.
+                          maxLength: 32768
+                          type: string
+                        observedGeneration:
+                          description: |-
+                            observedGeneration represents the .metadata.generation that the condition was set based upon.
+                            For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                            with respect to the current state of the instance.
+                          format: int64
+                          minimum: 0
+                          type: integer
+                        reason:
+                          description: |-
+                            reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                            Producers of specific condition types may define expected values and meanings for this field,
+                            and whether the values are considered a guaranteed API.
+                            The value should be a CamelCase string.
+                            This field may not be empty.
+                          maxLength: 1024
+                          minLength: 1
+                          pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                          type: string
+                        status:
+                          description: status of the condition, one of True, False,
+                            Unknown.
+                          enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                          type: string
+                        type:
+                          description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                          maxLength: 316
+                          pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                          type: string
+                      required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                      type: object
+                    maxItems: 32
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - type
+                    x-kubernetes-list-type: map
+                type: object
             type: object
         type: object
     served: true
@@ -587,7 +720,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
     service.beta.openshift.io/inject-cabundle: "true"
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
@@ -623,7 +756,7 @@ spec:
     - description: Cluster infrastructure is ready for GCE instances
       jsonPath: .status.ready
       name: Ready
-      type: string
+      type: boolean
     - description: GCP network the cluster is using
       jsonPath: .spec.network.name
       name: Network
@@ -677,9 +810,6 @@ spec:
                     description: port is the port on which the API server is serving.
                     format: int32
                     type: integer
-                required:
-                - host
-                - port
                 type: object
               credentialsRef:
                 description: |-
@@ -781,7 +911,8 @@ spec:
                       Defaults to true.
                     type: boolean
                   firewall:
-                    description: Firewall configuration.
+                    description: Firewall contains the firewall configuration associated
+                      with this network.
                     properties:
                       defaultRulesManagement:
                         default: Managed
@@ -799,6 +930,240 @@ spec:
                         - Managed
                         - Unmanaged
                         type: string
+                      firewallRules:
+                        description: |-
+                          FirewallRules is a list of additional firewall rules to create. FirewallRules has no effect
+                          when a HostProject is specified.
+                        items:
+                          description: FirewallRule describes a GCP firewall rule.
+                          properties:
+                            allowed:
+                              description: |-
+                                Allowed is the list of ALLOW rules specified by this firewall. Each rule
+                                specifies a protocol and port-range tuple that describes a permitted
+                                connection.
+                              items:
+                                description: FirewallDescriptor describes a GCP firewall
+                                  rule.
+                                properties:
+                                  IPProtocol:
+                                    description: |-
+                                      IPProtocol is the IP protocol to which this rule applies. The protocol type is
+                                      required when creating a firewall rule. This value can either be one of the
+                                      following well known protocol strings (tcp, udp, icmp, esp, ah, ipip, sctp)
+                                      or the IP protocol number.
+                                    enum:
+                                    - TCP
+                                    - UDP
+                                    - ICMP
+                                    - ESP
+                                    - AH
+                                    - IPIP
+                                    - SCTP
+                                    type: string
+                                  ports:
+                                    description: |-
+                                      Ports is an optional list of ports to which this rule applies. This field is
+                                      only applicable for the UDP or TCP protocol. Each entry must be either an
+                                      integer or a range. If not specified, this rule applies to connections
+                                      through any port. Example inputs include: ["22"], ["80","443"], and
+                                      ["12345-12349"].
+                                    items:
+                                      pattern: ^[0-9]+(-[0-9]+)?$
+                                      type: string
+                                    maxItems: 500
+                                    type: array
+                                required:
+                                - IPProtocol
+                                type: object
+                              maxItems: 1024
+                              minItems: 0
+                              type: array
+                            denied:
+                              description: |-
+                                Denied is the list of DENY rules specified by this firewall. Each rule
+                                specifies a protocol and port-range tuple that describes a denied
+                                connection. A firewall rule must specify either allowed or denied, not both.
+                              items:
+                                description: FirewallDescriptor describes a GCP firewall
+                                  rule.
+                                properties:
+                                  IPProtocol:
+                                    description: |-
+                                      IPProtocol is the IP protocol to which this rule applies. The protocol type is
+                                      required when creating a firewall rule. This value can either be one of the
+                                      following well known protocol strings (tcp, udp, icmp, esp, ah, ipip, sctp)
+                                      or the IP protocol number.
+                                    enum:
+                                    - TCP
+                                    - UDP
+                                    - ICMP
+                                    - ESP
+                                    - AH
+                                    - IPIP
+                                    - SCTP
+                                    type: string
+                                  ports:
+                                    description: |-
+                                      Ports is an optional list of ports to which this rule applies. This field is
+                                      only applicable for the UDP or TCP protocol. Each entry must be either an
+                                      integer or a range. If not specified, this rule applies to connections
+                                      through any port. Example inputs include: ["22"], ["80","443"], and
+                                      ["12345-12349"].
+                                    items:
+                                      pattern: ^[0-9]+(-[0-9]+)?$
+                                      type: string
+                                    maxItems: 500
+                                    type: array
+                                required:
+                                - IPProtocol
+                                type: object
+                              maxItems: 1024
+                              minItems: 0
+                              type: array
+                            description:
+                              description: |-
+                                Description is an optional description of this resource. Provide this field
+                                when you create the resource.
+                              maxLength: 2000
+                              minLength: 0
+                              type: string
+                            destinationRanges:
+                              description: |-
+                                DestinationRanges is the list of IP addresses where traffic applies. An empty
+                                list means all destinations. These ranges must be expressed in CIDR format.
+                                Both IPv4 and IPv6 are supported.
+                              items:
+                                maxLength: 43
+                                minLength: 1
+                                type: string
+                              maxItems: 1024
+                              minItems: 0
+                              type: array
+                              x-kubernetes-validations:
+                              - message: must be a valid IPv4/IPv6 address or CIDR/Prefix
+                                rule: self.all(i, isIP(i) || isCIDR(i))
+                            direction:
+                              default: Ingress
+                              description: |-
+                                Direction is the direction of traffic to which this firewall applies, either
+                                `Ingress` or `Egress`. The default is `Ingress`. For `Egress` traffic, you
+                                cannot specify the sourceTags fields.
+
+                                Possible values:
+                                  "Egress" - Indicates that firewall should apply to outgoing traffic.
+                                  "Ingress" - Indicates that firewall should apply to incoming traffic.
+                              enum:
+                              - Ingress
+                              - Egress
+                              type: string
+                            name:
+                              description: |-
+                                Name is the name of the resource; provided by the client when the resource is
+                                created. The name must be 1-63 characters long, and comply with RFC1035.
+                                Specifically, the name must be 1-63 characters long and match the regular
+                                expression `[a-z]([-a-z0-9]*[a-z0-9])?`. The first character must be a
+                                lowercase letter, and all following characters (except for the last
+                                character) must be a dash, lowercase letter, or digit. The last character
+                                must be a lowercase letter or digit.
+                                If the firewall does not begin with the cluster name, then the cluster name
+                                will be prepended during the creation of the firewall rule.
+                                When the name is not provided, the name is generated from the infrastructure
+                                identifier of the cluster followed by a generated set of characters. The
+                                generated name is derived from the rule, so it is stable across reconciles, and
+                                is truncated so that it never exceeds 63 characters.
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-z]([-a-z0-9]*[a-z0-9])?$
+                              type: string
+                            priority:
+                              default: 1000
+                              description: |-
+                                Priority is the priority for this rule. This is an integer between `1` and
+                                `65535`, both inclusive. The default value is `1000`. Relative priorities
+                                determine which rule takes effect if multiple rules apply. Lower values
+                                indicate higher priority. For example, a rule with priority `1` has higher
+                                precedence than a rule with priority `2`. DENY rules take precedence over
+                                ALLOW rules if they have equal priority. Note that VPC networks have implied
+                                rules with a priority of `65535`. To avoid conflicts with the implied rules,
+                                use a priority number less than `65535`.
+                              maximum: 65535
+                              minimum: 1
+                              type: integer
+                            sourceRanges:
+                              description: |-
+                                SourceRanges: If source ranges are specified, the firewall rule applies only
+                                to traffic that has a source IP address in these ranges. These ranges must
+                                be expressed in CIDR format. One or both of sourceRanges and sourceTags may
+                                be set. If both fields are set, the rule applies to traffic that has a
+                                source IP address within sourceRanges OR a source IP from a resource with a
+                                matching tag listed in the sourceTags field. The connection does not need to
+                                match both fields for the rule to apply. Both IPv4 and IPv6 are supported.
+                              items:
+                                maxLength: 43
+                                minLength: 1
+                                type: string
+                              maxItems: 1024
+                              minItems: 0
+                              type: array
+                              x-kubernetes-validations:
+                              - message: must be a valid IPv4/IPv6 address or CIDR/Prefix
+                                rule: self.all(i, isIP(i) || isCIDR(i))
+                            sourceTags:
+                              description: |-
+                                SourceTags are the rules applies only to traffic with source IPs that
+                                match the primary network interfaces of VM instances that have the tag and
+                                are in the same VPC network. Source tags cannot be used to control traffic
+                                to an instance's external IP address, it only applies to traffic between
+                                instances in the same virtual network. Because tags are associated with
+                                instances, not IP addresses. One or both of sourceRanges and sourceTags may be
+                                set. If both fields are set, the firewall applies to traffic that has a source
+                                IP address within sourceRanges OR a source IP from a resource with a matching
+                                tag listed in the sourceTags field. The connection does not need to match both
+                                fields for the firewall to apply.
+                              items:
+                                maxLength: 63
+                                minLength: 1
+                                pattern: ^([a-z0-9]+-)*[a-z0-9]+$
+                                type: string
+                              maxItems: 30
+                              minItems: 0
+                              type: array
+                            targetTags:
+                              description: |-
+                                TargetTags is a list of tags that controls which instances the firewall rule
+                                applies to. If targetTags are specified, then the firewall rule applies only
+                                to instances in the VPC network that have one of those tags. If no
+                                targetTags are specified, the firewall rule applies to all instances on the
+                                specified network.
+                              items:
+                                maxLength: 63
+                                minLength: 1
+                                pattern: ^([a-z0-9]+-)*[a-z0-9]+$
+                                type: string
+                              maxItems: 70
+                              minItems: 0
+                              type: array
+                          type: object
+                          x-kubernetes-validations:
+                          - message: sourceRanges cannot be set for Egress rules
+                            rule: self.direction != 'Egress' || !has(self.sourceRanges)
+                              || size(self.sourceRanges) == 0
+                          - message: sourceTags cannot be set for Egress rules
+                            rule: self.direction != 'Egress' || !has(self.sourceTags)
+                              || size(self.sourceTags) == 0
+                          - message: destinationRanges cannot be set for Ingress rules
+                            rule: self.direction != 'Ingress' || !has(self.destinationRanges)
+                              || size(self.destinationRanges) == 0
+                          - message: allowed and denied cannot both be set in the
+                              same rule
+                            rule: '!(has(self.allowed) && size(self.allowed) > 0 &&
+                              has(self.denied) && size(self.denied) > 0)'
+                          - message: at least one of allowed or denied must be set
+                            rule: (has(self.allowed) && size(self.allowed) > 0) ||
+                              (has(self.denied) && size(self.denied) > 0)
+                        maxItems: 50
+                        type: array
                     type: object
                   hostProject:
                     description: HostProject is the name of the project hosting the
@@ -1015,6 +1380,58 @@ spec:
           status:
             description: GCPClusterStatus defines the observed state of GCPCluster.
             properties:
+              conditions:
+                description: conditions defines current service state of the GCPCluster.
+                items:
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed. If that is not known, then using the time when
+                        the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This field may be empty.
+                      maxLength: 10240
+                      minLength: 1
+                      type: string
+                    reason:
+                      description: |-
+                        reason is the reason for the condition's last transition in CamelCase.
+                        The specific API may choose whether or not this field is considered a guaranteed API.
+                        This field may be empty.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                    severity:
+                      description: |-
+                        severity provides an explicit classification of Reason code, so the users or machines can immediately
+                        understand the current situation and act accordingly.
+                        The Severity field MUST be set only when Status=False.
+                      maxLength: 32
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: |-
+                        type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+                        can be useful (see .node.status.conditions), the ability to deconflict is important.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - status
+                  - type
+                  type: object
+                type: array
               failureDomains:
                 additionalProperties:
                   description: |-
@@ -1106,8 +1523,78 @@ spec:
                     type: string
                 type: object
               ready:
-                description: Bastion Instance `json:"bastion,omitempty"`
+                description: Ready denotes that the cluster infrastructure is ready.
                 type: boolean
+              v1beta2:
+                description: |-
+                  v1beta2 groups all the fields that will be added or modified in GCPCluster's status
+                  with the v1beta2 version of the Cluster API contract.
+                properties:
+                  conditions:
+                    description: |-
+                      conditions represents the observations of a GCPCluster's current state.
+                      Known condition types are Ready.
+                    items:
+                      description: Condition contains details for one aspect of the
+                        current state of this API Resource.
+                      properties:
+                        lastTransitionTime:
+                          description: |-
+                            lastTransitionTime is the last time the condition transitioned from one status to another.
+                            This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                          format: date-time
+                          type: string
+                        message:
+                          description: |-
+                            message is a human readable message indicating details about the transition.
+                            This may be an empty string.
+                          maxLength: 32768
+                          type: string
+                        observedGeneration:
+                          description: |-
+                            observedGeneration represents the .metadata.generation that the condition was set based upon.
+                            For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                            with respect to the current state of the instance.
+                          format: int64
+                          minimum: 0
+                          type: integer
+                        reason:
+                          description: |-
+                            reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                            Producers of specific condition types may define expected values and meanings for this field,
+                            and whether the values are considered a guaranteed API.
+                            The value should be a CamelCase string.
+                            This field may not be empty.
+                          maxLength: 1024
+                          minLength: 1
+                          pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                          type: string
+                        status:
+                          description: status of the condition, one of True, False,
+                            Unknown.
+                          enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                          type: string
+                        type:
+                          description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                          maxLength: 316
+                          pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                          type: string
+                      required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                      type: object
+                    maxItems: 32
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - type
+                    x-kubernetes-list-type: map
+                type: object
             required:
             - ready
             type: object
@@ -1121,7 +1608,579 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
+  labels:
+    cluster.x-k8s.io/provider: infrastructure-gcp
+    cluster.x-k8s.io/v1beta1: v1beta1
+  name: gcpmachinepools.infrastructure.cluster.x-k8s.io
+spec:
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    categories:
+    - cluster-api
+    kind: GCPMachinePool
+    listKind: GCPMachinePoolList
+    plural: gcpmachinepools
+    shortNames:
+    - gcpmp
+    singular: gcpmachinepool
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: MachinePool ready status
+      jsonPath: .status.ready
+      name: Ready
+      type: boolean
+    - description: Number of replicas
+      jsonPath: .status.replicas
+      name: Replicas
+      type: integer
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: GCPMachinePool is the Schema for the gcpmachinepools API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: GCPMachinePoolSpec defines the desired state of GCPMachinePool.
+            properties:
+              additionalDisks:
+                description: AdditionalDisks are optional non-boot attached disks.
+                items:
+                  description: AttachedDiskSpec degined GCP machine disk.
+                  properties:
+                    deviceType:
+                      description: |-
+                        DeviceType is a device type of the attached disk.
+                        Supported types of non-root attached volumes:
+                        1. "pd-standard" - Standard (HDD) persistent disk
+                        2. "pd-ssd" - SSD persistent disk
+                        3. "local-ssd" - Local SSD disk (https://cloud.google.com/compute/docs/disks/local-ssd).
+                        4. "pd-balanced" - Balanced Persistent Disk
+                        5. "hyperdisk-balanced" - Hyperdisk Balanced
+                        Default is "pd-standard".
+                      type: string
+                    encryptionKey:
+                      description: EncryptionKey defines the KMS key to be used to
+                        encrypt the disk.
+                      properties:
+                        keyType:
+                          description: |-
+                            KeyType is the type of encryption key. Must be either Managed, aka Customer-Managed Encryption Key (CMEK) or
+                            Supplied, aka Customer-Supplied EncryptionKey (CSEK).
+                          enum:
+                          - Managed
+                          - Supplied
+                          type: string
+                        kmsKeyServiceAccount:
+                          description: |-
+                            KMSKeyServiceAccount is the service account being used for the encryption request for the given KMS key.
+                            If absent, the Compute Engine default service account is used. For example:
+                            "kmsKeyServiceAccount": "name@project_id.iam.gserviceaccount.com.
+                            The maximum length is based on the Service Account ID (max 30), Project (max 30), and a valid gcloud email
+                            suffix ("iam.gserviceaccount.com").
+                          maxLength: 85
+                          pattern: '[-_.[A-Za-z0-9]+@[-_.[A-Za-z0-9]+.iam.gserviceaccount.com'
+                          type: string
+                        managedKey:
+                          description: ManagedKey references keys managed by the Cloud
+                            Key Management Service. This should be set when KeyType
+                            is Managed.
+                          properties:
+                            kmsKeyName:
+                              description: |-
+                                KMSKeyName is the name of the encryption key that is stored in Google Cloud KMS. For example:
+                                "kmsKeyName": "projects/kms_project_id/locations/region/keyRings/key_region/cryptoKeys/key
+                              maxLength: 160
+                              pattern: projects\/[-_:[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
+                              type: string
+                          required:
+                          - kmsKeyName
+                          type: object
+                        suppliedKey:
+                          description: SuppliedKey provides the key used to create
+                            or manage a disk. This should be set when KeyType is Managed.
+                          maxProperties: 1
+                          minProperties: 1
+                          properties:
+                            rawKey:
+                              description: |-
+                                RawKey specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648
+                                base64 to either encrypt or decrypt this resource. You can provide either the rawKey or the rsaEncryptedKey.
+                                For example: "rawKey": "SGVsbG8gZnJvbSBHb29nbGUgQ2xvdWQgUGxhdGZvcm0="
+                              format: byte
+                              type: string
+                            rsaEncryptedKey:
+                              description: |-
+                                RSAEncryptedKey specifies an RFC 4648 base64 encoded, RSA-wrapped 2048-bit customer-supplied encryption
+                                key to either encrypt or decrypt this resource. You can provide either the rawKey or the
+                                rsaEncryptedKey.
+                                For example: "rsaEncryptedKey": "ieCx/NcW06PcT7Ep1X6LUTc/hLvUDYyzSZPPVCVPTVEohpeHASqC8uw5TzyO9U+Fka9JFHi
+                                z0mBibXUInrC/jEk014kCK/NPjYgEMOyssZ4ZINPKxlUh2zn1bV+MCaTICrdmuSBTWlUUiFoDi
+                                D6PYznLwh8ZNdaheCeZ8ewEXgFQ8V+sDroLaN3Xs3MDTXQEMMoNUXMCZEIpg9Vtp9x2oe=="
+                                The key must meet the following requirements before you can provide it to Compute Engine:
+                                1. The key is wrapped using a RSA public key certificate provided by Google.
+                                2. After being wrapped, the key must be encoded in RFC 4648 base64 encoding.
+                                Gets the RSA public key certificate provided by Google at: https://cloud-certs.storage.googleapis.com/google-cloud-csek-ingress.pem
+                              format: byte
+                              type: string
+                          type: object
+                      required:
+                      - keyType
+                      type: object
+                    size:
+                      description: |-
+                        Size is the size of the disk in GBs.
+                        Defaults to 30GB. For "local-ssd" size is always 375GB.
+                      format: int64
+                      type: integer
+                  type: object
+                type: array
+              additionalLabels:
+                additionalProperties:
+                  type: string
+                description: |-
+                  AdditionalLabels is an optional set of tags to add to an instance, in addition to the ones added by default by the
+                  GCP provider. If both the GCPCluster and the GCPMachinePool specify the same tag name with different values, the
+                  GCPMachinePool's value takes precedence.
+                type: object
+              additionalMetadata:
+                description: |-
+                  AdditionalMetadata is an optional set of metadata to add to an instance, in addition to the ones added by default by the
+                  GCP provider.
+                items:
+                  description: MetadataItem defines a single piece of metadata associated
+                    with an instance.
+                  properties:
+                    key:
+                      description: Key is the identifier for the metadata entry.
+                      type: string
+                    value:
+                      description: Value is the value of the metadata entry.
+                      type: string
+                  required:
+                  - key
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - key
+                x-kubernetes-list-type: map
+              additionalNetworkTags:
+                description: |-
+                  AdditionalNetworkTags is a list of network tags that should be applied to the
+                  instance. These tags are set in addition to any network tags defined
+                  at the cluster level or in the actuator.
+                items:
+                  type: string
+                type: array
+              aliasIPRanges:
+                description: AliasIPRanges let you assign ranges of internal IP addresses
+                  as aliases to a VM's network interfaces.
+                items:
+                  description: AliasIPRange is an alias IP range attached to an instance's
+                    network interface.
+                  properties:
+                    ipCidrRange:
+                      description: |-
+                        IPCidrRange is the IP alias ranges to allocate for this interface. This IP
+                        CIDR range must belong to the specified subnetwork and cannot contain IP
+                        addresses reserved by system or used by other network interfaces. This range
+                        may be a single IP address (such as 10.2.3.4), a netmask (such as /24) or a
+                        CIDR-formatted string (such as 10.1.2.0/24).
+                      pattern: ^((([0-9]|[0-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[0-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])/([0-9]|[12][0-9]|3[0-2])|(([0-9]|[0-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[0-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])|(/([0-9]|[12][0-9]|3[0-2])))$
+                      type: string
+                    subnetworkRangeName:
+                      description: |-
+                        SubnetworkRangeName is the name of a subnetwork secondary IP range from which
+                        to allocate an IP alias range. If not specified, the primary range of the
+                        subnetwork is used.
+                      type: string
+                  required:
+                  - ipCidrRange
+                  type: object
+                type: array
+              confidentialCompute:
+                description: |-
+                  ConfidentialCompute Defines whether the instance should have confidential compute enabled or not, and the confidential computing technology of choice.
+                  If Disabled, the machine will not be configured to be a confidential computing instance.
+                  If Enabled, confidential computing will be configured and AMD Secure Encrypted Virtualization will be configured by default. That is subject to change over time. If using AMD Secure Encrypted Virtualization is vital, use AMDEncryptedVirtualization explicitly instead.
+                  If AMDEncryptedVirtualization, it will configure AMD Secure Encrypted Virtualization (AMD SEV) as the confidential computing technology.
+                  If AMDEncryptedVirtualizationNestedPaging, it will configure AMD Secure Encrypted Virtualization Secure Nested Paging (AMD SEV-SNP) as the confidential computing technology.
+                  If IntelTrustedDomainExtensions, it will configure Intel TDX as the confidential computing technology.
+                  If enabled (any value other than Disabled) OnHostMaintenance is required to be set to "Terminate".
+                  If omitted, the platform chooses a default, which is subject to change over time, currently that default is false.
+                enum:
+                - Enabled
+                - Disabled
+                - AMDEncryptedVirtualization
+                - AMDEncryptedVirtualizationNestedPaging
+                - IntelTrustedDomainExtensions
+                type: string
+              guestAccelerators:
+                description: |-
+                  GuestAccelerators is a list of the type and count of accelerator cards
+                  attached to the instance.
+                items:
+                  description: |-
+                    Accelerator is a specification of the type and number of accelerator
+                    cards attached to the instance.
+                  properties:
+                    count:
+                      description: |-
+                        Count is the number of the guest accelerator cards exposed to this
+                        instance.
+                      format: int64
+                      type: integer
+                    type:
+                      description: |-
+                        Type is the full or partial URL of the accelerator type resource to
+                        attach to this instance. For example:
+                        projects/my-project/zones/us-central1-c/acceleratorTypes/nvidia-tesla-p100
+                        If you are creating an instance template, specify only the accelerator name.
+                        See GPUs on Compute Engine for a full list of accelerator types.
+                      type: string
+                  type: object
+                type: array
+              image:
+                description: |-
+                  Image is the full reference to a valid image to be used for this machine.
+                  Takes precedence over ImageFamily.
+                type: string
+              imageFamily:
+                description: ImageFamily is the full reference to a valid image family
+                  to be used for this machine.
+                type: string
+              instanceType:
+                description: 'InstanceType is the type of instance to create. Example:
+                  n1.standard-2'
+                type: string
+              ipForwarding:
+                default: Enabled
+                description: |-
+                  IPForwarding Allows this instance to send and receive packets with non-matching destination or source IPs.
+                  This is required if you plan to use this instance to forward routes. Defaults to enabled.
+                enum:
+                - Enabled
+                - Disabled
+                type: string
+              onHostMaintenance:
+                description: |-
+                  OnHostMaintenance determines the behavior when a maintenance event occurs that might cause the instance to reboot.
+                  If omitted, the platform chooses a default, which is subject to change over time, currently that default is "Migrate".
+                enum:
+                - Migrate
+                - Terminate
+                type: string
+              preemptible:
+                description: Preemptible defines if instance is preemptible
+                type: boolean
+              providerIDList:
+                description: |-
+                  ProviderIDList are the identification IDs of machine instances provided by the provider.
+                  This field must match the provider IDs as seen on the node objects corresponding to a machine pool's machine instances.
+                items:
+                  type: string
+                type: array
+              provisioningModel:
+                description: |-
+                  ProvisioningModel defines if instance is spot.
+                  If set to "Standard" while preemptible is true, then the VM will be of type "Preemptible".
+                  If "Spot", VM type is "Spot". When unspecified, defaults to "Standard".
+                enum:
+                - Standard
+                - Spot
+                type: string
+              publicIP:
+                description: |-
+                  PublicIP specifies whether the instance should get a public IP.
+                  Set this to true if you don't have a NAT instances or Cloud Nat setup.
+                type: boolean
+              resourceManagerTags:
+                description: |-
+                  ResourceManagerTags is an optional set of tags to apply to GCP resources managed
+                  by the GCP provider. GCP supports a maximum of 50 tags per resource.
+                items:
+                  description: ResourceManagerTag is a tag to apply to GCP resources
+                    managed by the GCP provider.
+                  properties:
+                    key:
+                      description: |-
+                        Key is the key part of the tag. A tag key can have a maximum of 63 characters and cannot
+                        be empty. Tag key must begin and end with an alphanumeric character, and must contain
+                        only uppercase, lowercase alphanumeric characters, and the following special
+                        characters `._-`.
+                      maxLength: 63
+                      minLength: 1
+                      pattern: ^[a-zA-Z0-9]([0-9A-Za-z_.-]{0,61}[a-zA-Z0-9])?$
+                      type: string
+                    parentID:
+                      description: |-
+                        ParentID is the ID of the hierarchical resource where the tags are defined
+                        e.g. at the Organization or the Project level. To find the Organization or Project ID ref
+                        https://cloud.google.com/resource-manager/docs/creating-managing-organization#retrieving_your_organization_id
+                        https://cloud.google.com/resource-manager/docs/creating-managing-projects#identifying_projects
+                        An OrganizationID must consist of decimal numbers, and cannot have leading zeroes.
+                        A ProjectID must be 6 to 30 characters in length, can only contain lowercase letters,
+                        numbers, and hyphens, and must start with a letter, and cannot end with a hyphen.
+                      maxLength: 32
+                      minLength: 1
+                      pattern: (^[1-9][0-9]{0,31}$)|(^[a-z][a-z0-9-]{4,28}[a-z0-9]$)
+                      type: string
+                    value:
+                      description: |-
+                        Value is the value part of the tag. A tag value can have a maximum of 63 characters and
+                        cannot be empty. Tag value must begin and end with an alphanumeric character, and must
+                        contain only uppercase, lowercase alphanumeric characters, and the following special
+                        characters `_-.@%=+:,*#&(){}[]` and spaces.
+                      maxLength: 63
+                      minLength: 1
+                      pattern: ^[a-zA-Z0-9]([0-9A-Za-z_.@%=+:,*#&()\[\]{}\-\s]{0,61}[a-zA-Z0-9])?$
+                      type: string
+                  required:
+                  - key
+                  - parentID
+                  - value
+                  type: object
+                type: array
+              rootDeviceSize:
+                description: |-
+                  RootDeviceSize is the size of the root volume in GB.
+                  Defaults to 30.
+                format: int64
+                type: integer
+              rootDeviceType:
+                description: |-
+                  RootDeviceType is the type of the root volume.
+                  Supported types of root volumes:
+                  1. "pd-standard" - Standard (HDD) persistent disk
+                  2. "pd-ssd" - SSD persistent disk
+                  3. "pd-balanced" - Balanced Persistent Disk
+                  4. "hyperdisk-balanced" - Hyperdisk Balanced
+                  Default is "pd-standard".
+                type: string
+              rootDiskEncryptionKey:
+                description: RootDiskEncryptionKey defines the KMS key to be used
+                  to encrypt the root disk.
+                properties:
+                  keyType:
+                    description: |-
+                      KeyType is the type of encryption key. Must be either Managed, aka Customer-Managed Encryption Key (CMEK) or
+                      Supplied, aka Customer-Supplied EncryptionKey (CSEK).
+                    enum:
+                    - Managed
+                    - Supplied
+                    type: string
+                  kmsKeyServiceAccount:
+                    description: |-
+                      KMSKeyServiceAccount is the service account being used for the encryption request for the given KMS key.
+                      If absent, the Compute Engine default service account is used. For example:
+                      "kmsKeyServiceAccount": "name@project_id.iam.gserviceaccount.com.
+                      The maximum length is based on the Service Account ID (max 30), Project (max 30), and a valid gcloud email
+                      suffix ("iam.gserviceaccount.com").
+                    maxLength: 85
+                    pattern: '[-_.[A-Za-z0-9]+@[-_.[A-Za-z0-9]+.iam.gserviceaccount.com'
+                    type: string
+                  managedKey:
+                    description: ManagedKey references keys managed by the Cloud Key
+                      Management Service. This should be set when KeyType is Managed.
+                    properties:
+                      kmsKeyName:
+                        description: |-
+                          KMSKeyName is the name of the encryption key that is stored in Google Cloud KMS. For example:
+                          "kmsKeyName": "projects/kms_project_id/locations/region/keyRings/key_region/cryptoKeys/key
+                        maxLength: 160
+                        pattern: projects\/[-_:[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
+                        type: string
+                    required:
+                    - kmsKeyName
+                    type: object
+                  suppliedKey:
+                    description: SuppliedKey provides the key used to create or manage
+                      a disk. This should be set when KeyType is Managed.
+                    maxProperties: 1
+                    minProperties: 1
+                    properties:
+                      rawKey:
+                        description: |-
+                          RawKey specifies a 256-bit customer-supplied encryption key, encoded in RFC 4648
+                          base64 to either encrypt or decrypt this resource. You can provide either the rawKey or the rsaEncryptedKey.
+                          For example: "rawKey": "SGVsbG8gZnJvbSBHb29nbGUgQ2xvdWQgUGxhdGZvcm0="
+                        format: byte
+                        type: string
+                      rsaEncryptedKey:
+                        description: |-
+                          RSAEncryptedKey specifies an RFC 4648 base64 encoded, RSA-wrapped 2048-bit customer-supplied encryption
+                          key to either encrypt or decrypt this resource. You can provide either the rawKey or the
+                          rsaEncryptedKey.
+                          For example: "rsaEncryptedKey": "ieCx/NcW06PcT7Ep1X6LUTc/hLvUDYyzSZPPVCVPTVEohpeHASqC8uw5TzyO9U+Fka9JFHi
+                          z0mBibXUInrC/jEk014kCK/NPjYgEMOyssZ4ZINPKxlUh2zn1bV+MCaTICrdmuSBTWlUUiFoDi
+                          D6PYznLwh8ZNdaheCeZ8ewEXgFQ8V+sDroLaN3Xs3MDTXQEMMoNUXMCZEIpg9Vtp9x2oe=="
+                          The key must meet the following requirements before you can provide it to Compute Engine:
+                          1. The key is wrapped using a RSA public key certificate provided by Google.
+                          2. After being wrapped, the key must be encoded in RFC 4648 base64 encoding.
+                          Gets the RSA public key certificate provided by Google at: https://cloud-certs.storage.googleapis.com/google-cloud-csek-ingress.pem
+                        format: byte
+                        type: string
+                    type: object
+                required:
+                - keyType
+                type: object
+              serviceAccounts:
+                description: |-
+                  ServiceAccount specifies the service account email and which scopes to assign to the machine.
+                  Defaults to: email: "default", scope: []{compute.CloudPlatformScope}
+                properties:
+                  email:
+                    description: 'Email: Email address of the service account.'
+                    type: string
+                  scopes:
+                    description: |-
+                      Scopes: The list of scopes to be made available for this service
+                      account.
+                    items:
+                      type: string
+                    type: array
+                type: object
+              shieldedInstanceConfig:
+                description: ShieldedInstanceConfig is the Shielded VM configuration
+                  for this machine
+                properties:
+                  integrityMonitoring:
+                    description: |-
+                      IntegrityMonitoring determines whether the instance should have integrity monitoring that verify the runtime boot integrity.
+                      Compares the most recent boot measurements to the integrity policy baseline and return
+                      a pair of pass/fail results depending on whether they match or not.
+                      If omitted, the platform chooses a default, which is subject to change over time, currently that default is Enabled.
+                    enum:
+                    - Enabled
+                    - Disabled
+                    type: string
+                  secureBoot:
+                    description: |-
+                      SecureBoot Defines whether the instance should have secure boot enabled.
+                      Secure Boot verify the digital signature of all boot components, and halting the boot process if signature verification fails.
+                      If omitted, the platform chooses a default, which is subject to change over time, currently that default is Disabled.
+                    enum:
+                    - Enabled
+                    - Disabled
+                    type: string
+                  virtualizedTrustedPlatformModule:
+                    description: |-
+                      VirtualizedTrustedPlatformModule enable virtualized trusted platform module measurements to create a known good boot integrity policy baseline.
+                      The integrity policy baseline is used for comparison with measurements from subsequent VM boots to determine if anything has changed.
+                      If omitted, the platform chooses a default, which is subject to change over time, currently that default is Enabled.
+                    enum:
+                    - Enabled
+                    - Disabled
+                    type: string
+                type: object
+              subnet:
+                description: |-
+                  Subnet is a reference to the subnetwork to use for this instance. If not specified,
+                  the first subnetwork retrieved from the Cluster Region and Network is picked.
+                type: string
+            required:
+            - instanceType
+            type: object
+          status:
+            description: GCPMachinePoolStatus defines the observed state of GCPMachinePool.
+            properties:
+              conditions:
+                description: Conditions defines current service state of the GCPMachinePool.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                maxItems: 32
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              ready:
+                description: Ready is true when the provider resource is ready.
+                type: boolean
+              replicas:
+                description: Replicas is the most recently observed number of replicas
+                format: int32
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
     service.beta.openshift.io/inject-cabundle: "true"
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
@@ -1244,7 +2303,7 @@ spec:
                                     The maximum length is based on the Service Account ID (max 30), Project (max 30), and a valid gcloud email
                                     suffix ("iam.gserviceaccount.com").
                                   maxLength: 85
-                                  pattern: '[-_[A-Za-z0-9]+@[-_[A-Za-z0-9]+.iam.gserviceaccount.com'
+                                  pattern: '[-_.[A-Za-z0-9]+@[-_.[A-Za-z0-9]+.iam.gserviceaccount.com'
                                   type: string
                                 managedKey:
                                   description: ManagedKey references keys managed
@@ -1256,7 +2315,7 @@ spec:
                                         KMSKeyName is the name of the encryption key that is stored in Google Cloud KMS. For example:
                                         "kmsKeyName": "projects/kms_project_id/locations/region/keyRings/key_region/cryptoKeys/key
                                       maxLength: 160
-                                      pattern: projects\/[-_[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
+                                      pattern: projects\/[-_:[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
                                       type: string
                                   required:
                                   - kmsKeyName
@@ -1505,6 +2564,17 @@ spec:
                           - value
                           type: object
                         type: array
+                      resourcePolicies:
+                        description: |-
+                          ResourcePolicies are full or partial URLs of existing regional resource policies
+                          to attach when creating the instance. For example:
+                          projects/my-project/regions/us-central1/resourcePolicies/my-placement-policy.
+                          Policies must be in the same region as the instance. CAPG does not create or
+                          delete these policies. Changing this field requires replacing the machine.
+                        items:
+                          type: string
+                        type: array
+                        x-kubernetes-list-type: set
                       rootDeviceSize:
                         description: |-
                           RootDeviceSize is the size of the root volume in GB.
@@ -1541,7 +2611,7 @@ spec:
                               The maximum length is based on the Service Account ID (max 30), Project (max 30), and a valid gcloud email
                               suffix ("iam.gserviceaccount.com").
                             maxLength: 85
-                            pattern: '[-_[A-Za-z0-9]+@[-_[A-Za-z0-9]+.iam.gserviceaccount.com'
+                            pattern: '[-_.[A-Za-z0-9]+@[-_.[A-Za-z0-9]+.iam.gserviceaccount.com'
                             type: string
                           managedKey:
                             description: ManagedKey references keys managed by the
@@ -1553,7 +2623,7 @@ spec:
                                   KMSKeyName is the name of the encryption key that is stored in Google Cloud KMS. For example:
                                   "kmsKeyName": "projects/kms_project_id/locations/region/keyRings/key_region/cryptoKeys/key
                                 maxLength: 160
-                                pattern: projects\/[-_[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
+                                pattern: projects\/[-_:[A-Za-z0-9]+\/locations\/[-_[A-Za-z0-9]+\/keyRings\/[-_[A-Za-z0-9]+\/cryptoKeys\/[-_[A-Za-z0-9]+
                                 type: string
                             required:
                             - kmsKeyName
@@ -1653,15 +2723,55 @@ spec:
             required:
             - template
             type: object
+          status:
+            description: GCPMachineTemplateStatus defines the observed state of a
+              GCPMachineTemplate.
+            properties:
+              capacity:
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+                description: |-
+                  Capacity defines the resource capacity for this machine.
+                  This value is used for autoscaling-from-zero operations as defined in:
+                  https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20210310-opt-in-autoscaling-from-zero.md
+                type: object
+              nodeInfo:
+                description: |-
+                  NodeInfo defines the node architecture and operating system.
+                  This value is used for autoscaling-from-zero operations as defined in:
+                  https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20210310-opt-in-autoscaling-from-zero.md
+                properties:
+                  architecture:
+                    description: Architecture defines the hardware architecture (e.g.,
+                      amd64, arm64).
+                    enum:
+                    - amd64
+                    - arm64
+                    type: string
+                  operatingSystem:
+                    description: OperatingSystem defines the operating system (e.g.,
+                      linux, windows).
+                    enum:
+                    - linux
+                    - windows
+                    type: string
+                type: object
+            type: object
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
     service.beta.openshift.io/inject-cabundle: "true"
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
@@ -1768,9 +2878,6 @@ spec:
                               is serving.
                             format: int32
                             type: integer
-                        required:
-                        - host
-                        - port
                         type: object
                       credentialsRef:
                         description: |-
@@ -1874,7 +2981,8 @@ spec:
                               Defaults to true.
                             type: boolean
                           firewall:
-                            description: Firewall configuration.
+                            description: Firewall contains the firewall configuration
+                              associated with this network.
                             properties:
                               defaultRulesManagement:
                                 default: Managed
@@ -1892,6 +3000,248 @@ spec:
                                 - Managed
                                 - Unmanaged
                                 type: string
+                              firewallRules:
+                                description: |-
+                                  FirewallRules is a list of additional firewall rules to create. FirewallRules has no effect
+                                  when a HostProject is specified.
+                                items:
+                                  description: FirewallRule describes a GCP firewall
+                                    rule.
+                                  properties:
+                                    allowed:
+                                      description: |-
+                                        Allowed is the list of ALLOW rules specified by this firewall. Each rule
+                                        specifies a protocol and port-range tuple that describes a permitted
+                                        connection.
+                                      items:
+                                        description: FirewallDescriptor describes
+                                          a GCP firewall rule.
+                                        properties:
+                                          IPProtocol:
+                                            description: |-
+                                              IPProtocol is the IP protocol to which this rule applies. The protocol type is
+                                              required when creating a firewall rule. This value can either be one of the
+                                              following well known protocol strings (tcp, udp, icmp, esp, ah, ipip, sctp)
+                                              or the IP protocol number.
+                                            enum:
+                                            - TCP
+                                            - UDP
+                                            - ICMP
+                                            - ESP
+                                            - AH
+                                            - IPIP
+                                            - SCTP
+                                            type: string
+                                          ports:
+                                            description: |-
+                                              Ports is an optional list of ports to which this rule applies. This field is
+                                              only applicable for the UDP or TCP protocol. Each entry must be either an
+                                              integer or a range. If not specified, this rule applies to connections
+                                              through any port. Example inputs include: ["22"], ["80","443"], and
+                                              ["12345-12349"].
+                                            items:
+                                              pattern: ^[0-9]+(-[0-9]+)?$
+                                              type: string
+                                            maxItems: 500
+                                            type: array
+                                        required:
+                                        - IPProtocol
+                                        type: object
+                                      maxItems: 1024
+                                      minItems: 0
+                                      type: array
+                                    denied:
+                                      description: |-
+                                        Denied is the list of DENY rules specified by this firewall. Each rule
+                                        specifies a protocol and port-range tuple that describes a denied
+                                        connection. A firewall rule must specify either allowed or denied, not both.
+                                      items:
+                                        description: FirewallDescriptor describes
+                                          a GCP firewall rule.
+                                        properties:
+                                          IPProtocol:
+                                            description: |-
+                                              IPProtocol is the IP protocol to which this rule applies. The protocol type is
+                                              required when creating a firewall rule. This value can either be one of the
+                                              following well known protocol strings (tcp, udp, icmp, esp, ah, ipip, sctp)
+                                              or the IP protocol number.
+                                            enum:
+                                            - TCP
+                                            - UDP
+                                            - ICMP
+                                            - ESP
+                                            - AH
+                                            - IPIP
+                                            - SCTP
+                                            type: string
+                                          ports:
+                                            description: |-
+                                              Ports is an optional list of ports to which this rule applies. This field is
+                                              only applicable for the UDP or TCP protocol. Each entry must be either an
+                                              integer or a range. If not specified, this rule applies to connections
+                                              through any port. Example inputs include: ["22"], ["80","443"], and
+                                              ["12345-12349"].
+                                            items:
+                                              pattern: ^[0-9]+(-[0-9]+)?$
+                                              type: string
+                                            maxItems: 500
+                                            type: array
+                                        required:
+                                        - IPProtocol
+                                        type: object
+                                      maxItems: 1024
+                                      minItems: 0
+                                      type: array
+                                    description:
+                                      description: |-
+                                        Description is an optional description of this resource. Provide this field
+                                        when you create the resource.
+                                      maxLength: 2000
+                                      minLength: 0
+                                      type: string
+                                    destinationRanges:
+                                      description: |-
+                                        DestinationRanges is the list of IP addresses where traffic applies. An empty
+                                        list means all destinations. These ranges must be expressed in CIDR format.
+                                        Both IPv4 and IPv6 are supported.
+                                      items:
+                                        maxLength: 43
+                                        minLength: 1
+                                        type: string
+                                      maxItems: 1024
+                                      minItems: 0
+                                      type: array
+                                      x-kubernetes-validations:
+                                      - message: must be a valid IPv4/IPv6 address
+                                          or CIDR/Prefix
+                                        rule: self.all(i, isIP(i) || isCIDR(i))
+                                    direction:
+                                      default: Ingress
+                                      description: |-
+                                        Direction is the direction of traffic to which this firewall applies, either
+                                        `Ingress` or `Egress`. The default is `Ingress`. For `Egress` traffic, you
+                                        cannot specify the sourceTags fields.
+
+                                        Possible values:
+                                          "Egress" - Indicates that firewall should apply to outgoing traffic.
+                                          "Ingress" - Indicates that firewall should apply to incoming traffic.
+                                      enum:
+                                      - Ingress
+                                      - Egress
+                                      type: string
+                                    name:
+                                      description: |-
+                                        Name is the name of the resource; provided by the client when the resource is
+                                        created. The name must be 1-63 characters long, and comply with RFC1035.
+                                        Specifically, the name must be 1-63 characters long and match the regular
+                                        expression `[a-z]([-a-z0-9]*[a-z0-9])?`. The first character must be a
+                                        lowercase letter, and all following characters (except for the last
+                                        character) must be a dash, lowercase letter, or digit. The last character
+                                        must be a lowercase letter or digit.
+                                        If the firewall does not begin with the cluster name, then the cluster name
+                                        will be prepended during the creation of the firewall rule.
+                                        When the name is not provided, the name is generated from the infrastructure
+                                        identifier of the cluster followed by a generated set of characters. The
+                                        generated name is derived from the rule, so it is stable across reconciles, and
+                                        is truncated so that it never exceeds 63 characters.
+                                      maxLength: 63
+                                      minLength: 1
+                                      pattern: ^[a-z]([-a-z0-9]*[a-z0-9])?$
+                                      type: string
+                                    priority:
+                                      default: 1000
+                                      description: |-
+                                        Priority is the priority for this rule. This is an integer between `1` and
+                                        `65535`, both inclusive. The default value is `1000`. Relative priorities
+                                        determine which rule takes effect if multiple rules apply. Lower values
+                                        indicate higher priority. For example, a rule with priority `1` has higher
+                                        precedence than a rule with priority `2`. DENY rules take precedence over
+                                        ALLOW rules if they have equal priority. Note that VPC networks have implied
+                                        rules with a priority of `65535`. To avoid conflicts with the implied rules,
+                                        use a priority number less than `65535`.
+                                      maximum: 65535
+                                      minimum: 1
+                                      type: integer
+                                    sourceRanges:
+                                      description: |-
+                                        SourceRanges: If source ranges are specified, the firewall rule applies only
+                                        to traffic that has a source IP address in these ranges. These ranges must
+                                        be expressed in CIDR format. One or both of sourceRanges and sourceTags may
+                                        be set. If both fields are set, the rule applies to traffic that has a
+                                        source IP address within sourceRanges OR a source IP from a resource with a
+                                        matching tag listed in the sourceTags field. The connection does not need to
+                                        match both fields for the rule to apply. Both IPv4 and IPv6 are supported.
+                                      items:
+                                        maxLength: 43
+                                        minLength: 1
+                                        type: string
+                                      maxItems: 1024
+                                      minItems: 0
+                                      type: array
+                                      x-kubernetes-validations:
+                                      - message: must be a valid IPv4/IPv6 address
+                                          or CIDR/Prefix
+                                        rule: self.all(i, isIP(i) || isCIDR(i))
+                                    sourceTags:
+                                      description: |-
+                                        SourceTags are the rules applies only to traffic with source IPs that
+                                        match the primary network interfaces of VM instances that have the tag and
+                                        are in the same VPC network. Source tags cannot be used to control traffic
+                                        to an instance's external IP address, it only applies to traffic between
+                                        instances in the same virtual network. Because tags are associated with
+                                        instances, not IP addresses. One or both of sourceRanges and sourceTags may be
+                                        set. If both fields are set, the firewall applies to traffic that has a source
+                                        IP address within sourceRanges OR a source IP from a resource with a matching
+                                        tag listed in the sourceTags field. The connection does not need to match both
+                                        fields for the firewall to apply.
+                                      items:
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^([a-z0-9]+-)*[a-z0-9]+$
+                                        type: string
+                                      maxItems: 30
+                                      minItems: 0
+                                      type: array
+                                    targetTags:
+                                      description: |-
+                                        TargetTags is a list of tags that controls which instances the firewall rule
+                                        applies to. If targetTags are specified, then the firewall rule applies only
+                                        to instances in the VPC network that have one of those tags. If no
+                                        targetTags are specified, the firewall rule applies to all instances on the
+                                        specified network.
+                                      items:
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^([a-z0-9]+-)*[a-z0-9]+$
+                                        type: string
+                                      maxItems: 70
+                                      minItems: 0
+                                      type: array
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: sourceRanges cannot be set for Egress
+                                      rules
+                                    rule: self.direction != 'Egress' || !has(self.sourceRanges)
+                                      || size(self.sourceRanges) == 0
+                                  - message: sourceTags cannot be set for Egress rules
+                                    rule: self.direction != 'Egress' || !has(self.sourceTags)
+                                      || size(self.sourceTags) == 0
+                                  - message: destinationRanges cannot be set for Ingress
+                                      rules
+                                    rule: self.direction != 'Ingress' || !has(self.destinationRanges)
+                                      || size(self.destinationRanges) == 0
+                                  - message: allowed and denied cannot both be set
+                                      in the same rule
+                                    rule: '!(has(self.allowed) && size(self.allowed)
+                                      > 0 && has(self.denied) && size(self.denied)
+                                      > 0)'
+                                  - message: at least one of allowed or denied must
+                                      be set
+                                    rule: (has(self.allowed) && size(self.allowed)
+                                      > 0) || (has(self.denied) && size(self.denied)
+                                      > 0)
+                                maxItems: 50
+                                type: array
                             type: object
                           hostProject:
                             description: HostProject is the name of the project hosting
@@ -2119,7 +3469,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
     cluster.x-k8s.io/v1beta1: v1beta1
@@ -2145,7 +3495,7 @@ spec:
     - description: Cluster infrastructure is ready for GCE instances
       jsonPath: .status.ready
       name: Ready
-      type: string
+      type: boolean
     - description: GCP network the cluster is using
       jsonPath: .spec.network.name
       name: Network
@@ -2199,9 +3549,6 @@ spec:
                     description: port is the port on which the API server is serving.
                     format: int32
                     type: integer
-                required:
-                - host
-                - port
                 type: object
               credentialsRef:
                 description: |-
@@ -2295,7 +3642,8 @@ spec:
                       Defaults to true.
                     type: boolean
                   firewall:
-                    description: Firewall configuration.
+                    description: Firewall contains the firewall configuration associated
+                      with this network.
                     properties:
                       defaultRulesManagement:
                         default: Managed
@@ -2313,6 +3661,240 @@ spec:
                         - Managed
                         - Unmanaged
                         type: string
+                      firewallRules:
+                        description: |-
+                          FirewallRules is a list of additional firewall rules to create. FirewallRules has no effect
+                          when a HostProject is specified.
+                        items:
+                          description: FirewallRule describes a GCP firewall rule.
+                          properties:
+                            allowed:
+                              description: |-
+                                Allowed is the list of ALLOW rules specified by this firewall. Each rule
+                                specifies a protocol and port-range tuple that describes a permitted
+                                connection.
+                              items:
+                                description: FirewallDescriptor describes a GCP firewall
+                                  rule.
+                                properties:
+                                  IPProtocol:
+                                    description: |-
+                                      IPProtocol is the IP protocol to which this rule applies. The protocol type is
+                                      required when creating a firewall rule. This value can either be one of the
+                                      following well known protocol strings (tcp, udp, icmp, esp, ah, ipip, sctp)
+                                      or the IP protocol number.
+                                    enum:
+                                    - TCP
+                                    - UDP
+                                    - ICMP
+                                    - ESP
+                                    - AH
+                                    - IPIP
+                                    - SCTP
+                                    type: string
+                                  ports:
+                                    description: |-
+                                      Ports is an optional list of ports to which this rule applies. This field is
+                                      only applicable for the UDP or TCP protocol. Each entry must be either an
+                                      integer or a range. If not specified, this rule applies to connections
+                                      through any port. Example inputs include: ["22"], ["80","443"], and
+                                      ["12345-12349"].
+                                    items:
+                                      pattern: ^[0-9]+(-[0-9]+)?$
+                                      type: string
+                                    maxItems: 500
+                                    type: array
+                                required:
+                                - IPProtocol
+                                type: object
+                              maxItems: 1024
+                              minItems: 0
+                              type: array
+                            denied:
+                              description: |-
+                                Denied is the list of DENY rules specified by this firewall. Each rule
+                                specifies a protocol and port-range tuple that describes a denied
+                                connection. A firewall rule must specify either allowed or denied, not both.
+                              items:
+                                description: FirewallDescriptor describes a GCP firewall
+                                  rule.
+                                properties:
+                                  IPProtocol:
+                                    description: |-
+                                      IPProtocol is the IP protocol to which this rule applies. The protocol type is
+                                      required when creating a firewall rule. This value can either be one of the
+                                      following well known protocol strings (tcp, udp, icmp, esp, ah, ipip, sctp)
+                                      or the IP protocol number.
+                                    enum:
+                                    - TCP
+                                    - UDP
+                                    - ICMP
+                                    - ESP
+                                    - AH
+                                    - IPIP
+                                    - SCTP
+                                    type: string
+                                  ports:
+                                    description: |-
+                                      Ports is an optional list of ports to which this rule applies. This field is
+                                      only applicable for the UDP or TCP protocol. Each entry must be either an
+                                      integer or a range. If not specified, this rule applies to connections
+                                      through any port. Example inputs include: ["22"], ["80","443"], and
+                                      ["12345-12349"].
+                                    items:
+                                      pattern: ^[0-9]+(-[0-9]+)?$
+                                      type: string
+                                    maxItems: 500
+                                    type: array
+                                required:
+                                - IPProtocol
+                                type: object
+                              maxItems: 1024
+                              minItems: 0
+                              type: array
+                            description:
+                              description: |-
+                                Description is an optional description of this resource. Provide this field
+                                when you create the resource.
+                              maxLength: 2000
+                              minLength: 0
+                              type: string
+                            destinationRanges:
+                              description: |-
+                                DestinationRanges is the list of IP addresses where traffic applies. An empty
+                                list means all destinations. These ranges must be expressed in CIDR format.
+                                Both IPv4 and IPv6 are supported.
+                              items:
+                                maxLength: 43
+                                minLength: 1
+                                type: string
+                              maxItems: 1024
+                              minItems: 0
+                              type: array
+                              x-kubernetes-validations:
+                              - message: must be a valid IPv4/IPv6 address or CIDR/Prefix
+                                rule: self.all(i, isIP(i) || isCIDR(i))
+                            direction:
+                              default: Ingress
+                              description: |-
+                                Direction is the direction of traffic to which this firewall applies, either
+                                `Ingress` or `Egress`. The default is `Ingress`. For `Egress` traffic, you
+                                cannot specify the sourceTags fields.
+
+                                Possible values:
+                                  "Egress" - Indicates that firewall should apply to outgoing traffic.
+                                  "Ingress" - Indicates that firewall should apply to incoming traffic.
+                              enum:
+                              - Ingress
+                              - Egress
+                              type: string
+                            name:
+                              description: |-
+                                Name is the name of the resource; provided by the client when the resource is
+                                created. The name must be 1-63 characters long, and comply with RFC1035.
+                                Specifically, the name must be 1-63 characters long and match the regular
+                                expression `[a-z]([-a-z0-9]*[a-z0-9])?`. The first character must be a
+                                lowercase letter, and all following characters (except for the last
+                                character) must be a dash, lowercase letter, or digit. The last character
+                                must be a lowercase letter or digit.
+                                If the firewall does not begin with the cluster name, then the cluster name
+                                will be prepended during the creation of the firewall rule.
+                                When the name is not provided, the name is generated from the infrastructure
+                                identifier of the cluster followed by a generated set of characters. The
+                                generated name is derived from the rule, so it is stable across reconciles, and
+                                is truncated so that it never exceeds 63 characters.
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-z]([-a-z0-9]*[a-z0-9])?$
+                              type: string
+                            priority:
+                              default: 1000
+                              description: |-
+                                Priority is the priority for this rule. This is an integer between `1` and
+                                `65535`, both inclusive. The default value is `1000`. Relative priorities
+                                determine which rule takes effect if multiple rules apply. Lower values
+                                indicate higher priority. For example, a rule with priority `1` has higher
+                                precedence than a rule with priority `2`. DENY rules take precedence over
+                                ALLOW rules if they have equal priority. Note that VPC networks have implied
+                                rules with a priority of `65535`. To avoid conflicts with the implied rules,
+                                use a priority number less than `65535`.
+                              maximum: 65535
+                              minimum: 1
+                              type: integer
+                            sourceRanges:
+                              description: |-
+                                SourceRanges: If source ranges are specified, the firewall rule applies only
+                                to traffic that has a source IP address in these ranges. These ranges must
+                                be expressed in CIDR format. One or both of sourceRanges and sourceTags may
+                                be set. If both fields are set, the rule applies to traffic that has a
+                                source IP address within sourceRanges OR a source IP from a resource with a
+                                matching tag listed in the sourceTags field. The connection does not need to
+                                match both fields for the rule to apply. Both IPv4 and IPv6 are supported.
+                              items:
+                                maxLength: 43
+                                minLength: 1
+                                type: string
+                              maxItems: 1024
+                              minItems: 0
+                              type: array
+                              x-kubernetes-validations:
+                              - message: must be a valid IPv4/IPv6 address or CIDR/Prefix
+                                rule: self.all(i, isIP(i) || isCIDR(i))
+                            sourceTags:
+                              description: |-
+                                SourceTags are the rules applies only to traffic with source IPs that
+                                match the primary network interfaces of VM instances that have the tag and
+                                are in the same VPC network. Source tags cannot be used to control traffic
+                                to an instance's external IP address, it only applies to traffic between
+                                instances in the same virtual network. Because tags are associated with
+                                instances, not IP addresses. One or both of sourceRanges and sourceTags may be
+                                set. If both fields are set, the firewall applies to traffic that has a source
+                                IP address within sourceRanges OR a source IP from a resource with a matching
+                                tag listed in the sourceTags field. The connection does not need to match both
+                                fields for the firewall to apply.
+                              items:
+                                maxLength: 63
+                                minLength: 1
+                                pattern: ^([a-z0-9]+-)*[a-z0-9]+$
+                                type: string
+                              maxItems: 30
+                              minItems: 0
+                              type: array
+                            targetTags:
+                              description: |-
+                                TargetTags is a list of tags that controls which instances the firewall rule
+                                applies to. If targetTags are specified, then the firewall rule applies only
+                                to instances in the VPC network that have one of those tags. If no
+                                targetTags are specified, the firewall rule applies to all instances on the
+                                specified network.
+                              items:
+                                maxLength: 63
+                                minLength: 1
+                                pattern: ^([a-z0-9]+-)*[a-z0-9]+$
+                                type: string
+                              maxItems: 70
+                              minItems: 0
+                              type: array
+                          type: object
+                          x-kubernetes-validations:
+                          - message: sourceRanges cannot be set for Egress rules
+                            rule: self.direction != 'Egress' || !has(self.sourceRanges)
+                              || size(self.sourceRanges) == 0
+                          - message: sourceTags cannot be set for Egress rules
+                            rule: self.direction != 'Egress' || !has(self.sourceTags)
+                              || size(self.sourceTags) == 0
+                          - message: destinationRanges cannot be set for Ingress rules
+                            rule: self.direction != 'Ingress' || !has(self.destinationRanges)
+                              || size(self.destinationRanges) == 0
+                          - message: allowed and denied cannot both be set in the
+                              same rule
+                            rule: '!(has(self.allowed) && size(self.allowed) > 0 &&
+                              has(self.denied) && size(self.denied) > 0)'
+                          - message: at least one of allowed or denied must be set
+                            rule: (has(self.allowed) && size(self.allowed) > 0) ||
+                              (has(self.denied) && size(self.denied) > 0)
+                        maxItems: 50
+                        type: array
                     type: object
                   hostProject:
                     description: HostProject is the name of the project hosting the
@@ -2530,8 +4112,7 @@ spec:
             description: GCPManagedClusterStatus defines the observed state of GCPManagedCluster.
             properties:
               conditions:
-                description: Conditions specifies the conditions for the managed control
-                  plane
+                description: conditions specifies the conditions for the managed cluster
                 items:
                   description: Condition defines an observation of a Cluster API resource
                     operational state.
@@ -2674,6 +4255,74 @@ spec:
                 type: object
               ready:
                 type: boolean
+              v1beta2:
+                description: v1beta2 groups all the fields that will be added or modified
+                  in GCPManagedCluster's status with the v1beta2 contract.
+                properties:
+                  conditions:
+                    description: conditions represents the observations of a GCPManagedCluster's
+                      current state.
+                    items:
+                      description: Condition contains details for one aspect of the
+                        current state of this API Resource.
+                      properties:
+                        lastTransitionTime:
+                          description: |-
+                            lastTransitionTime is the last time the condition transitioned from one status to another.
+                            This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                          format: date-time
+                          type: string
+                        message:
+                          description: |-
+                            message is a human readable message indicating details about the transition.
+                            This may be an empty string.
+                          maxLength: 32768
+                          type: string
+                        observedGeneration:
+                          description: |-
+                            observedGeneration represents the .metadata.generation that the condition was set based upon.
+                            For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                            with respect to the current state of the instance.
+                          format: int64
+                          minimum: 0
+                          type: integer
+                        reason:
+                          description: |-
+                            reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                            Producers of specific condition types may define expected values and meanings for this field,
+                            and whether the values are considered a guaranteed API.
+                            The value should be a CamelCase string.
+                            This field may not be empty.
+                          maxLength: 1024
+                          minLength: 1
+                          pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                          type: string
+                        status:
+                          description: status of the condition, one of True, False,
+                            Unknown.
+                          enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                          type: string
+                        type:
+                          description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                          maxLength: 316
+                          pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                          type: string
+                      required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                      type: object
+                    maxItems: 32
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - type
+                    x-kubernetes-list-type: map
+                type: object
             required:
             - ready
             type: object
@@ -2687,7 +4336,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
     cluster.x-k8s.io/v1beta1: v1beta1
@@ -2713,7 +4362,7 @@ spec:
     - description: Control plane is ready
       jsonPath: .status.ready
       name: Ready
-      type: string
+      type: boolean
     - description: The current Kubernetes version
       jsonPath: .status.currentVersion
       name: CurrentVersion
@@ -2770,6 +4419,51 @@ spec:
               clusterNetwork:
                 description: ClusterNetwork define the cluster network.
                 properties:
+                  datapathProvider:
+                    description: |-
+                      DatapathProvider represents the desired datapath provider for the GKE cluster.
+                      If unspecified, GKE uses the default IPTables-based kube-proxy implementation.
+                      This field is immutable once the cluster has been created, and is always
+                      "advanced" (Dataplane V2) for Autopilot clusters.
+                    enum:
+                    - legacy
+                    - advanced
+                    type: string
+                  dnsConfig:
+                    description: |-
+                      DNSConfig represents the cluster DNS configuration for the GKE cluster.
+                      Once set, it cannot be removed entirely, though its contents may be changed.
+                    properties:
+                      clusterDNS:
+                        description: |-
+                          ClusterDNS represents which in-cluster DNS provider should be used.
+                          If not specified, defaults to the GKE default DNS provider (kube-dns).
+                        enum:
+                        - platform
+                        - cloud-dns
+                        - kube-dns
+                        type: string
+                      clusterDNSDomain:
+                        description: ClusterDNSDomain is the suffix used for all GKE
+                          cluster service records.
+                        type: string
+                      clusterDNSScope:
+                        description: |-
+                          ClusterDNSScope represents the scope of access to the GKE cluster DNS records.
+                          If not specified, defaults to cluster scope.
+                        enum:
+                        - cluster
+                        - vpc
+                        type: string
+                    type: object
+                  gatewayAPIChannel:
+                    description: |-
+                      GatewayAPIChannel controls whether the GKE-managed Gateway API controller
+                      is enabled on the cluster, and which release channel it runs on.
+                    enum:
+                    - disabled
+                    - standard
+                    type: string
                   pod:
                     description: Pod defines the range of CIDRBlock list from where
                       it gets the IP address.
@@ -2779,6 +4473,12 @@ spec:
                           CidrBlock is where all pods in the cluster are assigned an IP address from this range. Enter a range
                           (in CIDR notation) within a network range, a mask, or leave this field blank to use a default range.
                           This setting is permanent.
+                        type: string
+                      secondaryRangeName:
+                        description: |-
+                          SecondaryRangeName is the name of the existing secondary range in the cluster's subnetwork to
+                          use for pod IP addresses. The range must already exist on the subnet. Only applicable if
+                          UseIPAliases is true. Mutually exclusive with CidrBlock. This setting is permanent.
                         type: string
                     type: object
                   privateCluster:
@@ -2819,6 +4519,12 @@ spec:
                           CidrBlock is where cluster services will be assigned an IP address from this IP address range. Enter a range
                           (in CIDR notation) within a network range, a mask, or leave this field blank to use a default range.
                           This setting is permanent.
+                        type: string
+                      secondaryRangeName:
+                        description: |-
+                          SecondaryRangeName is the name of the existing secondary range in the cluster's subnetwork to
+                          use for service cluster IPs. The range must already exist on the subnet. Only applicable if
+                          UseIPAliases is true. Mutually exclusive with CidrBlock. This setting is permanent.
                         type: string
                     type: object
                   useIPAliases:
@@ -2886,9 +4592,6 @@ spec:
                     description: port is the port on which the API server is serving.
                     format: int32
                     type: integer
-                required:
-                - host
-                - port
                 type: object
               location:
                 description: |-
@@ -2935,6 +4638,21 @@ spec:
                     description: Whether master is accessible via Google Compute Engine
                       Public IP addresses.
                     type: boolean
+                type: object
+              monitoringConfig:
+                description: MonitoringConfig represents configuration of the monitoring
+                  feature of the GKE cluster.
+                properties:
+                  managedPrometheusConfig:
+                    description: ManagedPrometheusConfig configures Google Cloud Managed
+                      Service for Prometheus for the cluster.
+                    properties:
+                      enabled:
+                        description: |-
+                          Enabled controls whether Google Cloud Managed Service for Prometheus is enabled for the cluster.
+                          GKE enables this by default; set to false to disable it. This field cannot be set on Autopilot clusters.
+                        type: boolean
+                    type: object
                 type: object
               monitoringService:
                 description: |-
@@ -3039,6 +4757,74 @@ spec:
                   Ready denotes that the GCPManagedControlPlane API Server is ready to
                   receive requests.
                 type: boolean
+              v1beta2:
+                description: v1beta2 groups all the fields that will be added or modified
+                  in GCPManagedControlPlane's status with the v1beta2 contract.
+                properties:
+                  conditions:
+                    description: conditions represents the observations of a GCPManagedControlPlane's
+                      current state.
+                    items:
+                      description: Condition contains details for one aspect of the
+                        current state of this API Resource.
+                      properties:
+                        lastTransitionTime:
+                          description: |-
+                            lastTransitionTime is the last time the condition transitioned from one status to another.
+                            This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                          format: date-time
+                          type: string
+                        message:
+                          description: |-
+                            message is a human readable message indicating details about the transition.
+                            This may be an empty string.
+                          maxLength: 32768
+                          type: string
+                        observedGeneration:
+                          description: |-
+                            observedGeneration represents the .metadata.generation that the condition was set based upon.
+                            For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                            with respect to the current state of the instance.
+                          format: int64
+                          minimum: 0
+                          type: integer
+                        reason:
+                          description: |-
+                            reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                            Producers of specific condition types may define expected values and meanings for this field,
+                            and whether the values are considered a guaranteed API.
+                            The value should be a CamelCase string.
+                            This field may not be empty.
+                          maxLength: 1024
+                          minLength: 1
+                          pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                          type: string
+                        status:
+                          description: status of the condition, one of True, False,
+                            Unknown.
+                          enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                          type: string
+                        type:
+                          description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                          maxLength: 316
+                          pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                          type: string
+                      required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                      type: object
+                    maxItems: 32
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - type
+                    x-kubernetes-list-type: map
+                type: object
               version:
                 description: Version represents the version of the GKE control plane.
                 type: string
@@ -3055,7 +4841,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
     cluster.x-k8s.io/v1beta1: v1beta1
@@ -3076,7 +4862,7 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .status.ready
       name: Ready
-      type: string
+      type: boolean
     - jsonPath: .status.replicas
       name: Replicas
       type: string
@@ -3113,10 +4899,25 @@ spec:
                   AdditionalLabels is an optional set of tags to add to GCP resources managed by the GCP provider, in addition to the
                   ones added by default.
                 type: object
+              architectureTaintBehavior:
+                description: |-
+                  ArchitectureTaintBehavior controls GKE's default architecture taint on the nodes of this
+                  node pool. GKE taints ARM64 nodes kubernetes.io/arch=arm64:NoSchedule unless this is set
+                  to none. Left unset, GKE keeps its own default, which applies the taint.
+                enum:
+                - none
+                - arm
+                type: string
               diskSizeGB:
                 description: |-
                   DiskSizeGB is size of the disk attached to each node,
                   specified in GB.
+
+                  Deprecated: DiskSizeGB duplicates DiskSizeGb (both configure the same
+                  underlying GKE node pool disk size) and is retained only for backward
+                  compatibility with existing resources that already set it. This field
+                  remains immutable and will not gain new functionality; use DiskSizeGb
+                  for new manifests. If both fields are set, DiskSizeGb takes precedence.
                 format: int64
                 minimum: 10
                 type: integer
@@ -3124,6 +4925,7 @@ spec:
                 description: |-
                   DiskSizeGb is the size of the disk attached to each node, specified in GB.
                   The smallest allowed disk size is 10GB. If unspecified, the default disk size is 100GB.
+                  If DiskSizeGB is also set, DiskSizeGb takes precedence.
                 format: int32
                 type: integer
               diskType:
@@ -3132,12 +4934,17 @@ spec:
                 - pd-standard
                 - pd-ssd
                 - pd-balanced
+                - hyperdisk-balanced
                 type: string
               imageType:
                 description: ImageType is image type to use for this nodepool.
                 type: string
               instanceType:
-                description: InstanceType is name of Compute Engine machine type.
+                description: |-
+                  InstanceType is name of Compute Engine machine type.
+                  This field is mutable: changing it drives a rolling node replacement via
+                  GKE's node pool upgrade strategy (see UpgradeSettings), not an in-place
+                  resize. It takes precedence over MachineType if both are set.
                 type: string
               kubernetesLabels:
                 additionalProperties:
@@ -3205,6 +5012,12 @@ spec:
                   MachineType is the name of a Google Compute Engine [machine
                   type](https://cloud.google.com/compute/docs/machine-types).
                   If unspecified, the default machine type is `e2-medium`.
+
+                  Deprecated: MachineType duplicates InstanceType (both configure the same
+                  underlying GKE node pool machine type) and is retained only for backward
+                  compatibility with existing resources that already set it. This field
+                  remains immutable and will not gain new functionality; use InstanceType
+                  for new manifests. If both fields are set, InstanceType takes precedence.
                 type: string
               management:
                 description: Management specifies the node pool management options.
@@ -3306,7 +5119,22 @@ spec:
                           type: string
                         type: array
                     type: object
+                  workloadMetadataMode:
+                    description: |-
+                      WorkloadMetadataMode sets the mode for how to expose metadata to workloads running on the node pool.
+                      Valid values are GKE_METADATA and GCE_METADATA. Unset here means unmanaged. See documentation for
+                      more details.
+                    enum:
+                    - GKE_METADATA
+                    - GCE_METADATA
+                    type: string
                 type: object
+              preemptible:
+                description: |-
+                  Preemptible specifies whether to create nodes using preemptible VM instances.
+                  Preemptible VMs have a maximum lifetime of 24 hours and may be reclaimed with 30 seconds
+                  notice. This field is immutable.
+                type: boolean
               providerIDList:
                 description: |-
                   ProviderIDList are the provider IDs of instances in the
@@ -3315,6 +5143,46 @@ spec:
                 items:
                   type: string
                 type: array
+              reservationAffinity:
+                description: ReservationAffinity specifies whether to utilize reservations
+                  for compute. This field is immutable.
+                properties:
+                  consumeReservationType:
+                    description: ConsumeReservationType decides how reservations should
+                      be consumed if they exist
+                    enum:
+                    - NO_RESERVATION
+                    - ANY_RESERVATION
+                    - SPECIFIC_RESERVATION
+                    - ANY_RESERVATION_THEN_FAIL
+                    type: string
+                  key:
+                    description: |-
+                      Key dictates the key that should be used to match the reservation, required only for SPECIFIC_RESERVATION.
+                      Can only take the value "compute.googleapis.com/reservation-name"
+                    enum:
+                    - compute.googleapis.com/reservation-name
+                    type: string
+                  values:
+                    description: Values are the names of the reservations to match
+                      against, required only for SPECIFIC_RESERVATION
+                    items:
+                      type: string
+                    type: array
+                required:
+                - consumeReservationType
+                type: object
+                x-kubernetes-validations:
+                - message: if using SPECIFIC_RESERVATION, key and values must also
+                    be specified
+                  rule: '!(self.consumeReservationType == ''SPECIFIC_RESERVATION'')
+                    || (has(self.key) && self.key.size() > 0 && has(self.values) &&
+                    self.values.size() > 0 && self.values.all(e, e.size() > 0))'
+                - message: setting key and values is not valid without using the SPECIFIC_RESERVATION
+                    type
+                  rule: (self.consumeReservationType == 'SPECIFIC_RESERVATION') ||
+                    (!has(self.key) && (!has(self.values) || self.values.size() ==
+                    0))
               scaling:
                 description: Scaling specifies scaling for the node pool
                 properties:
@@ -3339,13 +5207,45 @@ spec:
                     format: int32
                     type: integer
                 type: object
+              spot:
+                description: |-
+                  Spot specifies whether to create nodes using Spot VM instances. Spot VMs can be reclaimed at
+                  any time and are recommended over Preemptible VMs for new workloads. This field is immutable.
+                type: boolean
+              upgradeSettings:
+                description: |-
+                  UpgradeSettings specifies the rollout strategy GKE uses when a change to
+                  this node pool requires replacing nodes, such as an InstanceType change.
+                properties:
+                  maxSurge:
+                    description: |-
+                      MaxSurge is the number of extra nodes to add to the node pool during an
+                      upgrade. Only applies when Strategy is SURGE. Default value is 1.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  maxUnavailable:
+                    description: |-
+                      MaxUnavailable is the number of nodes that can be simultaneously
+                      unavailable during an upgrade. Only applies when Strategy is SURGE.
+                      Default value is 0.
+                    format: int32
+                    minimum: 0
+                    type: integer
+                  strategy:
+                    description: Strategy is the upgrade strategy to use for the node
+                      pool.
+                    enum:
+                    - SURGE
+                    type: string
+                type: object
             type: object
           status:
             description: GCPManagedMachinePoolStatus defines the observed state of
               GCPManagedMachinePool.
             properties:
               conditions:
-                description: Conditions specifies the cpnditions for the managed machine
+                description: Conditions specifies the conditions for the managed machine
                   pool
                 items:
                   description: Condition defines an observation of a Cluster API resource
@@ -3398,8 +5298,11 @@ spec:
                   type: object
                 type: array
               infrastructureMachineKind:
-                description: InfrastructureMachineKind is the kind of the infrastructure
-                  resources behind MachinePool Machines.
+                description: |-
+                  InfrastructureMachineKind is the kind of the infrastructure resources behind MachinePool Machines.
+
+                  Deprecated: GKE node pools don't support MachinePool Machines, so this field is no longer set and
+                  any existing value is cleared. This field will be removed in a future API version.
                 type: string
               ready:
                 default: false
@@ -3410,6 +5313,74 @@ spec:
                 description: Replicas is the most recently observed number of replicas.
                 format: int32
                 type: integer
+              v1beta2:
+                description: v1beta2 groups all the fields that will be added or modified
+                  in GCPManagedMachinePool's status with the v1beta2 contract.
+                properties:
+                  conditions:
+                    description: conditions represents the observations of a GCPManagedMachinePool's
+                      current state.
+                    items:
+                      description: Condition contains details for one aspect of the
+                        current state of this API Resource.
+                      properties:
+                        lastTransitionTime:
+                          description: |-
+                            lastTransitionTime is the last time the condition transitioned from one status to another.
+                            This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                          format: date-time
+                          type: string
+                        message:
+                          description: |-
+                            message is a human readable message indicating details about the transition.
+                            This may be an empty string.
+                          maxLength: 32768
+                          type: string
+                        observedGeneration:
+                          description: |-
+                            observedGeneration represents the .metadata.generation that the condition was set based upon.
+                            For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                            with respect to the current state of the instance.
+                          format: int64
+                          minimum: 0
+                          type: integer
+                        reason:
+                          description: |-
+                            reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                            Producers of specific condition types may define expected values and meanings for this field,
+                            and whether the values are considered a guaranteed API.
+                            The value should be a CamelCase string.
+                            This field may not be empty.
+                          maxLength: 1024
+                          minLength: 1
+                          pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                          type: string
+                        status:
+                          description: status of the condition, one of True, False,
+                            Unknown.
+                          enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                          type: string
+                        type:
+                          description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                          maxLength: 316
+                          pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                          type: string
+                      required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                      type: object
+                    maxItems: 32
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - type
+                    x-kubernetes-list-type: map
+                type: object
             required:
             - ready
             type: object
@@ -3423,7 +5394,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
     cluster.x-k8s.io/v1beta1: v1beta1
@@ -3437,7 +5408,7 @@ spec:
     listKind: GCPManagedClusterTemplateList
     plural: gcpmanagedclustertemplates
     shortNames:
-    - amct
+    - gcpmct
     singular: gcpmanagedclustertemplate
   scope: Namespaced
   versions:
@@ -3497,9 +5468,6 @@ spec:
                               is serving.
                             format: int32
                             type: integer
-                        required:
-                        - host
-                        - port
                         type: object
                       credentialsRef:
                         description: |-
@@ -3593,7 +5561,8 @@ spec:
                               Defaults to true.
                             type: boolean
                           firewall:
-                            description: Firewall configuration.
+                            description: Firewall contains the firewall configuration
+                              associated with this network.
                             properties:
                               defaultRulesManagement:
                                 default: Managed
@@ -3611,6 +5580,248 @@ spec:
                                 - Managed
                                 - Unmanaged
                                 type: string
+                              firewallRules:
+                                description: |-
+                                  FirewallRules is a list of additional firewall rules to create. FirewallRules has no effect
+                                  when a HostProject is specified.
+                                items:
+                                  description: FirewallRule describes a GCP firewall
+                                    rule.
+                                  properties:
+                                    allowed:
+                                      description: |-
+                                        Allowed is the list of ALLOW rules specified by this firewall. Each rule
+                                        specifies a protocol and port-range tuple that describes a permitted
+                                        connection.
+                                      items:
+                                        description: FirewallDescriptor describes
+                                          a GCP firewall rule.
+                                        properties:
+                                          IPProtocol:
+                                            description: |-
+                                              IPProtocol is the IP protocol to which this rule applies. The protocol type is
+                                              required when creating a firewall rule. This value can either be one of the
+                                              following well known protocol strings (tcp, udp, icmp, esp, ah, ipip, sctp)
+                                              or the IP protocol number.
+                                            enum:
+                                            - TCP
+                                            - UDP
+                                            - ICMP
+                                            - ESP
+                                            - AH
+                                            - IPIP
+                                            - SCTP
+                                            type: string
+                                          ports:
+                                            description: |-
+                                              Ports is an optional list of ports to which this rule applies. This field is
+                                              only applicable for the UDP or TCP protocol. Each entry must be either an
+                                              integer or a range. If not specified, this rule applies to connections
+                                              through any port. Example inputs include: ["22"], ["80","443"], and
+                                              ["12345-12349"].
+                                            items:
+                                              pattern: ^[0-9]+(-[0-9]+)?$
+                                              type: string
+                                            maxItems: 500
+                                            type: array
+                                        required:
+                                        - IPProtocol
+                                        type: object
+                                      maxItems: 1024
+                                      minItems: 0
+                                      type: array
+                                    denied:
+                                      description: |-
+                                        Denied is the list of DENY rules specified by this firewall. Each rule
+                                        specifies a protocol and port-range tuple that describes a denied
+                                        connection. A firewall rule must specify either allowed or denied, not both.
+                                      items:
+                                        description: FirewallDescriptor describes
+                                          a GCP firewall rule.
+                                        properties:
+                                          IPProtocol:
+                                            description: |-
+                                              IPProtocol is the IP protocol to which this rule applies. The protocol type is
+                                              required when creating a firewall rule. This value can either be one of the
+                                              following well known protocol strings (tcp, udp, icmp, esp, ah, ipip, sctp)
+                                              or the IP protocol number.
+                                            enum:
+                                            - TCP
+                                            - UDP
+                                            - ICMP
+                                            - ESP
+                                            - AH
+                                            - IPIP
+                                            - SCTP
+                                            type: string
+                                          ports:
+                                            description: |-
+                                              Ports is an optional list of ports to which this rule applies. This field is
+                                              only applicable for the UDP or TCP protocol. Each entry must be either an
+                                              integer or a range. If not specified, this rule applies to connections
+                                              through any port. Example inputs include: ["22"], ["80","443"], and
+                                              ["12345-12349"].
+                                            items:
+                                              pattern: ^[0-9]+(-[0-9]+)?$
+                                              type: string
+                                            maxItems: 500
+                                            type: array
+                                        required:
+                                        - IPProtocol
+                                        type: object
+                                      maxItems: 1024
+                                      minItems: 0
+                                      type: array
+                                    description:
+                                      description: |-
+                                        Description is an optional description of this resource. Provide this field
+                                        when you create the resource.
+                                      maxLength: 2000
+                                      minLength: 0
+                                      type: string
+                                    destinationRanges:
+                                      description: |-
+                                        DestinationRanges is the list of IP addresses where traffic applies. An empty
+                                        list means all destinations. These ranges must be expressed in CIDR format.
+                                        Both IPv4 and IPv6 are supported.
+                                      items:
+                                        maxLength: 43
+                                        minLength: 1
+                                        type: string
+                                      maxItems: 1024
+                                      minItems: 0
+                                      type: array
+                                      x-kubernetes-validations:
+                                      - message: must be a valid IPv4/IPv6 address
+                                          or CIDR/Prefix
+                                        rule: self.all(i, isIP(i) || isCIDR(i))
+                                    direction:
+                                      default: Ingress
+                                      description: |-
+                                        Direction is the direction of traffic to which this firewall applies, either
+                                        `Ingress` or `Egress`. The default is `Ingress`. For `Egress` traffic, you
+                                        cannot specify the sourceTags fields.
+
+                                        Possible values:
+                                          "Egress" - Indicates that firewall should apply to outgoing traffic.
+                                          "Ingress" - Indicates that firewall should apply to incoming traffic.
+                                      enum:
+                                      - Ingress
+                                      - Egress
+                                      type: string
+                                    name:
+                                      description: |-
+                                        Name is the name of the resource; provided by the client when the resource is
+                                        created. The name must be 1-63 characters long, and comply with RFC1035.
+                                        Specifically, the name must be 1-63 characters long and match the regular
+                                        expression `[a-z]([-a-z0-9]*[a-z0-9])?`. The first character must be a
+                                        lowercase letter, and all following characters (except for the last
+                                        character) must be a dash, lowercase letter, or digit. The last character
+                                        must be a lowercase letter or digit.
+                                        If the firewall does not begin with the cluster name, then the cluster name
+                                        will be prepended during the creation of the firewall rule.
+                                        When the name is not provided, the name is generated from the infrastructure
+                                        identifier of the cluster followed by a generated set of characters. The
+                                        generated name is derived from the rule, so it is stable across reconciles, and
+                                        is truncated so that it never exceeds 63 characters.
+                                      maxLength: 63
+                                      minLength: 1
+                                      pattern: ^[a-z]([-a-z0-9]*[a-z0-9])?$
+                                      type: string
+                                    priority:
+                                      default: 1000
+                                      description: |-
+                                        Priority is the priority for this rule. This is an integer between `1` and
+                                        `65535`, both inclusive. The default value is `1000`. Relative priorities
+                                        determine which rule takes effect if multiple rules apply. Lower values
+                                        indicate higher priority. For example, a rule with priority `1` has higher
+                                        precedence than a rule with priority `2`. DENY rules take precedence over
+                                        ALLOW rules if they have equal priority. Note that VPC networks have implied
+                                        rules with a priority of `65535`. To avoid conflicts with the implied rules,
+                                        use a priority number less than `65535`.
+                                      maximum: 65535
+                                      minimum: 1
+                                      type: integer
+                                    sourceRanges:
+                                      description: |-
+                                        SourceRanges: If source ranges are specified, the firewall rule applies only
+                                        to traffic that has a source IP address in these ranges. These ranges must
+                                        be expressed in CIDR format. One or both of sourceRanges and sourceTags may
+                                        be set. If both fields are set, the rule applies to traffic that has a
+                                        source IP address within sourceRanges OR a source IP from a resource with a
+                                        matching tag listed in the sourceTags field. The connection does not need to
+                                        match both fields for the rule to apply. Both IPv4 and IPv6 are supported.
+                                      items:
+                                        maxLength: 43
+                                        minLength: 1
+                                        type: string
+                                      maxItems: 1024
+                                      minItems: 0
+                                      type: array
+                                      x-kubernetes-validations:
+                                      - message: must be a valid IPv4/IPv6 address
+                                          or CIDR/Prefix
+                                        rule: self.all(i, isIP(i) || isCIDR(i))
+                                    sourceTags:
+                                      description: |-
+                                        SourceTags are the rules applies only to traffic with source IPs that
+                                        match the primary network interfaces of VM instances that have the tag and
+                                        are in the same VPC network. Source tags cannot be used to control traffic
+                                        to an instance's external IP address, it only applies to traffic between
+                                        instances in the same virtual network. Because tags are associated with
+                                        instances, not IP addresses. One or both of sourceRanges and sourceTags may be
+                                        set. If both fields are set, the firewall applies to traffic that has a source
+                                        IP address within sourceRanges OR a source IP from a resource with a matching
+                                        tag listed in the sourceTags field. The connection does not need to match both
+                                        fields for the firewall to apply.
+                                      items:
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^([a-z0-9]+-)*[a-z0-9]+$
+                                        type: string
+                                      maxItems: 30
+                                      minItems: 0
+                                      type: array
+                                    targetTags:
+                                      description: |-
+                                        TargetTags is a list of tags that controls which instances the firewall rule
+                                        applies to. If targetTags are specified, then the firewall rule applies only
+                                        to instances in the VPC network that have one of those tags. If no
+                                        targetTags are specified, the firewall rule applies to all instances on the
+                                        specified network.
+                                      items:
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^([a-z0-9]+-)*[a-z0-9]+$
+                                        type: string
+                                      maxItems: 70
+                                      minItems: 0
+                                      type: array
+                                  type: object
+                                  x-kubernetes-validations:
+                                  - message: sourceRanges cannot be set for Egress
+                                      rules
+                                    rule: self.direction != 'Egress' || !has(self.sourceRanges)
+                                      || size(self.sourceRanges) == 0
+                                  - message: sourceTags cannot be set for Egress rules
+                                    rule: self.direction != 'Egress' || !has(self.sourceTags)
+                                      || size(self.sourceTags) == 0
+                                  - message: destinationRanges cannot be set for Ingress
+                                      rules
+                                    rule: self.direction != 'Ingress' || !has(self.destinationRanges)
+                                      || size(self.destinationRanges) == 0
+                                  - message: allowed and denied cannot both be set
+                                      in the same rule
+                                    rule: '!(has(self.allowed) && size(self.allowed)
+                                      > 0 && has(self.denied) && size(self.denied)
+                                      > 0)'
+                                  - message: at least one of allowed or denied must
+                                      be set
+                                    rule: (has(self.allowed) && size(self.allowed)
+                                      > 0) || (has(self.denied) && size(self.denied)
+                                      > 0)
+                                maxItems: 50
+                                type: array
                             type: object
                           hostProject:
                             description: HostProject is the name of the project hosting
@@ -3838,7 +6049,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
     cluster.x-k8s.io/v1beta1: v1beta1
@@ -3852,7 +6063,7 @@ spec:
     listKind: GCPManagedControlPlaneTemplateList
     plural: gcpmanagedcontrolplanetemplates
     shortNames:
-    - amcpt
+    - gcpmcpt
     singular: gcpmanagedcontrolplanetemplate
   scope: Namespaced
   versions:
@@ -3899,9 +6110,60 @@ spec:
                         - disabled
                         - project_singleton_policy_enforce
                         type: string
+                      clusterName:
+                        description: |-
+                          ClusterName allows you to specify the name of the GKE cluster.
+                          If you don't specify a name then a default name will be created
+                          based on the namespace and name of the managed control plane.
+                        type: string
                       clusterNetwork:
                         description: ClusterNetwork define the cluster network.
                         properties:
+                          datapathProvider:
+                            description: |-
+                              DatapathProvider represents the desired datapath provider for the GKE cluster.
+                              If unspecified, GKE uses the default IPTables-based kube-proxy implementation.
+                              This field is immutable once the cluster has been created, and is always
+                              "advanced" (Dataplane V2) for Autopilot clusters.
+                            enum:
+                            - legacy
+                            - advanced
+                            type: string
+                          dnsConfig:
+                            description: |-
+                              DNSConfig represents the cluster DNS configuration for the GKE cluster.
+                              Once set, it cannot be removed entirely, though its contents may be changed.
+                            properties:
+                              clusterDNS:
+                                description: |-
+                                  ClusterDNS represents which in-cluster DNS provider should be used.
+                                  If not specified, defaults to the GKE default DNS provider (kube-dns).
+                                enum:
+                                - platform
+                                - cloud-dns
+                                - kube-dns
+                                type: string
+                              clusterDNSDomain:
+                                description: ClusterDNSDomain is the suffix used for
+                                  all GKE cluster service records.
+                                type: string
+                              clusterDNSScope:
+                                description: |-
+                                  ClusterDNSScope represents the scope of access to the GKE cluster DNS records.
+                                  If not specified, defaults to cluster scope.
+                                enum:
+                                - cluster
+                                - vpc
+                                type: string
+                            type: object
+                          gatewayAPIChannel:
+                            description: |-
+                              GatewayAPIChannel controls whether the GKE-managed Gateway API controller
+                              is enabled on the cluster, and which release channel it runs on.
+                            enum:
+                            - disabled
+                            - standard
+                            type: string
                           pod:
                             description: Pod defines the range of CIDRBlock list from
                               where it gets the IP address.
@@ -3911,6 +6173,12 @@ spec:
                                   CidrBlock is where all pods in the cluster are assigned an IP address from this range. Enter a range
                                   (in CIDR notation) within a network range, a mask, or leave this field blank to use a default range.
                                   This setting is permanent.
+                                type: string
+                              secondaryRangeName:
+                                description: |-
+                                  SecondaryRangeName is the name of the existing secondary range in the cluster's subnetwork to
+                                  use for pod IP addresses. The range must already exist on the subnet. Only applicable if
+                                  UseIPAliases is true. Mutually exclusive with CidrBlock. This setting is permanent.
                                 type: string
                             type: object
                           privateCluster:
@@ -3953,6 +6221,12 @@ spec:
                                   CidrBlock is where cluster services will be assigned an IP address from this IP address range. Enter a range
                                   (in CIDR notation) within a network range, a mask, or leave this field blank to use a default range.
                                   This setting is permanent.
+                                type: string
+                              secondaryRangeName:
+                                description: |-
+                                  SecondaryRangeName is the name of the existing secondary range in the cluster's subnetwork to
+                                  use for service cluster IPs. The range must already exist on the subnet. Only applicable if
+                                  UseIPAliases is true. Mutually exclusive with CidrBlock. This setting is permanent.
                                 type: string
                             type: object
                           useIPAliases:
@@ -4045,6 +6319,21 @@ spec:
                               Engine Public IP addresses.
                             type: boolean
                         type: object
+                      monitoringConfig:
+                        description: MonitoringConfig represents configuration of
+                          the monitoring feature of the GKE cluster.
+                        properties:
+                          managedPrometheusConfig:
+                            description: ManagedPrometheusConfig configures Google
+                              Cloud Managed Service for Prometheus for the cluster.
+                            properties:
+                              enabled:
+                                description: |-
+                                  Enabled controls whether Google Cloud Managed Service for Prometheus is enabled for the cluster.
+                                  GKE enables this by default; set to false to disable it. This field cannot be set on Autopilot clusters.
+                                type: boolean
+                            type: object
+                        type: object
                       monitoringService:
                         description: |-
                           MonitoringService represents configuration of monitoring service feature of the GKE cluster.
@@ -4082,7 +6371,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
     cluster.x-k8s.io/v1beta1: v1beta1
@@ -4096,7 +6385,7 @@ spec:
     listKind: GCPManagedMachinePoolTemplateList
     plural: gcpmanagedmachinepooltemplates
     shortNames:
-    - ammpt
+    - gcpmmpt
     singular: gcpmanagedmachinepooltemplate
   scope: Namespaced
   versions:
@@ -4142,10 +6431,25 @@ spec:
                           AdditionalLabels is an optional set of tags to add to GCP resources managed by the GCP provider, in addition to the
                           ones added by default.
                         type: object
+                      architectureTaintBehavior:
+                        description: |-
+                          ArchitectureTaintBehavior controls GKE's default architecture taint on the nodes of this
+                          node pool. GKE taints ARM64 nodes kubernetes.io/arch=arm64:NoSchedule unless this is set
+                          to none. Left unset, GKE keeps its own default, which applies the taint.
+                        enum:
+                        - none
+                        - arm
+                        type: string
                       diskSizeGB:
                         description: |-
                           DiskSizeGB is size of the disk attached to each node,
                           specified in GB.
+
+                          Deprecated: DiskSizeGB duplicates DiskSizeGb (both configure the same
+                          underlying GKE node pool disk size) and is retained only for backward
+                          compatibility with existing resources that already set it. This field
+                          remains immutable and will not gain new functionality; use DiskSizeGb
+                          for new manifests. If both fields are set, DiskSizeGb takes precedence.
                         format: int64
                         minimum: 10
                         type: integer
@@ -4153,6 +6457,7 @@ spec:
                         description: |-
                           DiskSizeGb is the size of the disk attached to each node, specified in GB.
                           The smallest allowed disk size is 10GB. If unspecified, the default disk size is 100GB.
+                          If DiskSizeGB is also set, DiskSizeGb takes precedence.
                         format: int32
                         type: integer
                       diskType:
@@ -4162,13 +6467,17 @@ spec:
                         - pd-standard
                         - pd-ssd
                         - pd-balanced
+                        - hyperdisk-balanced
                         type: string
                       imageType:
                         description: ImageType is image type to use for this nodepool.
                         type: string
                       instanceType:
-                        description: InstanceType is name of Compute Engine machine
-                          type.
+                        description: |-
+                          InstanceType is name of Compute Engine machine type.
+                          This field is mutable: changing it drives a rolling node replacement via
+                          GKE's node pool upgrade strategy (see UpgradeSettings), not an in-place
+                          resize. It takes precedence over MachineType if both are set.
                         type: string
                       kubernetesLabels:
                         additionalProperties:
@@ -4237,6 +6546,12 @@ spec:
                           MachineType is the name of a Google Compute Engine [machine
                           type](https://cloud.google.com/compute/docs/machine-types).
                           If unspecified, the default machine type is `e2-medium`.
+
+                          Deprecated: MachineType duplicates InstanceType (both configure the same
+                          underlying GKE node pool machine type) and is retained only for backward
+                          compatibility with existing resources that already set it. This field
+                          remains immutable and will not gain new functionality; use InstanceType
+                          for new manifests. If both fields are set, InstanceType takes precedence.
                         type: string
                       management:
                         description: Management specifies the node pool management
@@ -4339,7 +6654,63 @@ spec:
                                   type: string
                                 type: array
                             type: object
+                          workloadMetadataMode:
+                            description: |-
+                              WorkloadMetadataMode sets the mode for how to expose metadata to workloads running on the node pool.
+                              Valid values are GKE_METADATA and GCE_METADATA. Unset here means unmanaged. See documentation for
+                              more details.
+                            enum:
+                            - GKE_METADATA
+                            - GCE_METADATA
+                            type: string
                         type: object
+                      preemptible:
+                        description: |-
+                          Preemptible specifies whether to create nodes using preemptible VM instances.
+                          Preemptible VMs have a maximum lifetime of 24 hours and may be reclaimed with 30 seconds
+                          notice. This field is immutable.
+                        type: boolean
+                      reservationAffinity:
+                        description: ReservationAffinity specifies whether to utilize
+                          reservations for compute. This field is immutable.
+                        properties:
+                          consumeReservationType:
+                            description: ConsumeReservationType decides how reservations
+                              should be consumed if they exist
+                            enum:
+                            - NO_RESERVATION
+                            - ANY_RESERVATION
+                            - SPECIFIC_RESERVATION
+                            - ANY_RESERVATION_THEN_FAIL
+                            type: string
+                          key:
+                            description: |-
+                              Key dictates the key that should be used to match the reservation, required only for SPECIFIC_RESERVATION.
+                              Can only take the value "compute.googleapis.com/reservation-name"
+                            enum:
+                            - compute.googleapis.com/reservation-name
+                            type: string
+                          values:
+                            description: Values are the names of the reservations
+                              to match against, required only for SPECIFIC_RESERVATION
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - consumeReservationType
+                        type: object
+                        x-kubernetes-validations:
+                        - message: if using SPECIFIC_RESERVATION, key and values must
+                            also be specified
+                          rule: '!(self.consumeReservationType == ''SPECIFIC_RESERVATION'')
+                            || (has(self.key) && self.key.size() > 0 && has(self.values)
+                            && self.values.size() > 0 && self.values.all(e, e.size()
+                            > 0))'
+                        - message: setting key and values is not valid without using
+                            the SPECIFIC_RESERVATION type
+                          rule: (self.consumeReservationType == 'SPECIFIC_RESERVATION')
+                            || (!has(self.key) && (!has(self.values) || self.values.size()
+                            == 0))
                       scaling:
                         description: Scaling specifies scaling for the node pool
                         properties:
@@ -4364,6 +6735,38 @@ spec:
                             format: int32
                             type: integer
                         type: object
+                      spot:
+                        description: |-
+                          Spot specifies whether to create nodes using Spot VM instances. Spot VMs can be reclaimed at
+                          any time and are recommended over Preemptible VMs for new workloads. This field is immutable.
+                        type: boolean
+                      upgradeSettings:
+                        description: |-
+                          UpgradeSettings specifies the rollout strategy GKE uses when a change to
+                          this node pool requires replacing nodes, such as an InstanceType change.
+                        properties:
+                          maxSurge:
+                            description: |-
+                              MaxSurge is the number of extra nodes to add to the node pool during an
+                              upgrade. Only applies when Strategy is SURGE. Default value is 1.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          maxUnavailable:
+                            description: |-
+                              MaxUnavailable is the number of nodes that can be simultaneously
+                              unavailable during an upgrade. Only applies when Strategy is SURGE.
+                              Default value is 0.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          strategy:
+                            description: Strategy is the upgrade strategy to use for
+                              the node pool.
+                            enum:
+                            - SURGE
+                            type: string
+                        type: object
                     type: object
                 required:
                 - spec
@@ -4379,7 +6782,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
     cluster.x-k8s.io/v1beta1: v1beta1
@@ -4401,7 +6804,7 @@ spec:
     - description: Bootstrap configuration is ready
       jsonPath: .status.ready
       name: Ready
-      type: string
+      type: boolean
     - description: Name of Secret containing bootstrap data
       jsonPath: .status.dataSecretName
       name: DataSecretName
@@ -4491,8 +6894,9 @@ spec:
                   type: object
                 type: array
               dataSecretName:
-                description: DataSecretName is the name of the secret that stores
-                  the bootstrap data script.
+                description: |-
+                  DataSecretName is the name of the secret that stores the bootstrap data script.
+                  GKE bootstraps its own nodes, so this is set to an empty string once the GKEConfig is ready.
                 type: string
               failureMessage:
                 description: FailureMessage will be set on non-retryable errors
@@ -4500,6 +6904,21 @@ spec:
               failureReason:
                 description: FailureReason will be set on non-retryable errors
                 type: string
+              initialization:
+                description: |-
+                  initialization provides observations of the GKEConfig initialization process.
+                  NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate
+                  initial MachinePool provisioning.
+                minProperties: 1
+                properties:
+                  dataSecretCreated:
+                    description: |-
+                      dataSecretCreated is true when the bootstrap data secret is considered created.
+                      GKE bootstraps its own nodes, so this is set to true once the GCPManagedMachinePool is ready.
+                      NOTE: this field is part of the Cluster API contract, and it is used to orchestrate
+                      initial MachinePool provisioning.
+                    type: boolean
+                type: object
               observedGeneration:
                 description: ObservedGeneration is the latest generation observed
                   by the controller.
@@ -4509,6 +6928,76 @@ spec:
                 description: Ready indicates the BootstrapData secret is ready to
                   be consumed
                 type: boolean
+              v1beta2:
+                description: |-
+                  v1beta2 groups all the fields that will be added or modified in GKEConfig's status
+                  with the v1beta2 version of the Cluster API contract.
+                properties:
+                  conditions:
+                    description: |-
+                      conditions represents the observations of a GKEConfig's current state.
+                      Known condition types are Ready.
+                    items:
+                      description: Condition contains details for one aspect of the
+                        current state of this API Resource.
+                      properties:
+                        lastTransitionTime:
+                          description: |-
+                            lastTransitionTime is the last time the condition transitioned from one status to another.
+                            This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                          format: date-time
+                          type: string
+                        message:
+                          description: |-
+                            message is a human readable message indicating details about the transition.
+                            This may be an empty string.
+                          maxLength: 32768
+                          type: string
+                        observedGeneration:
+                          description: |-
+                            observedGeneration represents the .metadata.generation that the condition was set based upon.
+                            For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                            with respect to the current state of the instance.
+                          format: int64
+                          minimum: 0
+                          type: integer
+                        reason:
+                          description: |-
+                            reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                            Producers of specific condition types may define expected values and meanings for this field,
+                            and whether the values are considered a guaranteed API.
+                            The value should be a CamelCase string.
+                            This field may not be empty.
+                          maxLength: 1024
+                          minLength: 1
+                          pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                          type: string
+                        status:
+                          description: status of the condition, one of True, False,
+                            Unknown.
+                          enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                          type: string
+                        type:
+                          description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                          maxLength: 316
+                          pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                          type: string
+                      required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                      type: object
+                    maxItems: 32
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - type
+                    x-kubernetes-list-type: map
+                type: object
             type: object
         type: object
     served: true
@@ -4520,7 +7009,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.21.0
   labels:
     cluster.x-k8s.io/provider: infrastructure-gcp
     cluster.x-k8s.io/v1beta1: v1beta1
@@ -4645,6 +7134,8 @@ rules:
   resources:
   - clusters
   - clusters/status
+  - machinepools
+  - machinepools/status
   verbs:
   - get
   - list
@@ -4653,10 +7144,10 @@ rules:
 - apiGroups:
   - cluster.x-k8s.io
   resources:
-  - machinepools
-  - machinepools/status
+  - machinedeployments
   - machines
   - machines/status
+  - machinesets
   verbs:
   - get
   - list
@@ -4681,7 +7172,9 @@ rules:
   - infrastructure.cluster.x-k8s.io
   resources:
   - gcpclusters/status
+  - gcpmachinepools/status
   - gcpmachines/status
+  - gcpmachinetemplates/status
   - gcpmanagedclusters/status
   - gcpmanagedcontrolplanes/status
   - gcpmanagedmachinepools/status
@@ -4689,6 +7182,25 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - gcpmachinepools
+  verbs:
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - gcpmachinetemplates
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
@@ -4802,7 +7314,9 @@ spec:
   template:
     metadata:
       annotations:
+        capi-operator.openshift.io/inject-proxy: manager
         kubectl.kubernetes.io/default-container: manager
+        openshift.io/required-scc: restricted-v2
         target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         cluster.x-k8s.io/provider: infrastructure-gcp
@@ -4811,10 +7325,12 @@ spec:
       containers:
       - args:
         - --leader-elect
-        - --feature-gates=GKE=${EXP_CAPG_GKE:=false}
+        - --feature-gates=GKE=${EXP_CAPG_GKE:=false},MachinePool=${EXP_MACHINE_POOL:=false}
         - --diagnostics-address=${CAPG_DIAGNOSTICS_ADDRESS:=:8443}
         - --insecure-diagnostics=${CAPG_INSECURE_DIAGNOSTICS:=false}
         - --v=${CAPG_LOGLEVEL:=0}
+        - --tls-min-version=${TLS_MIN_VERSION}
+        - --tls-cipher-suites=${TLS_CIPHER_SUITES}
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /home/.gcp/service_account.json
@@ -4911,6 +7427,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.gcpcluster.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -4932,6 +7451,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.gcpclustertemplate.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -4953,6 +7475,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.gcpmachine.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -4974,6 +7499,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: default.gcpmachinetemplate.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -4994,6 +7522,9 @@ webhooks:
       path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedcluster
   failurePolicy: Fail
   name: mgcpmanagedcluster.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5014,6 +7545,9 @@ webhooks:
       path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedcontrolplane
   failurePolicy: Fail
   name: mgcpmanagedcontrolplane.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5035,6 +7569,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: mgcpmanagedcontrolplanetemplate.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5055,6 +7592,9 @@ webhooks:
       path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedmachinepool
   failurePolicy: Fail
   name: mgcpmanagedmachinepool.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5075,6 +7615,9 @@ webhooks:
       path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedmachinepooltemplate
   failurePolicy: Fail
   name: mgcpmanagedmachinepooltemplate.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5106,6 +7649,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.gcpcluster.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5127,6 +7673,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.gcpclustertemplate.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5148,6 +7697,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.gcpmachine.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5160,6 +7712,28 @@ webhooks:
     - gcpmachines
   sideEffects: None
 - admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: capg-webhook-service
+      namespace: openshift-cluster-api
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmachinepool
+  failurePolicy: Fail
+  name: validation.gcpmachinepool.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - UPDATE
+    resources:
+    - gcpmachinepools
+  sideEffects: None
+- admissionReviewVersions:
   - v1beta1
   clientConfig:
     service:
@@ -5169,6 +7743,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: validation.gcpmachinetemplate.infrastructure.cluster.x-k8s.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5189,6 +7766,9 @@ webhooks:
       path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedcluster
   failurePolicy: Fail
   name: vgcpmanagedcluster.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5209,6 +7789,9 @@ webhooks:
       path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedclustertemplate
   failurePolicy: Fail
   name: vgcpmanagedclustertemplate.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5228,6 +7811,9 @@ webhooks:
       path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedcontrolplane
   failurePolicy: Fail
   name: vgcpmanagedcontrolplane.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5249,6 +7835,9 @@ webhooks:
   failurePolicy: Fail
   matchPolicy: Equivalent
   name: vgcpmanagedcontrolplanetemplate.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5269,6 +7858,9 @@ webhooks:
       path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedmachinepool
   failurePolicy: Fail
   name: vgcpmanagedmachinepool.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
@@ -5279,6 +7871,30 @@ webhooks:
     - UPDATE
     resources:
     - gcpmanagedmachinepools
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: capg-webhook-service
+      namespace: openshift-cluster-api
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedmachinepooltemplate
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: vgcpmanagedmachinepooltemplate.kb.io
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: openshift-cluster-api
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - gcpmanagedmachinepooltemplates
   sideEffects: None
 ---
 apiVersion: v1
