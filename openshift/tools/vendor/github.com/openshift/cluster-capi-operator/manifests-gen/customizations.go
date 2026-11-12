@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	certmangerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -19,14 +20,6 @@ import (
 )
 
 var (
-	// Workload annotations are used by the workload admission webhook to modify pod
-	// resources and correctly schedule them while also pinning them to specific CPUSets.
-	// See for more info:
-	// https://github.com/openshift/enhancements/blob/master/enhancements/workload-partitioning/wide-availability-workload-partitioning.md
-	openshiftWorkloadAnnotation = map[string]string{
-		"target.workload.openshift.io/management": `{"effect": "PreferredDuringScheduling"}`,
-	}
-
 	// The expected registry for images used by the cluster-capi-operator.
 	expectedRegistry = "registry.ci.openshift.org"
 )
@@ -68,9 +61,15 @@ func processObjects(objs []client.Object, opts cmdlineOptions) ([]client.Object,
 			case "Service":
 				replaceCertMangerServiceSecret(obj, serviceSecretNames)
 
-			case "Namespace", "Secret":
+			case "Namespace":
 				// Don't emit these resources
 				continue
+			case "Secret":
+				// Kubeconfig Secrets are consumed by Cluster API and managed by the
+				// revision installer; other Secrets are managed separately.
+				if !strings.HasSuffix(obj.GetName(), "-kubeconfig") {
+					continue
+				}
 			}
 
 		case "apps":
@@ -81,6 +80,16 @@ func processObjects(objs []client.Object, opts cmdlineOptions) ([]client.Object,
 					return nil, fmt.Errorf("failed to customize deployment %q: %w", obj.GetName(), err)
 				}
 				obj = deploy
+			}
+
+		case "rbac.authorization.k8s.io":
+			switch getKind(obj) {
+			case "ClusterRole":
+				var err error
+				obj, err = handleAggregateClusterRole(obj)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 		case "cert-manager.io":
@@ -137,7 +146,7 @@ func findWebhookServiceSecretName(objs []client.Object) map[string]string {
 				if !ok {
 					panic("can't find secret from cert: " + certNN)
 				}
-				if crd.Spec.Conversion != nil {
+				if crd.Spec.Conversion != nil && crd.Spec.Conversion.Webhook != nil && crd.Spec.Conversion.Webhook.ClientConfig != nil && crd.Spec.Conversion.Webhook.ClientConfig.Service != nil {
 					serviceSecretNames[crd.Spec.Conversion.Webhook.ClientConfig.Service.Name] = secretName
 				}
 			}
@@ -170,13 +179,38 @@ func findWebhookServiceSecretName(objs []client.Object) map[string]string {
 	return serviceSecretNames
 }
 
+// capiOperatorDomain is the shared annotation/label domain for this operator.
+// Mirrors operatorstatus.CAPIOperatorIdentifierDomain, which is not importable
+// here because manifests-gen is a standalone module.
+const (
+	capiOperatorDomain    = "capi-operator.openshift.io"
+	proxyInjectAnnotation = capiOperatorDomain + "/inject-proxy"
+)
+
 func customizeDeployment(obj client.Object) (client.Object, error) {
 	deployment := &appsv1.Deployment{}
 	mustConvert(obj, deployment)
 
 	deployment.Spec.Template.Spec.PriorityClassName = "system-cluster-critical"
 
-	deployment.Spec.Template.Annotations = mergeMaps(deployment.Spec.Template.Annotations, openshiftWorkloadAnnotation)
+	// Add the proxy injection annotation to the pod template if not already set
+	// by the provider. manifests-gen targets the "manager" container, which is
+	// the standard name for CAPI provider controller containers. Providers that
+	// use different container names, or need proxy injection on additional
+	// containers, should set this annotation in their upstream manifests.
+	if _, exists := deployment.Spec.Template.Annotations[proxyInjectAnnotation]; !exists {
+		for _, c := range deployment.Spec.Template.Spec.Containers {
+			if c.Name == "manager" {
+				if deployment.Spec.Template.Annotations == nil {
+					deployment.Spec.Template.Annotations = make(map[string]string)
+				}
+
+				deployment.Spec.Template.Annotations[proxyInjectAnnotation] = "manager"
+
+				break
+			}
+		}
+	}
 
 	for i := range deployment.Spec.Template.Spec.Containers {
 		container := &deployment.Spec.Template.Spec.Containers[i]
@@ -225,18 +259,6 @@ func replaceCertMangerServiceSecret(obj client.Object, serviceSecretNames map[st
 		anns["service.beta.openshift.io/serving-cert-secret-name"] = name
 		obj.SetAnnotations(anns)
 	}
-}
-
-// Variadic function to merge maps of like kind.
-// Note: keys of next map will override keys in previous map if previous map contains same key.
-func mergeMaps[K comparable, V any](maps ...map[K]V) map[K]V {
-	result := map[K]V{}
-	for _, m := range maps {
-		for k, v := range m {
-			result[k] = v
-		}
-	}
-	return result
 }
 
 // generateInfraClusterProtectionPolicy generates a Validating Admission Policy and Binding for protecting
@@ -315,6 +337,36 @@ func stripStatus(obj client.Object) client.Object {
 	}
 	delete(unstructuredObj, "status")
 	return &unstructured.Unstructured{Object: unstructuredObj}
+}
+
+// handleAggregateClusterRole suppresses the rules field on aggregate
+// ClusterRoles (those with a non-empty aggregationRule). The Kubernetes
+// aggregation controller overwrites rules on these objects, so emitting
+// them creates a tight reconciliation loop with boxcutter.
+func handleAggregateClusterRole(obj client.Object) (client.Object, error) {
+	u, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return obj, nil
+	}
+
+	aggRule, found, _ := unstructured.NestedMap(u.Object, "aggregationRule")
+	if !found || len(aggRule) == 0 {
+		return obj, nil
+	}
+
+	rules, rulesFound, _ := unstructured.NestedSlice(u.Object, "rules")
+	if !rulesFound {
+		return obj, nil
+	}
+
+	if len(rules) > 0 {
+		return nil, fmt.Errorf("ClusterRole %q has both aggregationRule and non-empty rules: the contents of rules will be overwritten by the aggregation controller", obj.GetName())
+	}
+
+	fmt.Fprintf(os.Stderr, "WARNING: ClusterRole %q has aggregationRule with empty rules; suppressing rules field\n", obj.GetName())
+	delete(u.Object, "rules")
+
+	return obj, nil
 }
 
 func setTypeMetadataFromScheme(obj client.Object, version string) {
