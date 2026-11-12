@@ -1,0 +1,30 @@
+# See the OWNERS docs: https://git.k8s.io/community/docs/devel/owners.md
+
+aliases:
+  sig-cluster-lifecycle-leads:
+    - fabriziopandini
+    - hakman
+    - justinsb
+    - neolit123
+    - sbueringer
+
+  cluster-api-admins:
+    - fabriziopandini
+    - sbueringer
+
+  cluster-api-maintainers:
+    - chrischdi
+    - fabriziopandini
+    - JoelSpeed
+    - sbueringer
+
+  cluster-api-gcp-maintainers:
+    - cpanato
+    - damdo
+    - dims
+    - salasberryfin
+
+  cluster-api-gcp-reviewers:
+    - barbacbd
+    - theobarberbany
+    - jonathanrainer

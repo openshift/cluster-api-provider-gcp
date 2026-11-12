@@ -28,9 +28,6 @@ coverage.*
 .env
 envfile
 
-!vendor/github.com/emicklei/go-restful/v3/coverage.sh
-!vendor/github.com/subosito/gotenv/.env
-
 # kubeconfigs
 kind.kubeconfig
 minikube.kubeconfig

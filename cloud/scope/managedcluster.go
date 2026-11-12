@@ -28,7 +28,9 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	"sigs.k8s.io/cluster-api/util/patch"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -60,7 +62,7 @@ func NewManagedClusterScope(ctx context.Context, params ManagedClusterScopeParam
 		params.Compute = computeSvc
 	}
 
-	helper, err := patch.NewHelper(params.GCPManagedCluster, params.Client)
+	helper, err := v1beta1patch.NewHelper(params.GCPManagedCluster, params.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
@@ -78,7 +80,7 @@ func NewManagedClusterScope(ctx context.Context, params ManagedClusterScopeParam
 // ManagedClusterScope defines the basic context for an actuator to operate upon.
 type ManagedClusterScope struct {
 	client      client.Client
-	patchHelper *patch.Helper
+	patchHelper *v1beta1patch.Helper
 
 	Cluster                *clusterv1.Cluster
 	GCPManagedCluster      *infrav1exp.GCPManagedCluster
@@ -120,7 +122,7 @@ func (s *ManagedClusterScope) Namespace() string {
 
 // NetworkName returns the cluster network unique identifier.
 func (s *ManagedClusterScope) NetworkName() string {
-	return ptr.Deref(s.GCPManagedCluster.Spec.Network.Name, "default")
+	return ptr.Deref(s.GCPManagedCluster.Spec.Network.Name, defaultNetworkName)
 }
 
 // NetworkProject returns the project name where network resources should exist.
@@ -174,7 +176,7 @@ func (s *ManagedClusterScope) ResourceManagerTags() infrav1.ResourceManagerTags 
 func (s *ManagedClusterScope) ControlPlaneEndpoint() clusterv1.APIEndpoint {
 	endpoint := clusterv1.APIEndpoint{
 		Host: s.GCPManagedCluster.Spec.ControlPlaneEndpoint.Host,
-		Port: 443,
+		Port: APIServerPort,
 	}
 	if s.Cluster.Spec.ClusterNetwork.APIServerPort != 0 {
 		endpoint.Port = s.Cluster.Spec.ClusterNetwork.APIServerPort
@@ -277,23 +279,46 @@ func (s *ManagedClusterScope) SubnetSpecs() []*compute.Subnetwork {
 // ANCHOR: ClusterFirewallSpec
 
 // FirewallRulesSpec returns google compute firewall spec.
-func (s *ManagedClusterScope) FirewallRulesSpec() []*compute.Firewall {
-	return createFirewallRules(
-		s.Name(),
-		s.NetworkLink(),
-		s.GCPManagedCluster.Spec.Network.Firewall.DefaultRulesManagement,
-		s.GCPManagedCluster.Spec.Network.Firewall.FirewallRules,
-	)
+// The default CAPG firewall rules (health-check and cluster-internal) target
+// CAPI-specific instance tags (e.g. "<cluster>-control-plane", "<cluster>-node")
+// that do not exist on GKE nodes, so they are never created for GCPManagedCluster.
+// The DefaultRulesManagement field is ignored here; only user-specified custom
+// firewall rules are reconciled.
+func (s *ManagedClusterScope) FirewallRulesSpec() ([]*compute.Firewall, error) {
+	return createFirewallRules(s.Name(), s.NetworkLink(), infrav1.RulesManagementUnmanaged, s.GCPManagedCluster.Spec.Network.Firewall.FirewallRules, defaultHealthCheckPort)
 }
 
 // ANCHOR_END: ClusterFirewallSpec
 
+// ConditionSetter returns a v1beta1 condition setter for this scope.
+func (s *ManagedClusterScope) ConditionSetter() v1beta1conditions.Setter {
+	return s.GCPManagedCluster
+}
+
+// V1Beta2ConditionSetter returns a v1beta2 condition setter for this scope.
+func (s *ManagedClusterScope) V1Beta2ConditionSetter() v1beta2conditions.Setter {
+	return s.GCPManagedCluster
+}
+
 // PatchObject persists the cluster configuration and status.
-func (s *ManagedClusterScope) PatchObject() error {
-	return s.patchHelper.Patch(context.TODO(), s.GCPManagedCluster)
+func (s *ManagedClusterScope) PatchObject(ctx context.Context) error {
+	return s.patchHelper.Patch(
+		ctx,
+		s.GCPManagedCluster,
+		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
+			infrav1.GCPClusterNetworkReadyCondition,
+			infrav1.GCPClusterSubnetsReadyCondition,
+			infrav1.GCPClusterFirewallRulesReadyCondition,
+		}},
+		v1beta1patch.WithOwnedV1Beta2Conditions{Conditions: []string{
+			infrav1.GCPClusterNetworkReadyCondition,
+			infrav1.GCPClusterSubnetsReadyCondition,
+			infrav1.GCPClusterFirewallRulesReadyCondition,
+		}},
+	)
 }
 
 // Close closes the current scope persisting the cluster configuration and status.
-func (s *ManagedClusterScope) Close() error {
-	return s.PatchObject()
+func (s *ManagedClusterScope) Close(ctx context.Context) error {
+	return s.PatchObject(ctx)
 }

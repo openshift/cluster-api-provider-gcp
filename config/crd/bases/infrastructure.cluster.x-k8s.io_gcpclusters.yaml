@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.0
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: gcpclusters.infrastructure.cluster.x-k8s.io
 spec:
   group: infrastructure.cluster.x-k8s.io
@@ -24,7 +24,7 @@ spec:
     - description: Cluster infrastructure is ready for GCE instances
       jsonPath: .status.ready
       name: Ready
-      type: string
+      type: boolean
     - description: GCP network the cluster is using
       jsonPath: .spec.network.name
       name: Network
@@ -251,8 +251,7 @@ spec:
                               description: |-
                                 Denied is the list of DENY rules specified by this firewall. Each rule
                                 specifies a protocol and port-range tuple that describes a denied
-                                connection. When a conflict applies between the Denied and Allowed fields,
-                                the Denied field will take precedent.
+                                connection. A firewall rule must specify either allowed or denied, not both.
                               items:
                                 description: FirewallDescriptor describes a GCP firewall
                                   rule.
@@ -313,13 +312,6 @@ spec:
                               - message: must be a valid IPv4/IPv6 address or CIDR/Prefix
                                 rule: self.all(i, isIP(i) || isCIDR(i))
                             direction:
-                              allOf:
-                              - enum:
-                                - Ingress
-                                - Egress
-                              - enum:
-                                - Ingress
-                                - Egress
                               default: Ingress
                               description: |-
                                 Direction is the direction of traffic to which this firewall applies, either
@@ -329,6 +321,9 @@ spec:
                                 Possible values:
                                   "Egress" - Indicates that firewall should apply to outgoing traffic.
                                   "Ingress" - Indicates that firewall should apply to incoming traffic.
+                              enum:
+                              - Ingress
+                              - Egress
                               type: string
                             name:
                               description: |-
@@ -341,15 +336,22 @@ spec:
                                 must be a lowercase letter or digit.
                                 If the firewall does not begin with the cluster name, then the cluster name
                                 will be prepended during the creation of the firewall rule.
+                                When the name is not provided, the name is generated from the infrastructure
+                                identifier of the cluster followed by a generated set of characters. The
+                                generated name is derived from the rule, so it is stable across reconciles, and
+                                is truncated so that it never exceeds 63 characters.
+                              maxLength: 63
+                              minLength: 1
+                              pattern: ^[a-z]([-a-z0-9]*[a-z0-9])?$
                               type: string
                             priority:
                               default: 1000
                               description: |-
-                                Priority is the priority for this rule. This is an integer between `0` and
+                                Priority is the priority for this rule. This is an integer between `1` and
                                 `65535`, both inclusive. The default value is `1000`. Relative priorities
                                 determine which rule takes effect if multiple rules apply. Lower values
-                                indicate higher priority. For example, a rule with priority `0` has higher
-                                precedence than a rule with priority `1`. DENY rules take precedence over
+                                indicate higher priority. For example, a rule with priority `1` has higher
+                                precedence than a rule with priority `2`. DENY rules take precedence over
                                 ALLOW rules if they have equal priority. Note that VPC networks have implied
                                 rules with a priority of `65535`. To avoid conflicts with the implied rules,
                                 use a priority number less than `65535`.
@@ -411,6 +413,23 @@ spec:
                               minItems: 0
                               type: array
                           type: object
+                          x-kubernetes-validations:
+                          - message: sourceRanges cannot be set for Egress rules
+                            rule: self.direction != 'Egress' || !has(self.sourceRanges)
+                              || size(self.sourceRanges) == 0
+                          - message: sourceTags cannot be set for Egress rules
+                            rule: self.direction != 'Egress' || !has(self.sourceTags)
+                              || size(self.sourceTags) == 0
+                          - message: destinationRanges cannot be set for Ingress rules
+                            rule: self.direction != 'Ingress' || !has(self.destinationRanges)
+                              || size(self.destinationRanges) == 0
+                          - message: allowed and denied cannot both be set in the
+                              same rule
+                            rule: '!(has(self.allowed) && size(self.allowed) > 0 &&
+                              has(self.denied) && size(self.denied) > 0)'
+                          - message: at least one of allowed or denied must be set
+                            rule: (has(self.allowed) && size(self.allowed) > 0) ||
+                              (has(self.denied) && size(self.denied) > 0)
                         maxItems: 50
                         type: array
                     type: object
@@ -629,6 +648,58 @@ spec:
           status:
             description: GCPClusterStatus defines the observed state of GCPCluster.
             properties:
+              conditions:
+                description: conditions defines current service state of the GCPCluster.
+                items:
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed. If that is not known, then using the time when
+                        the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This field may be empty.
+                      maxLength: 10240
+                      minLength: 1
+                      type: string
+                    reason:
+                      description: |-
+                        reason is the reason for the condition's last transition in CamelCase.
+                        The specific API may choose whether or not this field is considered a guaranteed API.
+                        This field may be empty.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                    severity:
+                      description: |-
+                        severity provides an explicit classification of Reason code, so the users or machines can immediately
+                        understand the current situation and act accordingly.
+                        The Severity field MUST be set only when Status=False.
+                      maxLength: 32
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: |-
+                        type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+                        can be useful (see .node.status.conditions), the ability to deconflict is important.
+                      maxLength: 256
+                      minLength: 1
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - status
+                  - type
+                  type: object
+                type: array
               failureDomains:
                 additionalProperties:
                   description: |-
@@ -720,8 +791,78 @@ spec:
                     type: string
                 type: object
               ready:
-                description: Bastion Instance `json:"bastion,omitempty"`
+                description: Ready denotes that the cluster infrastructure is ready.
                 type: boolean
+              v1beta2:
+                description: |-
+                  v1beta2 groups all the fields that will be added or modified in GCPCluster's status
+                  with the v1beta2 version of the Cluster API contract.
+                properties:
+                  conditions:
+                    description: |-
+                      conditions represents the observations of a GCPCluster's current state.
+                      Known condition types are Ready.
+                    items:
+                      description: Condition contains details for one aspect of the
+                        current state of this API Resource.
+                      properties:
+                        lastTransitionTime:
+                          description: |-
+                            lastTransitionTime is the last time the condition transitioned from one status to another.
+                            This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                          format: date-time
+                          type: string
+                        message:
+                          description: |-
+                            message is a human readable message indicating details about the transition.
+                            This may be an empty string.
+                          maxLength: 32768
+                          type: string
+                        observedGeneration:
+                          description: |-
+                            observedGeneration represents the .metadata.generation that the condition was set based upon.
+                            For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                            with respect to the current state of the instance.
+                          format: int64
+                          minimum: 0
+                          type: integer
+                        reason:
+                          description: |-
+                            reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                            Producers of specific condition types may define expected values and meanings for this field,
+                            and whether the values are considered a guaranteed API.
+                            The value should be a CamelCase string.
+                            This field may not be empty.
+                          maxLength: 1024
+                          minLength: 1
+                          pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                          type: string
+                        status:
+                          description: status of the condition, one of True, False,
+                            Unknown.
+                          enum:
+                          - "True"
+                          - "False"
+                          - Unknown
+                          type: string
+                        type:
+                          description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                          maxLength: 316
+                          pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                          type: string
+                      required:
+                      - lastTransitionTime
+                      - message
+                      - reason
+                      - status
+                      - type
+                      type: object
+                    maxItems: 32
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - type
+                    x-kubernetes-list-type: map
+                type: object
             required:
             - ready
             type: object

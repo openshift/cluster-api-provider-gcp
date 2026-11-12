@@ -26,7 +26,8 @@ set -o pipefail
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 KUBECTL="${REPO_ROOT}/hack/tools/bin/kubectl"
 KIND="${REPO_ROOT}/hack/tools/bin/kind"
-make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${KIND##*/}"
+YQ="${REPO_ROOT}/hack/tools/bin/yq"
+make --directory="${REPO_ROOT}" "${KUBECTL##*/}" "${KIND##*/}" "${YQ##*/}"
 
 # shellcheck source=hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
@@ -43,23 +44,19 @@ mkdir -p "${ARTIFACTS}/logs/"
 : "${GOOGLE_APPLICATION_CREDENTIALS:?Environment variable empty or not defined.}"
 
 export GCP_REGION=${GCP_REGION:-"us-east4"}
+export GCP_ZONE=${GCP_ZONE:-"${GCP_REGION}-a"}
 export TEST_NAME=${CLUSTER_NAME:-"capg-${RANDOM}"}
 export GCP_NETWORK_NAME=${GCP_NETWORK_NAME:-"${TEST_NAME}-mynetwork"}
 GCP_B64ENCODED_CREDENTIALS=$(base64 "$GOOGLE_APPLICATION_CREDENTIALS" | tr -d '\n')
 export GCP_B64ENCODED_CREDENTIALS
-KUBERNETES_VERSION=$(go run github.com/mikefarah/yq/v4@v4.45.4 '.variables.KUBERNETES_VERSION' test/e2e/config/gcp-ci.yaml)
-export KUBERNETES_VERSION
-read -ra VERSION_PARTS <<< "$(echo "${KUBERNETES_VERSION#v}" | tr '.' ' ')"
-export KUBERNETES_MAJOR_VERSION="${VERSION_PARTS[0]}"
-export KUBERNETES_MINOR_VERSION="${VERSION_PARTS[1]}"
-export KUBERNETES_PATCH_VERSION="${VERSION_PARTS[2]}"
-# using prebuilt image from image-builder project the image is built everyday and the job is available here https://prow.k8s.io/?job=periodic-image-builder-gcp-all-nightly
-export IMAGE_ID="projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-2204-${KUBERNETES_VERSION//[.+]/-}-nightly"
+# KUBERNETES_VERSION/IMAGE_ID (and, for other flavors, KUBERNETES_VERSION_GKE/
+# CCM_VERSION/etc.) are resolved in main(), after gcloud auth -- see
+# hack/resolve-e2e-versions.sh.
 
 init_image() {
   if [[ "${REUSE_OLD_IMAGES:-false}" == "true" ]]; then
     image=$(gcloud compute images list --project "$GCP_PROJECT" \
-      --no-standard-images --filter="family:capi-ubuntu-2204-k8s-v${KUBERNETES_MAJOR_VERSION}-${KUBERNETES_MINOR_VERSION}" --format="table[no-heading](name)")
+      --no-standard-images --filter="family:capi-ubuntu-${CAPG_UBUNTU_VERSION}-k8s-v${KUBERNETES_MAJOR_VERSION}-${KUBERNETES_MINOR_VERSION}" --format="table[no-heading](name)")
     if [[ -n "$image" ]]; then
       return
     fi
@@ -70,27 +67,29 @@ init_image() {
   "build_timestamp": "0",
   "kubernetes_series": "v${KUBERNETES_MAJOR_VERSION}.${KUBERNETES_MINOR_VERSION}",
   "kubernetes_semver": "${KUBERNETES_VERSION}",
-  "kubernetes_deb_version": "${KUBERNETES_MAJOR_VERSION}.${KUBERNETES_MINOR_VERSION}.${KUBERNETES_PATCH_VERSION}-00",
-  "kubernetes_rpm_version": "${KUBERNETES_MAJOR_VERSION}.${KUBERNETES_MINOR_VERSION}.${KUBERNETES_PATCH_VERSION}-0"
+  "kubernetes_deb_version": "${KUBERNETES_MAJOR_VERSION}.${KUBERNETES_MINOR_VERSION}.${KUBERNETES_PATCH_VERSION}-1.1",
+  "kubernetes_rpm_version": "${KUBERNETES_MAJOR_VERSION}.${KUBERNETES_MINOR_VERSION}.${KUBERNETES_PATCH_VERSION}"
 }
 EOF
+
+  local build_target=build-gce-ubuntu-"${CAPG_UBUNTU_VERSION}"
 
   if [[ $EUID -ne 0 ]]; then
     (cd "$(go env GOPATH)/src/sigs.k8s.io/image-builder/images/capi" && \
       GCP_PROJECT_ID=$GCP_PROJECT \
       GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS \
       PACKER_VAR_FILES=override.json \
-      make deps-gce build-gce-ubuntu-2004)
+      make deps-gce "${build_target}")
   else
     # assume we are running in the CI environment as root
     # Add a user for ansible to work properly
     groupadd -r packer && useradd -m -s /bin/bash -r -g packer packer
     chown -R packer:packer /home/prow/go/src/sigs.k8s.io/image-builder
     # use the packer user to run the build
-    su - packer -c "bash -c 'cd /home/prow/go/src/sigs.k8s.io/image-builder/images/capi && PATH=$PATH:~packer/.local/bin:/home/prow/go/src/sigs.k8s.io/image-builder/images/capi/.local/bin GCP_PROJECT_ID=$GCP_PROJECT GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS PACKER_VAR_FILES=override.json make deps-gce build-gce-ubuntu-2204'"
+    su - packer -c "bash -c 'cd /home/prow/go/src/sigs.k8s.io/image-builder/images/capi && PATH=$PATH:~packer/.local/bin:/home/prow/go/src/sigs.k8s.io/image-builder/images/capi/.local/bin GCP_PROJECT_ID=$GCP_PROJECT GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS PACKER_VAR_FILES=override.json make deps-gce $build_target'"
   fi
 
-  filter="name~cluster-api-ubuntu-2204-${KUBERNETES_VERSION//[.+]/-}"
+  filter="name~cluster-api-ubuntu-${CAPG_UBUNTU_VERSION}-${KUBERNETES_VERSION//[.+]/-}"
   image_id=$(gcloud compute images list --project "$GCP_PROJECT" \
     --no-standard-images --filter="${filter}" --format="table[no-heading](name)")
   if [[ -z "$image_id" ]]; then
@@ -200,7 +199,11 @@ main() {
     if [[ "${arg}" == "--build-image-only" ]]; then
       BUILD_IMAGE_ONLY="1"
     fi
+    if [[ "${arg}" == --flavor=* ]]; then
+      E2E_FLAVOR="${arg#--flavor=}"
+    fi
   done
+  export E2E_FLAVOR="${E2E_FLAVOR:-all}"
 
   # If BOSKOS_HOST is set then acquire an GCP account from Boskos.
   if [[ -n "${BOSKOS_HOST:-}" ]]; then
@@ -254,6 +257,14 @@ EOF
     return 2
   fi
 
+  source hack/resolve-e2e-versions.sh
+  if [[ -n "${KUBERNETES_VERSION:-}" ]]; then
+    read -ra VERSION_PARTS <<< "$(echo "${KUBERNETES_VERSION#v}" | tr '.' ' ')"
+    export KUBERNETES_MAJOR_VERSION="${VERSION_PARTS[0]}"
+    export KUBERNETES_MINOR_VERSION="${VERSION_PARTS[1]}"
+    export KUBERNETES_PATCH_VERSION="${VERSION_PARTS[2]}"
+  fi
+
   SKIP_CLEANUP=${SKIP_CLEANUP:-""}
   if [[ -z "${SKIP_CLEANUP}" ]]; then
     trap exit-handler EXIT
@@ -275,13 +286,20 @@ EOF
     init_networks
   fi
 
-  make test-e2e
-  test_status="${?}"
+  # Capture the status rather than letting errexit abort here, so that a failing
+  # suite still releases the GCP project below instead of leaking it until the
+  # Boskos lease expires.
+  test_status=0
+  make test-e2e || test_status="${?}"
   echo TESTSTATUS
   echo "${test_status}"
 
-  # If Boskos is being used then release the GCP project back to Boskos.
-  [[ -z "${BOSKOS_HOST:-}" ]] || hack/checkin_account.py >> "${ARTIFACTS}/logs/boskos.log" 2>&1
+  # If Boskos is being used then release the GCP project back to Boskos. A
+  # failure here must not mask the suite's result: the lease expires on its own.
+  if [[ -n "${BOSKOS_HOST:-}" ]]; then
+    hack/checkin_account.py >> "${ARTIFACTS}/logs/boskos.log" 2>&1 ||
+      echo "WARNING: failed to release the GCP project to Boskos, see ${ARTIFACTS}/logs/boskos.log" >&2
+  fi
 }
 
 main "$@"

@@ -22,16 +22,15 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-gcp/util/location"
 
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
-
 	container "cloud.google.com/go/container/apiv1"
-	credentials "cloud.google.com/go/iam/credentials/apiv1"
 	resourcemanager "cloud.google.com/go/resourcemanager/apiv3"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -43,13 +42,14 @@ const (
 
 // ManagedControlPlaneScopeParams defines the input parameters used to create a new Scope.
 type ManagedControlPlaneScopeParams struct {
-	CredentialsClient      *credentials.IamCredentialsClient
+	TokenClient            *TokenClient
 	ManagedClusterClient   *container.ClusterManagerClient
 	TagBindingsClient      *resourcemanager.TagBindingsClient
 	Client                 client.Client
 	Cluster                *clusterv1.Cluster
 	GCPManagedCluster      *infrav1exp.GCPManagedCluster
 	GCPManagedControlPlane *infrav1exp.GCPManagedControlPlane
+	Resolver               location.Resolving
 }
 
 // NewManagedControlPlaneScope creates a new Scope from the supplied parameters.
@@ -63,11 +63,6 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 	}
 	if params.GCPManagedControlPlane == nil {
 		return nil, errors.New("failed to generate new scope from nil GCPManagedControlPlane")
-	}
-
-	credential, err := getCredentials(ctx, params.GCPManagedCluster.Spec.CredentialsRef, params.Client)
-	if err != nil {
-		return nil, fmt.Errorf("getting gcp credentials: %w", err)
 	}
 
 	if params.ManagedClusterClient == nil {
@@ -84,13 +79,25 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		}
 		params.TagBindingsClient = tagBindingsClient
 	}
-	if params.CredentialsClient == nil {
-		var credentialsClient *credentials.IamCredentialsClient
-		credentialsClient, err = newIamCredentialsClient(ctx, params.GCPManagedCluster.Spec.CredentialsRef, params.Client, params.GCPManagedCluster.Spec.ServiceEndpoints)
+	if params.TokenClient == nil {
+		tokenClient, err := NewTokenClient(ctx, params.GCPManagedCluster.Spec.CredentialsRef, params.Client)
 		if err != nil {
-			return nil, errors.Errorf("failed to create gcp credentials client: %v", err)
+			return nil, errors.Errorf("failed to create gcp token client: %v", err)
 		}
-		params.CredentialsClient = credentialsClient
+		params.TokenClient = &tokenClient
+	}
+	if params.Resolver == nil {
+		resolver, err := NewResolver(ctx, params.GCPManagedCluster.Spec.CredentialsRef, params.Client, params.GCPManagedCluster.Spec.ServiceEndpoints)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create location resolver")
+		}
+		defer resolver.Close()
+		params.Resolver = resolver
+	}
+
+	resolvedLocation, err := params.Resolver.Resolve(ctx, params.GCPManagedControlPlane.Spec.Project, params.GCPManagedControlPlane.Spec.Location)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to resolve location")
 	}
 
 	helper, err := v1beta1patch.NewHelper(params.GCPManagedControlPlane, params.Client)
@@ -105,9 +112,9 @@ func NewManagedControlPlaneScope(ctx context.Context, params ManagedControlPlane
 		GCPManagedControlPlane: params.GCPManagedControlPlane,
 		mcClient:               params.ManagedClusterClient,
 		tagBindingsClient:      params.TagBindingsClient,
-		credentialsClient:      params.CredentialsClient,
-		credential:             credential,
+		tokenClient:            *params.TokenClient,
 		patchHelper:            helper,
+		ResolvedLocation:       *resolvedLocation,
 	}, nil
 }
 
@@ -121,36 +128,47 @@ type ManagedControlPlaneScope struct {
 	GCPManagedControlPlane *infrav1exp.GCPManagedControlPlane
 	mcClient               *container.ClusterManagerClient
 	tagBindingsClient      *resourcemanager.TagBindingsClient
-	credentialsClient      *credentials.IamCredentialsClient
-	credential             *Credential
+	tokenClient            TokenClient
+	ResolvedLocation       location.ResolvedLocation
 
 	AllMachinePools        []clusterv1.MachinePool
 	AllManagedMachinePools []infrav1exp.GCPManagedMachinePool
 }
 
 // PatchObject persists the managed control plane configuration and status.
-func (s *ManagedControlPlaneScope) PatchObject() error {
+func (s *ManagedControlPlaneScope) PatchObject(ctx context.Context) error {
 	return s.patchHelper.Patch(
-		context.TODO(),
+		ctx,
 		s.GCPManagedControlPlane,
 		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
 			infrav1exp.GKEControlPlaneReadyCondition,
 			infrav1exp.GKEControlPlaneCreatingCondition,
 			infrav1exp.GKEControlPlaneUpdatingCondition,
 			infrav1exp.GKEControlPlaneDeletingCondition,
-		}})
+		}},
+		v1beta1patch.WithOwnedV1Beta2Conditions{Conditions: []string{
+			string(infrav1exp.GKEControlPlaneReadyCondition),
+			string(infrav1exp.GKEControlPlaneCreatingCondition),
+			string(infrav1exp.GKEControlPlaneUpdatingCondition),
+			string(infrav1exp.GKEControlPlaneDeletingCondition),
+		}},
+	)
 }
 
 // Close closes the current scope persisting the managed control plane configuration and status.
-func (s *ManagedControlPlaneScope) Close() error {
+func (s *ManagedControlPlaneScope) Close(ctx context.Context) error {
 	s.mcClient.Close()
 	s.tagBindingsClient.Close()
-	s.credentialsClient.Close()
-	return s.PatchObject()
+	return s.PatchObject(ctx)
 }
 
-// ConditionSetter return a condition setter (which is GCPManagedControlPlane itself).
+// ConditionSetter returns a v1beta1 condition setter for this scope.
 func (s *ManagedControlPlaneScope) ConditionSetter() v1beta1conditions.Setter {
+	return s.GCPManagedControlPlane
+}
+
+// V1Beta2ConditionSetter returns a v1beta2 condition setter for this scope.
+func (s *ManagedControlPlaneScope) V1Beta2ConditionSetter() v1beta2conditions.Setter {
 	return s.GCPManagedControlPlane
 }
 
@@ -169,14 +187,10 @@ func (s *ManagedControlPlaneScope) TagBindingsClient() *resourcemanager.TagBindi
 	return s.tagBindingsClient
 }
 
-// CredentialsClient returns a client used to interact with IAM.
-func (s *ManagedControlPlaneScope) CredentialsClient() *credentials.IamCredentialsClient {
-	return s.credentialsClient
-}
-
-// GetCredential returns the credential data.
-func (s *ManagedControlPlaneScope) GetCredential() *Credential {
-	return s.credential
+// TokenClient returns the client used to mint short-lived access tokens
+// for the GCP identity configured for this control plane.
+func (s *ManagedControlPlaneScope) TokenClient() TokenClient {
+	return s.tokenClient
 }
 
 // GetAllNodePools gets all node pools for the control plane.
@@ -213,8 +227,28 @@ func (s *ManagedControlPlaneScope) GetAllNodePools(ctx context.Context) ([]infra
 
 // Region returns the region of the GKE cluster.
 func (s *ManagedControlPlaneScope) Region() string {
-	loc, _ := location.Parse(s.GCPManagedControlPlane.Spec.Location)
-	return loc.Region
+	return s.ResolvedLocation.Region
+}
+
+// IsRegional returns if the GKE cluster is a regional cluster.
+func (s *ManagedControlPlaneScope) IsRegional() bool {
+	return s.ResolvedLocation.Regional
+}
+
+// ValidateLocation checks both that the regions of the cluster and control plane match and that we don't try to
+// use Autopilot with a Zonal cluster
+func (s *ManagedControlPlaneScope) ValidateLocation() (reason, message string) {
+	controlPlaneRegion := s.Region()
+	clusterRegion := s.GCPManagedCluster.Spec.Region
+	if controlPlaneRegion != clusterRegion {
+		return infrav1exp.GKEControlPlaneRegionMismatchReason, fmt.Sprintf("control plane in region %s, while cluster in region %s", controlPlaneRegion, clusterRegion)
+	}
+	zonal := !s.IsRegional()
+	autopilotEnabled := s.GCPManagedControlPlane.Spec.EnableAutopilot
+	if zonal && autopilotEnabled {
+		return infrav1exp.GKEControlPlaneAutopilotRequiresRegionalReason, "an Autopilot enabled cluster cannot also be zonal"
+	}
+	return "", ""
 }
 
 // ClusterLocation returns the location of the cluster.
