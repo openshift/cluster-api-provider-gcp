@@ -29,6 +29,12 @@ type GCPManagedControlPlaneClassSpec struct {
 	// +optional
 	MachineTemplate *GCPManagedControlPlaneTemplateMachineTemplate `json:"machineTemplate,omitempty"`
 
+	// ClusterName allows you to specify the name of the GKE cluster.
+	// If you don't specify a name then a default name will be created
+	// based on the namespace and name of the managed control plane.
+	// +optional
+	ClusterName string `json:"clusterName,omitempty"`
+
 	// ClusterNetwork define the cluster network.
 	// +optional
 	ClusterNetwork *ClusterNetwork `json:"clusterNetwork,omitempty"`
@@ -77,6 +83,10 @@ type GCPManagedControlPlaneClassSpec struct {
 	// Value is ignored when enableAutopilot = true.
 	// +optional
 	MonitoringService *MonitoringService `json:"monitoringService,omitempty"`
+
+	// MonitoringConfig represents configuration of the monitoring feature of the GKE cluster.
+	// +optional
+	MonitoringConfig *MonitoringConfig `json:"monitoringConfig,omitempty"`
 }
 
 // GCPManagedMachinePoolClassSpec defines the GCPManagedMachinePool properties that may be shared across several GCP managed machinepools.
@@ -88,10 +98,17 @@ type GCPManagedMachinePoolClassSpec struct {
 	// MachineType is the name of a Google Compute Engine [machine
 	// type](https://cloud.google.com/compute/docs/machine-types).
 	// If unspecified, the default machine type is `e2-medium`.
+	//
+	// Deprecated: MachineType duplicates InstanceType (both configure the same
+	// underlying GKE node pool machine type) and is retained only for backward
+	// compatibility with existing resources that already set it. This field
+	// remains immutable and will not gain new functionality; use InstanceType
+	// for new manifests. If both fields are set, InstanceType takes precedence.
 	// +optional
 	MachineType *string `json:"machineType,omitempty"`
 	// DiskSizeGb is the size of the disk attached to each node, specified in GB.
 	// The smallest allowed disk size is 10GB. If unspecified, the default disk size is 100GB.
+	// If DiskSizeGB is also set, DiskSizeGb takes precedence.
 	// +optional
 	DiskSizeGb *int32 `json:"diskSizeGb,omitempty"`
 	// LocalSsdCount is the number of local SSD disks to be attached to the node.
@@ -108,6 +125,9 @@ type GCPManagedMachinePoolClassSpec struct {
 	// +optional
 	ImageType *string `json:"imageType,omitempty"`
 	// InstanceType is name of Compute Engine machine type.
+	// This field is mutable: changing it drives a rolling node replacement via
+	// GKE's node pool upgrade strategy (see UpgradeSettings), not an in-place
+	// resize. It takes precedence over MachineType if both are set.
 	// +optional
 	InstanceType *string `json:"instanceType,omitempty"`
 	// DiskType is type of the disk attached to each node.
@@ -115,6 +135,12 @@ type GCPManagedMachinePoolClassSpec struct {
 	DiskType *DiskType `json:"diskType,omitempty"`
 	// DiskSizeGB is size of the disk attached to each node,
 	// specified in GB.
+	//
+	// Deprecated: DiskSizeGB duplicates DiskSizeGb (both configure the same
+	// underlying GKE node pool disk size) and is retained only for backward
+	// compatibility with existing resources that already set it. This field
+	// remains immutable and will not gain new functionality; use DiskSizeGb
+	// for new manifests. If both fields are set, DiskSizeGb takes precedence.
 	// +kubebuilder:validation:Minimum:=10
 	// +optional
 	DiskSizeGB *int64 `json:"diskSizeGB,omitempty"`
@@ -137,6 +163,11 @@ type GCPManagedMachinePoolClassSpec struct {
 	// KubernetesTaints specifies the taints to apply to the nodes of the node pool.
 	// +optional
 	KubernetesTaints Taints `json:"kubernetesTaints,omitempty"`
+	// ArchitectureTaintBehavior controls GKE's default architecture taint on the nodes of this
+	// node pool. GKE taints ARM64 nodes kubernetes.io/arch=arm64:NoSchedule unless this is set
+	// to none. Left unset, GKE keeps its own default, which applies the taint.
+	// +optional
+	ArchitectureTaintBehavior *ArchitectureTaintBehavior `json:"architectureTaintBehavior,omitempty"`
 	// AdditionalLabels is an optional set of tags to add to GCP resources managed by the GCP provider, in addition to the
 	// ones added by default.
 	// +optional
@@ -144,6 +175,10 @@ type GCPManagedMachinePoolClassSpec struct {
 	// Management specifies the node pool management options.
 	// +optional
 	Management *NodePoolManagement `json:"management,omitempty"`
+	// UpgradeSettings specifies the rollout strategy GKE uses when a change to
+	// this node pool requires replacing nodes, such as an InstanceType change.
+	// +optional
+	UpgradeSettings *NodePoolUpgradeSettings `json:"upgradeSettings,omitempty"`
 	// LinuxNodeConfig specifies the settings for Linux agent nodes.
 	// +optional
 	LinuxNodeConfig *LinuxNodeConfig `json:"linuxNodeConfig,omitempty"`
@@ -156,4 +191,7 @@ type GCPManagedMachinePoolClassSpec struct {
 	// any time and are recommended over Preemptible VMs for new workloads. This field is immutable.
 	// +optional
 	Spot *bool `json:"spot,omitempty"`
+	// ReservationAffinity specifies whether to utilize reservations for compute. This field is immutable.
+	// +optional
+	ReservationAffinity *infrav1.ReservationAffinity `json:"reservationAffinity,omitempty"`
 }

@@ -19,9 +19,11 @@ package instances
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/GoogleCloudPlatform/k8s-cloud-provider/pkg/cloud"
 	"github.com/GoogleCloudPlatform/k8s-cloud-provider/pkg/cloud/filter"
 	"github.com/GoogleCloudPlatform/k8s-cloud-provider/pkg/cloud/meta"
 	"google.golang.org/api/compute/v1"
@@ -36,6 +38,9 @@ import (
 )
 
 const metadataKeyUserData = "user-data"
+
+// ErrInstanceNotFound is returned when a previously provisioned VM has disappeared
+var ErrInstanceNotFound = errors.New("instance has been removed after provisioning")
 
 // Reconcile reconcile machine instance.
 func (s *Service) Reconcile(ctx context.Context) error {
@@ -103,7 +108,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 func (s *Service) Delete(ctx context.Context) error {
 	log := log.FromContext(ctx)
 	log.Info("Deleting instance resources")
-	instanceSpec := s.scope.InstanceSpec(log)
+	instanceSpec := s.scope.InstanceSpec(ctx, log)
 	instanceName := instanceSpec.Name
 	instanceKey := meta.ZonalKey(instanceName, s.scope.Zone())
 	log.V(2).Info("Looking for instance before deleting", "name", instanceName, "zone", s.scope.Zone())
@@ -136,7 +141,7 @@ func (s *Service) createOrGetInstance(ctx context.Context) (*compute.Instance, e
 		return nil, errors.Wrap(err, "failed to retrieve bootstrap data")
 	}
 
-	instanceSpec := s.scope.InstanceSpec(log)
+	instanceSpec := s.scope.InstanceSpec(ctx, log)
 	instanceName := instanceSpec.Name
 	instanceKey := meta.ZonalKey(instanceName, s.scope.Zone())
 	instanceSpec.Metadata.Items = append(instanceSpec.Metadata.Items, &compute.MetadataItems{
@@ -149,6 +154,15 @@ func (s *Service) createOrGetInstance(ctx context.Context) (*compute.Instance, e
 	if err != nil {
 		if !gcperrors.IsNotFound(err) {
 			log.Error(err, "Error looking for instance", "name", instanceName, "zone", s.scope.Zone())
+			return nil, err
+		}
+
+		// Check if GetProviderID is set. If it is then this VM was created previously and so shouldn't be recreated
+		if s.scope.GetProviderID() != "" {
+			return nil, ErrInstanceNotFound
+		}
+
+		if err := validateResourcePolicyRegions(instanceSpec.ResourcePolicies, s.scope.Zone()); err != nil {
 			return nil, err
 		}
 
@@ -165,6 +179,28 @@ func (s *Service) createOrGetInstance(ctx context.Context) (*compute.Instance, e
 	}
 
 	return instance, nil
+}
+
+// validateResourcePolicyRegions checks against the selected zone, which is not
+// available when admitting a GCPMachineTemplate.
+func validateResourcePolicyRegions(policies []string, zone string) error {
+	for _, policy := range policies {
+		resource, err := cloud.ParseResourceURL(policy)
+		if err != nil {
+			return fmt.Errorf("failed to parse resource policy %q: %w", policy, err)
+		}
+		zoneRegion := ""
+		if i := strings.LastIndex(zone, "-"); i >= 0 {
+			zoneRegion = zone[:i]
+		}
+		if zoneRegion == "" {
+			return fmt.Errorf("cannot determine region from instance zone %q", zone)
+		}
+		if ptr.Deref(resource.Key, meta.Key{}).Region != zoneRegion {
+			return fmt.Errorf("resource policy %q must be in the same region as instance zone %q", policy, zone)
+		}
+	}
+	return nil
 }
 
 func (s *Service) registerControlPlaneInstance(ctx context.Context, instance *compute.Instance) error {

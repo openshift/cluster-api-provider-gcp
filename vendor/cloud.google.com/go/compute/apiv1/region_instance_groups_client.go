@@ -87,7 +87,7 @@ func defaultRegionInstanceGroupsRESTCallOptions() *RegionInstanceGroupsCallOptio
 	}
 }
 
-// internalRegionInstanceGroupsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionInstanceGroupsClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionInstanceGroupsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -99,7 +99,7 @@ type internalRegionInstanceGroupsClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsRegionInstanceGroupRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// RegionInstanceGroupsClient is a client for interacting with Google Compute Engine API.
+// RegionInstanceGroupsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionInstanceGroups API.
@@ -113,7 +113,7 @@ type RegionInstanceGroupsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionInstanceGroupsClient) Close() error {
 	return c.internalClient.Close()
@@ -267,7 +267,7 @@ func (c *regionInstanceGroupsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionInstanceGroupsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

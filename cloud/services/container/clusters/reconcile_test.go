@@ -20,9 +20,11 @@ import (
 	"testing"
 
 	"cloud.google.com/go/container/apiv1/containerpb"
+	"google.golang.org/protobuf/proto"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	infrav1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-gcp/cloud/scope"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
 )
@@ -31,6 +33,43 @@ func newTestService(controlPlane *infrav1exp.GCPManagedControlPlane) *Service {
 	s := new(scope.ManagedControlPlaneScope)
 	s.GCPManagedControlPlane = controlPlane
 	return &Service{scope: s}
+}
+
+// TestNetworkName guards against a regression of
+// https://github.com/kubernetes-sigs/cluster-api-provider-gcp/issues/1187: createCluster used to
+// dereference Spec.Network.Name directly, which panicked whenever a GCPManagedCluster was created
+// without the network field set. Network is a non-pointer struct field, so omitting it from a
+// manifest leaves it as the zero-value NetworkSpec{} (Name == nil), which is what "network name
+// not set" below represents.
+func TestNetworkName(t *testing.T) {
+	tests := []struct {
+		name    string
+		network infrav1.NetworkSpec
+		want    string
+	}{
+		{
+			name:    "network name not set",
+			network: infrav1.NetworkSpec{},
+			want:    "",
+		},
+		{
+			name:    "network name set",
+			network: infrav1.NetworkSpec{Name: ptr.To("my-network")},
+			want:    "my-network",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := newTestService(&infrav1exp.GCPManagedControlPlane{})
+			svc.scope.GCPManagedCluster = &infrav1exp.GCPManagedCluster{
+				Spec: infrav1exp.GCPManagedClusterSpec{Network: tt.network},
+			}
+			if got := svc.networkName(); got != tt.want {
+				t.Errorf("networkName() = %q, want %q", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestCheckDiffAndPrepareUpdate(t *testing.T) {
@@ -50,8 +89,8 @@ func TestCheckDiffAndPrepareUpdate(t *testing.T) {
 						Project:        "test-project",
 						Location:       "us-central1",
 						ReleaseChannel: ptr.To(infrav1exp.Stable),
+						ClusterName:    "test-cluster",
 					},
-					ClusterName: "test-cluster",
 				},
 			},
 			existingCluster: &containerpb.Cluster{
@@ -78,8 +117,8 @@ func TestCheckDiffAndPrepareUpdate(t *testing.T) {
 						Project:        "test-project",
 						Location:       "us-central1",
 						ReleaseChannel: ptr.To(infrav1exp.Rapid),
+						ClusterName:    "test-cluster",
 					},
-					ClusterName: "test-cluster",
 				},
 			},
 			existingCluster: &containerpb.Cluster{
@@ -100,11 +139,11 @@ func TestCheckDiffAndPrepareUpdate(t *testing.T) {
 			controlPlane: &infrav1exp.GCPManagedControlPlane{
 				Spec: infrav1exp.GCPManagedControlPlaneSpec{
 					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
-						Project:  "test-project",
-						Location: "us-central1",
+						Project:     "test-project",
+						Location:    "us-central1",
+						ClusterName: "test-cluster",
 					},
-					ClusterName: "test-cluster",
-					Version:     ptr.To("1.28.0"),
+					Version: ptr.To("1.28.0"),
 				},
 			},
 			existingCluster: &containerpb.Cluster{
@@ -123,11 +162,11 @@ func TestCheckDiffAndPrepareUpdate(t *testing.T) {
 			controlPlane: &infrav1exp.GCPManagedControlPlane{
 				Spec: infrav1exp.GCPManagedControlPlaneSpec{
 					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
+						ClusterName:       "test-cluster",
 						Project:           "test-project",
 						Location:          "us-central1",
 						MonitoringService: ptr.To(infrav1exp.MonitoringService("none")),
 					},
-					ClusterName: "test-cluster",
 				},
 			},
 			existingCluster: &containerpb.Cluster{
@@ -149,10 +188,10 @@ func TestCheckDiffAndPrepareUpdate(t *testing.T) {
 			controlPlane: &infrav1exp.GCPManagedControlPlane{
 				Spec: infrav1exp.GCPManagedControlPlaneSpec{
 					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
-						Project:  "test-project",
-						Location: "us-central1",
+						Project:     "test-project",
+						Location:    "us-central1",
+						ClusterName: "test-cluster",
 					},
-					ClusterName: "test-cluster",
 				},
 			},
 			existingCluster: &containerpb.Cluster{},
@@ -174,10 +213,10 @@ func TestCheckDiffAndPrepareUpdate(t *testing.T) {
 			controlPlane: &infrav1exp.GCPManagedControlPlane{
 				Spec: infrav1exp.GCPManagedControlPlaneSpec{
 					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
-						Project:  "test-project",
-						Location: "us-central1",
+						Project:     "test-project",
+						Location:    "us-central1",
+						ClusterName: "test-cluster",
 					},
-					ClusterName: "test-cluster",
 				},
 			},
 			existingCluster: &containerpb.Cluster{
@@ -206,8 +245,8 @@ func TestCheckDiffAndPrepareUpdate(t *testing.T) {
 								{CidrBlock: "10.0.0.0/8", DisplayName: "internal"},
 							},
 						},
+						ClusterName: "test-cluster",
 					},
-					ClusterName: "test-cluster",
 				},
 			},
 			existingCluster: &containerpb.Cluster{},
@@ -233,6 +272,200 @@ func TestCheckDiffAndPrepareUpdate(t *testing.T) {
 			},
 		},
 		{
+			name: "no diff when gateway api channel is unset, regardless of what GKE actually has",
+			controlPlane: &infrav1exp.GCPManagedControlPlane{
+				Spec: infrav1exp.GCPManagedControlPlaneSpec{
+					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
+						Project:        "test-project",
+						Location:       "us-central1",
+						ReleaseChannel: ptr.To(infrav1exp.Stable),
+						ClusterName:    "test-cluster",
+						// No ClusterNetwork/GatewayAPIChannel set - matches an
+						// Autopilot cluster, which GKE mandates onto the
+						// STANDARD channel regardless of what's requested.
+					},
+				},
+			},
+			existingCluster: &containerpb.Cluster{
+				ReleaseChannel: &containerpb.ReleaseChannel{
+					Channel: containerpb.ReleaseChannel_STABLE,
+				},
+				NetworkConfig: &containerpb.NetworkConfig{
+					GatewayApiConfig: &containerpb.GatewayAPIConfig{
+						Channel: containerpb.GatewayAPIConfig_CHANNEL_STANDARD,
+					},
+				},
+				ControlPlaneEndpointsConfig: &containerpb.ControlPlaneEndpointsConfig{
+					IpEndpointsConfig: &containerpb.ControlPlaneEndpointsConfig_IPEndpointsConfig{
+						AuthorizedNetworksConfig: &containerpb.MasterAuthorizedNetworksConfig{
+							Enabled:                     false,
+							CidrBlocks:                  []*containerpb.MasterAuthorizedNetworksConfig_CidrBlock{},
+							GcpPublicCidrsAccessEnabled: ptr.To(false),
+						},
+					},
+				},
+			},
+			wantNeedUpdate: false,
+		},
+		{
+			name: "no diff when gateway api channel matches",
+			controlPlane: &infrav1exp.GCPManagedControlPlane{
+				Spec: infrav1exp.GCPManagedControlPlaneSpec{
+					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
+						ClusterName: "test-cluster",
+						Project:     "test-project",
+						Location:    "us-central1",
+						ClusterNetwork: &infrav1exp.ClusterNetwork{
+							GatewayAPIChannel: ptr.To(infrav1exp.GatewayAPIChannelStandard),
+						},
+					},
+				},
+			},
+			existingCluster: &containerpb.Cluster{
+				NetworkConfig: &containerpb.NetworkConfig{
+					GatewayApiConfig: &containerpb.GatewayAPIConfig{
+						Channel: containerpb.GatewayAPIConfig_CHANNEL_STANDARD,
+					},
+				},
+				ControlPlaneEndpointsConfig: &containerpb.ControlPlaneEndpointsConfig{
+					IpEndpointsConfig: &containerpb.ControlPlaneEndpointsConfig_IPEndpointsConfig{
+						AuthorizedNetworksConfig: &containerpb.MasterAuthorizedNetworksConfig{
+							Enabled:                     false,
+							CidrBlocks:                  []*containerpb.MasterAuthorizedNetworksConfig_CidrBlock{},
+							GcpPublicCidrsAccessEnabled: ptr.To(false),
+						},
+					},
+				},
+			},
+			wantNeedUpdate: false,
+		},
+		{
+			name: "update needed when gateway api channel differs",
+			controlPlane: &infrav1exp.GCPManagedControlPlane{
+				Spec: infrav1exp.GCPManagedControlPlaneSpec{
+					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
+						ClusterName: "test-cluster",
+						Project:     "test-project",
+						Location:    "us-central1",
+						ClusterNetwork: &infrav1exp.ClusterNetwork{
+							GatewayAPIChannel: ptr.To(infrav1exp.GatewayAPIChannelStandard),
+						},
+					},
+				},
+			},
+			existingCluster: &containerpb.Cluster{
+				NetworkConfig: &containerpb.NetworkConfig{
+					GatewayApiConfig: &containerpb.GatewayAPIConfig{
+						Channel: containerpb.GatewayAPIConfig_CHANNEL_DISABLED,
+					},
+				},
+			},
+			wantNeedUpdate: true,
+			validateUpdateFunc: func(t *testing.T, req *containerpb.UpdateClusterRequest) {
+				t.Helper()
+				if req.GetUpdate().GetDesiredGatewayApiConfig().GetChannel() != containerpb.GatewayAPIConfig_CHANNEL_STANDARD {
+					t.Errorf("expected STANDARD gateway API channel, got %v", req.GetUpdate().GetDesiredGatewayApiConfig().GetChannel())
+				}
+			},
+		},
+		{
+			name: "update needed when gateway api channel desired but existing cluster has no NetworkConfig",
+			controlPlane: &infrav1exp.GCPManagedControlPlane{
+				Spec: infrav1exp.GCPManagedControlPlaneSpec{
+					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
+						ClusterName: "test-cluster",
+						Project:     "test-project",
+						Location:    "us-central1",
+						ClusterNetwork: &infrav1exp.ClusterNetwork{
+							GatewayAPIChannel: ptr.To(infrav1exp.GatewayAPIChannelDisabled),
+						},
+					},
+				},
+			},
+			existingCluster: &containerpb.Cluster{},
+			wantNeedUpdate:  true,
+			validateUpdateFunc: func(t *testing.T, req *containerpb.UpdateClusterRequest) {
+				t.Helper()
+				if req.GetUpdate().GetDesiredGatewayApiConfig().GetChannel() != containerpb.GatewayAPIConfig_CHANNEL_DISABLED {
+					t.Errorf("expected DISABLED gateway API channel, got %v", req.GetUpdate().GetDesiredGatewayApiConfig().GetChannel())
+				}
+			},
+		},
+		{
+			name: "no update when managed prometheus already matches desired state",
+			controlPlane: &infrav1exp.GCPManagedControlPlane{
+				Spec: infrav1exp.GCPManagedControlPlaneSpec{
+					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
+						Project:  "test-project",
+						Location: "us-central1",
+						MonitoringConfig: &infrav1exp.MonitoringConfig{
+							ManagedPrometheusConfig: &infrav1exp.ManagedPrometheusConfig{
+								Enabled: ptr.To(false),
+							},
+						},
+						ClusterName: "test-cluster",
+					},
+				},
+			},
+			existingCluster: &containerpb.Cluster{
+				MonitoringConfig: &containerpb.MonitoringConfig{
+					ManagedPrometheusConfig: &containerpb.ManagedPrometheusConfig{
+						Enabled: false,
+					},
+				},
+				ControlPlaneEndpointsConfig: &containerpb.ControlPlaneEndpointsConfig{
+					IpEndpointsConfig: &containerpb.ControlPlaneEndpointsConfig_IPEndpointsConfig{
+						AuthorizedNetworksConfig: &containerpb.MasterAuthorizedNetworksConfig{
+							Enabled:                     false,
+							CidrBlocks:                  []*containerpb.MasterAuthorizedNetworksConfig_CidrBlock{},
+							GcpPublicCidrsAccessEnabled: ptr.To(false),
+						},
+					},
+				},
+			},
+			wantNeedUpdate: false,
+		},
+		{
+			name: "update needed to disable managed prometheus, other monitoring config preserved",
+			controlPlane: &infrav1exp.GCPManagedControlPlane{
+				Spec: infrav1exp.GCPManagedControlPlaneSpec{
+					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
+						Project:  "test-project",
+						Location: "us-central1",
+						MonitoringConfig: &infrav1exp.MonitoringConfig{
+							ManagedPrometheusConfig: &infrav1exp.ManagedPrometheusConfig{
+								Enabled: ptr.To(false),
+							},
+						},
+						ClusterName: "test-cluster",
+					},
+				},
+			},
+			existingCluster: &containerpb.Cluster{
+				MonitoringConfig: &containerpb.MonitoringConfig{
+					ComponentConfig: &containerpb.MonitoringComponentConfig{
+						EnableComponents: []containerpb.MonitoringComponentConfig_Component{
+							containerpb.MonitoringComponentConfig_SYSTEM_COMPONENTS,
+						},
+					},
+					ManagedPrometheusConfig: &containerpb.ManagedPrometheusConfig{
+						Enabled: true,
+					},
+				},
+			},
+			wantNeedUpdate: true,
+			validateUpdateFunc: func(t *testing.T, req *containerpb.UpdateClusterRequest) {
+				t.Helper()
+				desired := req.GetUpdate().GetDesiredMonitoringConfig()
+				if desired.GetManagedPrometheusConfig().GetEnabled() {
+					t.Error("expected managed prometheus to be disabled")
+				}
+				if len(desired.GetComponentConfig().GetEnableComponents()) != 1 {
+					t.Errorf("expected existing ComponentConfig to be preserved, got %v", desired.GetComponentConfig())
+				}
+			},
+		},
+		{
 			name: "authorized networks update with existing cluster having nil nested config",
 			controlPlane: &infrav1exp.GCPManagedControlPlane{
 				Spec: infrav1exp.GCPManagedControlPlaneSpec{
@@ -244,8 +477,8 @@ func TestCheckDiffAndPrepareUpdate(t *testing.T) {
 								{CidrBlock: "192.168.0.0/16"},
 							},
 						},
+						ClusterName: "test-cluster",
 					},
-					ClusterName: "test-cluster",
 				},
 			},
 			existingCluster: &containerpb.Cluster{
@@ -266,6 +499,102 @@ func TestCheckDiffAndPrepareUpdate(t *testing.T) {
 				authConfig := req.GetUpdate().GetDesiredControlPlaneEndpointsConfig().GetIpEndpointsConfig().GetAuthorizedNetworksConfig()
 				if len(authConfig.GetCidrBlocks()) != 1 || authConfig.GetCidrBlocks()[0].GetCidrBlock() != "192.168.0.0/16" {
 					t.Errorf("unexpected CidrBlocks: %v", authConfig.GetCidrBlocks())
+				}
+			},
+		},
+		{
+			name: "no diff when DNSConfig matches",
+			controlPlane: &infrav1exp.GCPManagedControlPlane{
+				Spec: infrav1exp.GCPManagedControlPlaneSpec{
+					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
+						Project:     "test-project",
+						Location:    "us-central1",
+						ClusterName: "test-cluster",
+						ClusterNetwork: &infrav1exp.ClusterNetwork{
+							DNSConfig: &infrav1exp.DNSConfig{
+								ClusterDNS: ptr.To(infrav1exp.CloudDNS),
+							},
+						},
+					},
+				},
+			},
+			existingCluster: &containerpb.Cluster{
+				ControlPlaneEndpointsConfig: &containerpb.ControlPlaneEndpointsConfig{
+					IpEndpointsConfig: &containerpb.ControlPlaneEndpointsConfig_IPEndpointsConfig{
+						AuthorizedNetworksConfig: &containerpb.MasterAuthorizedNetworksConfig{
+							Enabled:                     false,
+							CidrBlocks:                  []*containerpb.MasterAuthorizedNetworksConfig_CidrBlock{},
+							GcpPublicCidrsAccessEnabled: ptr.To(false),
+						},
+					},
+				},
+				NetworkConfig: &containerpb.NetworkConfig{
+					DnsConfig: &containerpb.DNSConfig{
+						ClusterDns: containerpb.DNSConfig_CLOUD_DNS,
+					},
+				},
+			},
+			wantNeedUpdate: false,
+		},
+		{
+			name: "no diff when DNSConfig unset by user, even if GKE has its own default (e.g. Autopilot)",
+			controlPlane: &infrav1exp.GCPManagedControlPlane{
+				Spec: infrav1exp.GCPManagedControlPlaneSpec{
+					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
+						Project:     "test-project",
+						Location:    "us-central1",
+						ClusterName: "test-cluster",
+					},
+				},
+			},
+			existingCluster: &containerpb.Cluster{
+				ControlPlaneEndpointsConfig: &containerpb.ControlPlaneEndpointsConfig{
+					IpEndpointsConfig: &containerpb.ControlPlaneEndpointsConfig_IPEndpointsConfig{
+						AuthorizedNetworksConfig: &containerpb.MasterAuthorizedNetworksConfig{
+							Enabled:                     false,
+							CidrBlocks:                  []*containerpb.MasterAuthorizedNetworksConfig_CidrBlock{},
+							GcpPublicCidrsAccessEnabled: ptr.To(false),
+						},
+					},
+				},
+				NetworkConfig: &containerpb.NetworkConfig{
+					DnsConfig: &containerpb.DNSConfig{
+						ClusterDns:       containerpb.DNSConfig_CLOUD_DNS,
+						ClusterDnsScope:  containerpb.DNSConfig_CLUSTER_SCOPE,
+						ClusterDnsDomain: "cluster.local",
+					},
+				},
+			},
+			wantNeedUpdate: false,
+		},
+		{
+			name: "update needed when DNSConfig differs",
+			controlPlane: &infrav1exp.GCPManagedControlPlane{
+				Spec: infrav1exp.GCPManagedControlPlaneSpec{
+					GCPManagedControlPlaneClassSpec: infrav1exp.GCPManagedControlPlaneClassSpec{
+						Project:     "test-project",
+						Location:    "us-central1",
+						ClusterName: "test-cluster",
+						ClusterNetwork: &infrav1exp.ClusterNetwork{
+							DNSConfig: &infrav1exp.DNSConfig{
+								ClusterDNS: ptr.To(infrav1exp.CloudDNS),
+							},
+						},
+					},
+				},
+			},
+			existingCluster: &containerpb.Cluster{
+				NetworkConfig: &containerpb.NetworkConfig{
+					DnsConfig: &containerpb.DNSConfig{
+						ClusterDns: containerpb.DNSConfig_KUBE_DNS,
+					},
+				},
+			},
+			wantNeedUpdate: true,
+			validateUpdateFunc: func(t *testing.T, req *containerpb.UpdateClusterRequest) {
+				t.Helper()
+				if req.GetUpdate().GetDesiredDnsConfig().GetClusterDns() != containerpb.DNSConfig_CLOUD_DNS {
+					t.Errorf("expected DesiredDnsConfig CLOUD_DNS, got %v", req.GetUpdate().GetDesiredDnsConfig().GetClusterDns())
 				}
 			},
 		},
@@ -457,6 +786,70 @@ func TestConvertToSdkMasterAuthorizedNetworksConfig(t *testing.T) {
 	}
 }
 
+func TestConvertToSdkMonitoringConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *infrav1exp.MonitoringConfig
+		want   *containerpb.MonitoringConfig
+	}{
+		{
+			name:   "nil config",
+			config: nil,
+			want:   nil,
+		},
+		{
+			name:   "config without ManagedPrometheusConfig",
+			config: &infrav1exp.MonitoringConfig{},
+			want:   nil,
+		},
+		{
+			name: "ManagedPrometheusConfig with nil Enabled",
+			config: &infrav1exp.MonitoringConfig{
+				ManagedPrometheusConfig: &infrav1exp.ManagedPrometheusConfig{},
+			},
+			want: nil,
+		},
+		{
+			name: "managed prometheus disabled",
+			config: &infrav1exp.MonitoringConfig{
+				ManagedPrometheusConfig: &infrav1exp.ManagedPrometheusConfig{
+					Enabled: ptr.To(false),
+				},
+			},
+			want: &containerpb.MonitoringConfig{
+				ManagedPrometheusConfig: &containerpb.ManagedPrometheusConfig{
+					Enabled: false,
+				},
+			},
+		},
+		{
+			name: "managed prometheus enabled",
+			config: &infrav1exp.MonitoringConfig{
+				ManagedPrometheusConfig: &infrav1exp.ManagedPrometheusConfig{
+					Enabled: ptr.To(true),
+				},
+			},
+			want: &containerpb.MonitoringConfig{
+				ManagedPrometheusConfig: &containerpb.ManagedPrometheusConfig{
+					Enabled: true,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := convertToSdkMonitoringConfig(tt.config)
+			if got.GetManagedPrometheusConfig().GetEnabled() != tt.want.GetManagedPrometheusConfig().GetEnabled() {
+				t.Errorf("convertToSdkMonitoringConfig() = %v, want %v", got, tt.want)
+			}
+			if (got == nil) != (tt.want == nil) {
+				t.Errorf("convertToSdkMonitoringConfig() nilness = %v, want %v", got == nil, tt.want == nil)
+			}
+		})
+	}
+}
+
 func TestConvertToSdkReleaseChannel(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -466,7 +859,7 @@ func TestConvertToSdkReleaseChannel(t *testing.T) {
 		{
 			name:    "nil channel",
 			channel: nil,
-			want:    containerpb.ReleaseChannel_UNSPECIFIED,
+			want:    containerpb.ReleaseChannel_UNSPECIFIED, //nolint:staticcheck
 		},
 		{
 			name:    "rapid",
@@ -566,11 +959,159 @@ func TestConvertToSdkBinaryAuthorizationEvaluationMode(t *testing.T) {
 	}
 }
 
+func TestConvertToSdkDNSConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		config *infrav1exp.DNSConfig
+		want   *containerpb.DNSConfig
+	}{
+		{
+			name:   "nil config",
+			config: nil,
+			want:   nil,
+		},
+		{
+			name:   "empty config",
+			config: &infrav1exp.DNSConfig{},
+			want:   &containerpb.DNSConfig{},
+		},
+		{
+			name: "cloud dns, vpc scope, custom domain",
+			config: &infrav1exp.DNSConfig{
+				ClusterDNS:       ptr.To(infrav1exp.CloudDNS),
+				ClusterDNSScope:  ptr.To(infrav1exp.VPCScope),
+				ClusterDNSDomain: ptr.To("example.com"),
+			},
+			want: &containerpb.DNSConfig{
+				ClusterDns:       containerpb.DNSConfig_CLOUD_DNS,
+				ClusterDnsScope:  containerpb.DNSConfig_VPC_SCOPE,
+				ClusterDnsDomain: "example.com",
+			},
+		},
+		{
+			name: "kube dns, cluster scope",
+			config: &infrav1exp.DNSConfig{
+				ClusterDNS:      ptr.To(infrav1exp.KubeDNS),
+				ClusterDNSScope: ptr.To(infrav1exp.ClusterScope),
+			},
+			want: &containerpb.DNSConfig{
+				ClusterDns:      containerpb.DNSConfig_KUBE_DNS,
+				ClusterDnsScope: containerpb.DNSConfig_CLUSTER_SCOPE,
+			},
+		},
+		{
+			name: "platform default",
+			config: &infrav1exp.DNSConfig{
+				ClusterDNS: ptr.To(infrav1exp.PlatformDefault),
+			},
+			want: &containerpb.DNSConfig{
+				ClusterDns: containerpb.DNSConfig_PLATFORM_DEFAULT,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := convertToSdkDNSConfig(tt.config)
+			if !proto.Equal(got, tt.want) {
+				t.Errorf("convertToSdkDNSConfig() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateClusterSecondaryRangeNames(t *testing.T) {
+	tests := []struct {
+		name            string
+		clusterNetwork  *infrav1exp.ClusterNetwork
+		wantClusterName string
+		wantServiceName string
+	}{
+		{
+			name: "pod secondary range name populates ClusterSecondaryRangeName",
+			clusterNetwork: &infrav1exp.ClusterNetwork{
+				UseIPAliases: true,
+				Pod:          &infrav1exp.ClusterNetworkPod{SecondaryRangeName: ptr.To("pods-range")},
+			},
+			wantClusterName: "pods-range",
+		},
+		{
+			name: "service secondary range name populates ServicesSecondaryRangeName",
+			clusterNetwork: &infrav1exp.ClusterNetwork{
+				UseIPAliases: true,
+				Service:      &infrav1exp.ClusterNetworkService{SecondaryRangeName: ptr.To("services-range")},
+			},
+			wantServiceName: "services-range",
+		},
+		{
+			name: "both secondary range names populated together",
+			clusterNetwork: &infrav1exp.ClusterNetwork{
+				UseIPAliases: true,
+				Pod:          &infrav1exp.ClusterNetworkPod{SecondaryRangeName: ptr.To("pods-range")},
+				Service:      &infrav1exp.ClusterNetworkService{SecondaryRangeName: ptr.To("services-range")},
+			},
+			wantClusterName: "pods-range",
+			wantServiceName: "services-range",
+		},
+		{
+			name: "nil secondary range names leave fields empty",
+			clusterNetwork: &infrav1exp.ClusterNetwork{
+				UseIPAliases: true,
+				Pod:          &infrav1exp.ClusterNetworkPod{},
+				Service:      &infrav1exp.ClusterNetworkService{},
+			},
+		},
+		{
+			name: "secondary range names ignored when UseIPAliases is false",
+			clusterNetwork: &infrav1exp.ClusterNetwork{
+				UseIPAliases: false,
+				Pod:          &infrav1exp.ClusterNetworkPod{SecondaryRangeName: ptr.To("pods-range")},
+				Service:      &infrav1exp.ClusterNetworkService{SecondaryRangeName: ptr.To("services-range")},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var policy *containerpb.IPAllocationPolicy
+			if tt.clusterNetwork.UseIPAliases {
+				policy = buildIPAllocationPolicy(tt.clusterNetwork)
+			}
+
+			got := policy.GetClusterSecondaryRangeName()
+			if got != tt.wantClusterName {
+				t.Errorf("ClusterSecondaryRangeName = %q, want %q", got, tt.wantClusterName)
+			}
+			got = policy.GetServicesSecondaryRangeName()
+			if got != tt.wantServiceName {
+				t.Errorf("ServicesSecondaryRangeName = %q, want %q", got, tt.wantServiceName)
+			}
+		})
+	}
+}
+
 func TestClusterNetworkNilPointerGuards(t *testing.T) {
 	tests := []struct {
 		name           string
 		clusterNetwork *infrav1exp.ClusterNetwork
 	}{
+		{
+			name: "no panic with gateway api channel only and no private cluster",
+			clusterNetwork: &infrav1exp.ClusterNetwork{
+				GatewayAPIChannel: ptr.To(infrav1exp.GatewayAPIChannelStandard),
+			},
+		},
+		{
+			name: "no panic with gateway api channel and private cluster combined",
+			clusterNetwork: &infrav1exp.ClusterNetwork{
+				GatewayAPIChannel: ptr.To(infrav1exp.GatewayAPIChannelStandard),
+				PrivateCluster: &infrav1exp.PrivateCluster{
+					EnablePrivateNodes:    true,
+					EnablePrivateEndpoint: true,
+					ControlPlaneCidrBlock: "172.16.0.0/28",
+				},
+			},
+		},
 		{
 			name: "no panic when useIPAliases is true with nil Pod and nil Service",
 			clusterNetwork: &infrav1exp.ClusterNetwork{
@@ -617,6 +1158,35 @@ func TestClusterNetworkNilPointerGuards(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "no panic with datapath provider only and no private cluster or gateway",
+			clusterNetwork: &infrav1exp.ClusterNetwork{
+				DatapathProvider: ptr.To(infrav1exp.AdvancedDatapath),
+			},
+		},
+		{
+			name: "no panic with dns config only and no private cluster or gateway",
+			clusterNetwork: &infrav1exp.ClusterNetwork{
+				DNSConfig: &infrav1exp.DNSConfig{
+					ClusterDNS: ptr.To(infrav1exp.CloudDNS),
+				},
+			},
+		},
+		{
+			name: "no panic with datapath provider, dns config, private cluster and gateway combined",
+			clusterNetwork: &infrav1exp.ClusterNetwork{
+				DatapathProvider: ptr.To(infrav1exp.AdvancedDatapath),
+				DNSConfig: &infrav1exp.DNSConfig{
+					ClusterDNS: ptr.To(infrav1exp.CloudDNS),
+				},
+				GatewayAPIChannel: ptr.To(infrav1exp.GatewayAPIChannelStandard),
+				PrivateCluster: &infrav1exp.PrivateCluster{
+					EnablePrivateNodes:    true,
+					EnablePrivateEndpoint: true,
+					ControlPlaneCidrBlock: "172.16.0.0/28",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -650,10 +1220,11 @@ func TestClusterNetworkNilPointerGuards(t *testing.T) {
 					}
 				}
 
-				cluster.NetworkConfig = &containerpb.NetworkConfig{
-					DefaultSnatStatus: &containerpb.DefaultSnatStatus{
-						Disabled: cn.PrivateCluster.DisableDefaultSNAT,
-					},
+				if cluster.GetNetworkConfig() == nil {
+					cluster.NetworkConfig = &containerpb.NetworkConfig{}
+				}
+				cluster.NetworkConfig.DefaultSnatStatus = &containerpb.DefaultSnatStatus{
+					Disabled: cn.PrivateCluster.DisableDefaultSNAT,
 				}
 				cluster.NetworkConfig.DefaultEnablePrivateNodes = &cn.PrivateCluster.EnablePrivateNodes
 
@@ -662,6 +1233,29 @@ func TestClusterNetworkNilPointerGuards(t *testing.T) {
 					EnablePrivateNodes:  cn.PrivateCluster.EnablePrivateNodes,
 				}
 				cluster.ControlPlaneEndpointsConfig.IpEndpointsConfig.GlobalAccess = &cn.PrivateCluster.ControlPlaneGlobalAccess
+			}
+
+			if cn.GatewayAPIChannel != nil {
+				if cluster.GetNetworkConfig() == nil {
+					cluster.NetworkConfig = &containerpb.NetworkConfig{}
+				}
+				cluster.NetworkConfig.GatewayApiConfig = &containerpb.GatewayAPIConfig{
+					Channel: convertToSdkGatewayAPIChannel(cn.GatewayAPIChannel),
+				}
+			}
+
+			if cn.DatapathProvider != nil {
+				if cluster.GetNetworkConfig() == nil {
+					cluster.NetworkConfig = &containerpb.NetworkConfig{}
+				}
+				cluster.NetworkConfig.DatapathProvider = convertToSdkDatapathProvider(cn.DatapathProvider)
+			}
+
+			if cn.DNSConfig != nil {
+				if cluster.GetNetworkConfig() == nil {
+					cluster.NetworkConfig = &containerpb.NetworkConfig{}
+				}
+				cluster.NetworkConfig.DnsConfig = convertToSdkDNSConfig(cn.DNSConfig)
 			}
 
 			// Verify IP allocation policy when UseIPAliases is set
@@ -696,6 +1290,16 @@ func TestClusterNetworkNilPointerGuards(t *testing.T) {
 				}
 				if cluster.GetPrivateClusterConfig() == nil {
 					t.Fatal("expected PrivateClusterConfig to be set")
+				}
+			}
+
+			// Verify gateway API config
+			if cn.GatewayAPIChannel != nil {
+				if cluster.GetNetworkConfig() == nil {
+					t.Fatal("expected NetworkConfig to be initialized")
+				}
+				if cluster.GetNetworkConfig().GetGatewayApiConfig().GetChannel() != containerpb.GatewayAPIConfig_CHANNEL_STANDARD {
+					t.Errorf("expected STANDARD gateway API channel, got %v", cluster.GetNetworkConfig().GetGatewayApiConfig().GetChannel())
 				}
 			}
 		})

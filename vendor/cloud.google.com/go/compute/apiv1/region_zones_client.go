@@ -60,7 +60,7 @@ func defaultRegionZonesRESTCallOptions() *RegionZonesCallOptions {
 	}
 }
 
-// internalRegionZonesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionZonesClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionZonesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -68,7 +68,7 @@ type internalRegionZonesClient interface {
 	List(context.Context, *computepb.ListRegionZonesRequest, ...gax.CallOption) *ZoneIterator
 }
 
-// RegionZonesClient is a client for interacting with Google Compute Engine API.
+// RegionZonesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionZones API.
@@ -82,7 +82,7 @@ type RegionZonesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionZonesClient) Close() error {
 	return c.internalClient.Close()
@@ -196,7 +196,7 @@ func (c *regionZonesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionZonesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

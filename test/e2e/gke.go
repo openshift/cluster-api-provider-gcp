@@ -24,15 +24,20 @@ import (
 	"fmt"
 	"time"
 
+	container "cloud.google.com/go/container/apiv1"
+	"cloud.google.com/go/container/apiv1/containerpb"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	expv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
+	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1exp "sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
 )
@@ -130,9 +135,29 @@ func ApplyManagedClusterTemplateAndWait(ctx context.Context, input ApplyManagedC
 		Cluster: result.Cluster,
 	}, input.WaitForMachinePools...)
 
+	By("Verifying the machine pools replica counters")
+	verifyMachinePoolsReplicaCounters(ctx, input.ClusterProxy.GetClient(), result.MachinePools, input.WaitForMachinePools...)
+
 	if input.PostMachinesProvisioned != nil {
 		By("Calling PostMachinesProvisioned")
 		input.PostMachinesProvisioned()
+	}
+}
+
+// verifyMachinePoolsReplicaCounters checks that the replica counters of the MachinePools match the desired replicas.
+// GKE node pools don't support MachinePool Machines, so Cluster API must compute these counters from the node pool
+// status. If GCPManagedMachinePool sets status.infrastructureMachineKind, Cluster API computes them from Machines
+// that are never created and reports 0 ready and available replicas.
+func verifyMachinePoolsReplicaCounters(ctx context.Context, getter framework.Getter, machinePools []*expv1.MachinePool, intervals ...interface{}) {
+	for _, mp := range machinePools {
+		key := client.ObjectKeyFromObject(mp)
+		Eventually(func(g Gomega) {
+			machinePool := &expv1.MachinePool{}
+			g.Expect(getter.Get(ctx, key, machinePool)).To(Succeed())
+			desiredReplicas := ptr.Deref(machinePool.Spec.Replicas, 0)
+			g.Expect(ptr.Deref(machinePool.Status.ReadyReplicas, 0)).To(Equal(desiredReplicas), "MachinePool %s should report all replicas as ready", klog.KObj(machinePool))
+			g.Expect(ptr.Deref(machinePool.Status.AvailableReplicas, 0)).To(Equal(desiredReplicas), "MachinePool %s should report all replicas as available", klog.KObj(machinePool))
+		}, intervals...).Should(Succeed(), "Failed to verify replica counters for MachinePool %s", klog.KObj(mp))
 	}
 }
 
@@ -239,6 +264,107 @@ func WaitForManagedClusterResourcesDeleted(ctx context.Context, input WaitForMan
 		g.Expect(input.Lister.List(ctx, list, client.InNamespace(input.Namespace))).To(Succeed())
 		g.Expect(list.Items).To(BeEmpty(), "GCPManagedCluster objects still present in namespace %q", input.Namespace)
 	}, intervals...).Should(Succeed())
+}
+
+// VerifyManagedPrometheusEnabled queries the live GKE cluster via the GCP container API and asserts
+// that Google Cloud Managed Service for Prometheus is enabled/disabled as expected. This proves the
+// setting actually took effect on GCP, rather than just that the CAPG reconcile round-tripped it.
+func VerifyManagedPrometheusEnabled(ctx context.Context, controlPlane *infrav1exp.GCPManagedControlPlane, wantEnabled bool) {
+	Expect(controlPlane).ToNot(BeNil(), "Invalid argument. controlPlane can't be nil when calling VerifyManagedPrometheusEnabled")
+
+	clusterManagerClient, err := container.NewClusterManagerClient(ctx)
+	Expect(err).ToNot(HaveOccurred(), "Failed to create GCP cluster manager client")
+	defer clusterManagerClient.Close()
+
+	clusterFullName := fmt.Sprintf("projects/%s/locations/%s/clusters/%s",
+		controlPlane.Spec.Project, controlPlane.Spec.Location, controlPlane.Spec.ClusterName)
+
+	var cluster *containerpb.Cluster
+	Eventually(func() error {
+		cluster, err = clusterManagerClient.GetCluster(ctx, &containerpb.GetClusterRequest{Name: clusterFullName})
+		return err
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to get GKE cluster %s", clusterFullName)
+
+	Expect(cluster.GetMonitoringConfig().GetManagedPrometheusConfig().GetEnabled()).To(Equal(wantEnabled),
+		"Expected managed Prometheus enabled=%v on GKE cluster %s", wantEnabled, clusterFullName)
+}
+
+// PatchMachinePoolInstanceTypeAndWaitInput is the input type for PatchMachinePoolInstanceTypeAndWait.
+type PatchMachinePoolInstanceTypeAndWaitInput struct {
+	ClusterProxy               framework.ClusterProxy
+	Cluster                    *clusterv1.Cluster
+	MachinePool                *expv1.MachinePool
+	InstanceType               string
+	UpgradeSettings            *infrav1exp.NodePoolUpgradeSettings
+	WaitForInstanceTypeRollout []interface{}
+}
+
+// PatchMachinePoolInstanceTypeAndWait patches spec.instanceType (and, if given, spec.upgradeSettings)
+// on the GCPManagedMachinePool backing the given MachinePool, then waits for GKE to complete the
+// resulting rolling node replacement by polling the workload cluster's Nodes for the node pool until
+// all of them report the new instance type.
+func PatchMachinePoolInstanceTypeAndWait(ctx context.Context, input PatchMachinePoolInstanceTypeAndWaitInput) {
+	Expect(ctx).NotTo(BeNil(), "ctx is required for PatchMachinePoolInstanceTypeAndWait")
+	Expect(input.ClusterProxy).ToNot(BeNil(), "Invalid argument. input.ClusterProxy can't be nil when calling PatchMachinePoolInstanceTypeAndWait")
+	Expect(input.Cluster).ToNot(BeNil(), "Invalid argument. input.Cluster can't be nil when calling PatchMachinePoolInstanceTypeAndWait")
+	Expect(input.MachinePool).ToNot(BeNil(), "Invalid argument. input.MachinePool can't be nil when calling PatchMachinePoolInstanceTypeAndWait")
+	Expect(input.InstanceType).ToNot(BeEmpty(), "Invalid argument. input.InstanceType can't be empty when calling PatchMachinePoolInstanceTypeAndWait")
+
+	mgmtClient := input.ClusterProxy.GetClient()
+
+	gcpMMP := &infrav1exp.GCPManagedMachinePool{}
+	key := client.ObjectKey{Namespace: input.MachinePool.Namespace, Name: input.MachinePool.Spec.Template.Spec.InfrastructureRef.Name}
+	Expect(mgmtClient.Get(ctx, key, gcpMMP)).To(Succeed(), "Failed to get GCPManagedMachinePool %s", klog.KRef(key.Namespace, key.Name))
+
+	nodePoolName := gcpMMP.Spec.NodePoolName
+	if nodePoolName == "" {
+		nodePoolName = gcpMMP.Name
+	}
+
+	workloadClient := input.ClusterProxy.GetWorkloadCluster(ctx, input.Cluster.Namespace, input.Cluster.Name).GetClient()
+
+	By(fmt.Sprintf("Verifying node pool %q isn't already on instance type %q", nodePoolName, input.InstanceType))
+	existingNodes := &corev1.NodeList{}
+	Expect(workloadClient.List(ctx, existingNodes, client.MatchingLabels{"cloud.google.com/gke-nodepool": nodePoolName})).To(Succeed())
+	Expect(existingNodes.Items).ToNot(BeEmpty(), "no nodes found for node pool %q", nodePoolName)
+	for _, node := range existingNodes.Items {
+		Expect(node.Labels["node.kubernetes.io/instance-type"]).ToNot(Equal(input.InstanceType),
+			"node %s is already on instance type %q; pick a different InstanceType for this test so the rollout is actually exercised", node.Name, input.InstanceType)
+	}
+
+	By(fmt.Sprintf("Patching GCPManagedMachinePool %s instanceType to %q", klog.KObj(gcpMMP), input.InstanceType))
+	patchHelper, err := patch.NewHelper(gcpMMP, mgmtClient)
+	Expect(err).ToNot(HaveOccurred())
+
+	gcpMMP.Spec.InstanceType = ptr.To(input.InstanceType)
+	if input.UpgradeSettings != nil {
+		gcpMMP.Spec.UpgradeSettings = input.UpgradeSettings
+	}
+	Eventually(func() error {
+		return patchHelper.Patch(ctx, gcpMMP)
+	}, retryableOperationTimeout, retryableOperationInterval).Should(Succeed(), "Failed to patch GCPManagedMachinePool %s", klog.KObj(gcpMMP))
+
+	By(fmt.Sprintf("Waiting for GKE to roll node pool %q to instance type %q", nodePoolName, input.InstanceType))
+	Eventually(func(g Gomega) {
+		nodeList := &corev1.NodeList{}
+		g.Expect(workloadClient.List(ctx, nodeList, client.MatchingLabels{"cloud.google.com/gke-nodepool": nodePoolName})).To(Succeed())
+		g.Expect(nodeList.Items).ToNot(BeEmpty(), "no nodes found for node pool %q", nodePoolName)
+		for _, node := range nodeList.Items {
+			g.Expect(node.Labels["node.kubernetes.io/instance-type"]).To(Equal(input.InstanceType), "node %s has not yet rolled to the new instance type", node.Name)
+		}
+	}, input.WaitForInstanceTypeRollout...).Should(Succeed())
+}
+
+// FindMachinePoolByName returns the MachinePool named name from pools, failing the spec immediately if
+// it isn't found.
+func FindMachinePoolByName(pools []*expv1.MachinePool, name string) *expv1.MachinePool {
+	for _, pool := range pools {
+		if pool.Name == name {
+			return pool
+		}
+	}
+	Fail(fmt.Sprintf("no machine pool named %q found among %d machine pools", name, len(pools)))
+	return nil
 }
 
 func setDefaults(input *ApplyManagedClusterTemplateAndWaitInput) {

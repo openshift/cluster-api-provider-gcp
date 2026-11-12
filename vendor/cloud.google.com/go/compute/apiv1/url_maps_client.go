@@ -117,7 +117,7 @@ func defaultUrlMapsRESTCallOptions() *UrlMapsCallOptions {
 	}
 }
 
-// internalUrlMapsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalUrlMapsClient is an interface that defines the methods available from Compute Engine API.
 type internalUrlMapsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -134,7 +134,7 @@ type internalUrlMapsClient interface {
 	Validate(context.Context, *computepb.ValidateUrlMapRequest, ...gax.CallOption) (*computepb.UrlMapsValidateResponse, error)
 }
 
-// UrlMapsClient is a client for interacting with Google Compute Engine API.
+// UrlMapsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The UrlMaps API.
@@ -148,7 +148,7 @@ type UrlMapsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *UrlMapsClient) Close() error {
 	return c.internalClient.Close()
@@ -344,7 +344,7 @@ func (c *urlMapsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *urlMapsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

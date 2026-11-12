@@ -33,7 +33,8 @@ SHARE_DIR := share
 MDBOOK_EXTRACT_COMMAND := tar xfvz $(SHARE_DIR)/mdbook.tar.gz -C bin
 MDBOOK_ARCHIVE_EXT := .tar.gz
 
-MDBOOK_VERSION := v0.4.5
+# mdBook is a Rust binary downloaded from GitHub, not a Go module dependency.
+MDBOOK_VERSION := v0.5.4
 
 # Tooling binaries.
 $(BIN_DIR):

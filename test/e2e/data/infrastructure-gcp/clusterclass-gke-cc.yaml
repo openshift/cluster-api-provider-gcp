@@ -1,0 +1,123 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: gke-cc
+  namespace: default
+spec:
+  controlPlane:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: GCPManagedControlPlaneTemplate
+      name: ${CLUSTER_NAME}-control-plane
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: GCPManagedClusterTemplate
+      name: ${CLUSTER_NAME}
+  workers:
+    machinePools:
+      - class: default-worker
+        template:
+          bootstrap:
+            ref:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: GKEConfigTemplate
+              name: ${CLUSTER_NAME}-default-worker
+          infrastructure:
+            ref:
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              kind: GCPManagedMachinePoolTemplate
+              name: ${CLUSTER_NAME}-default-worker
+  variables:
+    - name: region
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: us-east4
+    - name: networkName
+      required: true
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: gke-default-network
+  patches:
+    - name: managedClusterRegion
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPManagedClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/region
+              valueFrom:
+                variable: region
+    - name: managedControlPlaneRegion
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPManagedControlPlaneTemplate
+            matchResources:
+              controlPlane: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/location
+              valueFrom:
+                variable: region
+    - name: managedClusterNetwork
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: GCPManagedClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: add
+              path: /spec/template/spec/network/name
+              valueFrom:
+                variable: networkName
+---
+kind: GCPManagedControlPlaneTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  template:
+    spec:
+      project: "${GCP_PROJECT}"
+      location: "set-by-patch"
+      releaseChannel: "regular"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: GCPManagedClusterTemplate
+metadata:
+  name: ${CLUSTER_NAME}
+spec:
+  template:
+    spec:
+      project: "${GCP_PROJECT}"
+      region: "set-by-patch"
+      network:
+        name: "set-by-patch"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: GCPManagedMachinePoolTemplate
+metadata:
+  name: ${CLUSTER_NAME}-default-worker
+spec:
+  template:
+    spec: {}
+---
+# GKE nodes are bootstrapped by GKE itself, but ClusterClass requires a bootstrap
+# template for every MachinePool class. GKEConfig is a no-op bootstrap config that
+# becomes ready once the backing GCPManagedMachinePool is ready.
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: GKEConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-default-worker
+spec:
+  template:
+    spec: {}

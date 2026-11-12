@@ -22,12 +22,14 @@ import (
 
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	expinfrav1 "sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
 )
 
 var (
-	vV1_32_5       = "v1.32.5"
-	releaseChannel = expinfrav1.Rapid
+	vV1_32_5                  = "v1.32.5"
+	releaseChannel            = expinfrav1.Rapid
+	gatewayAPIChannelStandard = expinfrav1.GatewayAPIChannelStandard
 )
 
 func TestGCPManagedControlPlaneDefaultingWebhook(t *testing.T) {
@@ -45,27 +47,45 @@ func TestGCPManagedControlPlaneDefaultingWebhook(t *testing.T) {
 			resourceName: "cluster1",
 			resourceNS:   "default",
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "default_cluster1",
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+				},
 			},
-			expectSpec: expinfrav1.GCPManagedControlPlaneSpec{ClusterName: "default_cluster1"},
+			expectSpec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+				},
+			},
 		},
 		{
 			name:         "no cluster name should generate a valid one",
 			resourceName: "cluster1",
 			resourceNS:   "default",
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "",
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "",
+				},
 			},
-			expectSpec: expinfrav1.GCPManagedControlPlaneSpec{ClusterName: "default-cluster1"},
+			expectSpec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default-cluster1",
+				},
+			},
 		},
 		{
 			name:         "invalid cluster name (too long)",
 			resourceName: strings.Repeat("A", maxClusterNameLength+1),
 			resourceNS:   "default",
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "",
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "",
+				},
 			},
-			expectSpec: expinfrav1.GCPManagedControlPlaneSpec{ClusterName: "capg-"},
+			expectSpec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "capg-",
+				},
+			},
 			expectHash: true,
 		},
 		{
@@ -73,27 +93,34 @@ func TestGCPManagedControlPlaneDefaultingWebhook(t *testing.T) {
 			resourceName: "cluster1",
 			resourceNS:   "default",
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "cluster1_27_1",
-				Version:     &vV1_32_5,
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "cluster1_27_1",
+				},
+				Version: &vV1_32_5,
 			},
-			expectSpec: expinfrav1.GCPManagedControlPlaneSpec{ClusterName: "cluster1_27_1", Version: &vV1_32_5},
+			expectSpec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "cluster1_27_1",
+				},
+				Version: &vV1_32_5,
+			},
 		},
 		{
 			name:         "with autopilot enabled",
 			resourceName: "cluster1",
 			resourceNS:   "default",
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "cluster1_autopilot",
-				Version:     &vV1_32_5,
+				Version: &vV1_32_5,
 				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
 					EnableAutopilot: true,
+					ClusterName:     "cluster1_autopilot",
 				},
 			},
 			expectSpec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "cluster1_autopilot",
-				Version:     &vV1_32_5,
+				Version: &vV1_32_5,
 				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
 					EnableAutopilot: true,
+					ClusterName:     "cluster1_autopilot",
 				},
 			},
 		},
@@ -138,7 +165,9 @@ func TestGCPManagedControlPlaneValidatingWebhookCreate(t *testing.T) {
 			expectError: true,
 			expectWarn:  false,
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: strings.Repeat("A", maxClusterNameLength+1),
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: strings.Repeat("A", maxClusterNameLength+1),
+				},
 			},
 		},
 		{
@@ -146,10 +175,10 @@ func TestGCPManagedControlPlaneValidatingWebhookCreate(t *testing.T) {
 			expectError: true,
 			expectWarn:  false,
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "",
 				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
 					EnableAutopilot: true,
 					ReleaseChannel:  nil,
+					ClusterName:     "",
 				},
 			},
 		},
@@ -158,10 +187,110 @@ func TestGCPManagedControlPlaneValidatingWebhookCreate(t *testing.T) {
 			expectError: false,
 			expectWarn:  false,
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "",
 				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
 					EnableAutopilot: true,
 					ReleaseChannel:  &releaseChannel,
+					ClusterName:     "",
+				},
+			},
+		},
+		{
+			name:        "autopilot enabled with gateway api channel should cause an error",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:     "",
+					EnableAutopilot: true,
+					ReleaseChannel:  &releaseChannel,
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						GatewayAPIChannel: &gatewayAPIChannelStandard,
+					},
+				},
+			},
+		},
+		{
+			name:        "gateway api channel set without autopilot",
+			expectError: false,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						GatewayAPIChannel: &gatewayAPIChannelStandard,
+					},
+				},
+			},
+		},
+		{
+			name:        "autopilot enabled with datapath provider should cause an error",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:     "",
+					EnableAutopilot: true,
+					ReleaseChannel:  &releaseChannel,
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						DatapathProvider: ptr.To(expinfrav1.AdvancedDatapath),
+					},
+				},
+			},
+		},
+		{
+			name:        "autopilot enabled with managed prometheus enabled should cause an error",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:     "",
+					EnableAutopilot: true,
+					ReleaseChannel:  &releaseChannel,
+					MonitoringConfig: &expinfrav1.MonitoringConfig{ManagedPrometheusConfig: &expinfrav1.ManagedPrometheusConfig{
+						Enabled: new(true),
+					}},
+				},
+			},
+		},
+		{
+			name:        "autopilot enabled with managed prometheus disabled should cause an error",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:     "",
+					EnableAutopilot: true,
+					ReleaseChannel:  &releaseChannel,
+					MonitoringConfig: &expinfrav1.MonitoringConfig{ManagedPrometheusConfig: &expinfrav1.ManagedPrometheusConfig{
+						Enabled: new(false),
+					}},
+				},
+			},
+		},
+		{
+			name:        "managed prometheus can be set on non-autopilot clusters",
+			expectError: false,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:    "",
+					ReleaseChannel: &releaseChannel,
+					MonitoringConfig: &expinfrav1.MonitoringConfig{ManagedPrometheusConfig: &expinfrav1.ManagedPrometheusConfig{
+						Enabled: new(true),
+					}},
+				},
+			},
+		},
+		{
+			name:        "datapath provider set without autopilot",
+			expectError: false,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						DatapathProvider: ptr.To(expinfrav1.AdvancedDatapath),
+					},
 				},
 			},
 		},
@@ -170,8 +299,10 @@ func TestGCPManagedControlPlaneValidatingWebhookCreate(t *testing.T) {
 			expectError: false,
 			expectWarn:  true,
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName:         "",
 				ControlPlaneVersion: &vV1_32_5,
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "",
+				},
 			},
 		},
 		{
@@ -179,9 +310,167 @@ func TestGCPManagedControlPlaneValidatingWebhookCreate(t *testing.T) {
 			expectError: true,
 			expectWarn:  false,
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName:         "",
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "",
+				},
 				ControlPlaneVersion: &vV1_32_5,
 				Version:             &vV1_32_5,
+			},
+		},
+		{
+			name:        "pod secondary range name without UseIPAliases should cause an error",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: false,
+						Pod:          &expinfrav1.ClusterNetworkPod{SecondaryRangeName: ptr.To("pods-range")},
+					},
+				},
+			},
+		},
+		{
+			name:        "service secondary range name without UseIPAliases should cause an error",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: false,
+						Service:      &expinfrav1.ClusterNetworkService{SecondaryRangeName: ptr.To("services-range")},
+					},
+				},
+			},
+		},
+		{
+			name:        "secondary range names with UseIPAliases should be valid",
+			expectError: false,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Pod:          &expinfrav1.ClusterNetworkPod{SecondaryRangeName: ptr.To("pods-range")},
+						Service:      &expinfrav1.ClusterNetworkService{SecondaryRangeName: ptr.To("services-range")},
+					},
+				},
+			},
+		},
+		{
+			name:        "pod secondaryRangeName and cidrBlock together should cause an error",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Pod: &expinfrav1.ClusterNetworkPod{
+							CidrBlock:          "10.0.0.0/14",
+							SecondaryRangeName: ptr.To("pods-range"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:        "service secondaryRangeName and cidrBlock together should cause an error",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Service: &expinfrav1.ClusterNetworkService{
+							CidrBlock:          "10.4.0.0/19",
+							SecondaryRangeName: ptr.To("services-range"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:        "empty pod secondaryRangeName should be invalid",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Pod: &expinfrav1.ClusterNetworkPod{
+							CidrBlock:          "10.0.0.0/14",
+							SecondaryRangeName: ptr.To(""),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:        "empty service secondaryRangeName should be invalid",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Service: &expinfrav1.ClusterNetworkService{
+							CidrBlock:          "10.4.0.0/19",
+							SecondaryRangeName: ptr.To(""),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:        "empty pod secondaryRangeName should be invalid regardless of UseIPAliases",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: false,
+						Pod:          &expinfrav1.ClusterNetworkPod{SecondaryRangeName: ptr.To("")},
+					},
+				},
+			},
+		},
+		{
+			name:        "pod secondaryRangeName starting with a digit should be invalid",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Pod:          &expinfrav1.ClusterNetworkPod{SecondaryRangeName: ptr.To("123-invalid")},
+					},
+				},
+			},
+		},
+		{
+			name:        "pod secondaryRangeName with uppercase letters should be invalid",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Pod:          &expinfrav1.ClusterNetworkPod{SecondaryRangeName: ptr.To("Invalid")},
+					},
+				},
+			},
+		},
+		{
+			name:        "pod secondaryRangeName ending with a hyphen should be invalid",
+			expectError: true,
+			expectWarn:  false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Pod:          &expinfrav1.ClusterNetworkPod{SecondaryRangeName: ptr.To("my-range-")},
+					},
+				},
 			},
 		},
 	}
@@ -210,25 +499,39 @@ func TestGCPManagedControlPlaneValidatingWebhookCreate(t *testing.T) {
 }
 
 func TestGCPManagedControlPlaneValidatingWebhookUpdate(t *testing.T) {
+	defaultOldSpec := expinfrav1.GCPManagedControlPlaneSpec{
+		GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+			ClusterName: "default_cluster1",
+			ClusterNetwork: &expinfrav1.ClusterNetwork{
+				PrivateCluster: &expinfrav1.PrivateCluster{
+					EnablePrivateEndpoint: true,
+				},
+			},
+		},
+	}
+
 	tests := []struct {
 		name        string
 		expectError bool
+		oldSpec     *expinfrav1.GCPManagedControlPlaneSpec // nil uses defaultOldSpec
 		spec        expinfrav1.GCPManagedControlPlaneSpec
 	}{
 		{
 			name:        "request to change cluster name should cause an error",
 			expectError: true,
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "default_cluster2",
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster2",
+				},
 			},
 		},
 		{
 			name:        "request to change project should cause an error",
 			expectError: true,
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "default_cluster1",
 				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
-					Project: "new-project",
+					Project:     "new-project",
+					ClusterName: "default_cluster1",
 				},
 			},
 		},
@@ -236,9 +539,9 @@ func TestGCPManagedControlPlaneValidatingWebhookUpdate(t *testing.T) {
 			name:        "request to change location should cause an error",
 			expectError: true,
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "default_cluster1",
 				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
-					Location: "us-west4",
+					Location:    "us-west4",
+					ClusterName: "default_cluster1",
 				},
 			},
 		},
@@ -246,9 +549,9 @@ func TestGCPManagedControlPlaneValidatingWebhookUpdate(t *testing.T) {
 			name:        "request to enable/disable autopilot should cause an error",
 			expectError: true,
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "default_cluster1",
 				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
 					EnableAutopilot: true,
+					ClusterName:     "default_cluster1",
 				},
 			},
 		},
@@ -256,12 +559,261 @@ func TestGCPManagedControlPlaneValidatingWebhookUpdate(t *testing.T) {
 			name:        "request to change network should not cause an error",
 			expectError: false,
 			spec: expinfrav1.GCPManagedControlPlaneSpec{
-				ClusterName: "default_cluster1",
 				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
 					ClusterNetwork: &expinfrav1.ClusterNetwork{
 						PrivateCluster: &expinfrav1.PrivateCluster{
 							EnablePrivateEndpoint: false,
 						},
+					},
+				},
+			},
+		},
+		{
+			name:        "request to change gateway api channel should not cause an error",
+			expectError: false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						PrivateCluster: &expinfrav1.PrivateCluster{
+							EnablePrivateEndpoint: true,
+						},
+						GatewayAPIChannel: &gatewayAPIChannelStandard,
+					},
+				},
+			},
+		},
+		{
+			name:        "request to add managed prometheus value to an autopilot cluster should cause an error",
+			expectError: true,
+			oldSpec: &expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:     "default_cluster1",
+					EnableAutopilot: true,
+				},
+			},
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					EnableAutopilot:  true,
+					ClusterName:      "default_cluster1",
+					MonitoringConfig: &expinfrav1.MonitoringConfig{ManagedPrometheusConfig: &expinfrav1.ManagedPrometheusConfig{Enabled: new(true)}},
+				},
+			},
+		},
+		{
+			name:        "request to change managed prometheus value should not cause an error",
+			expectError: false,
+			oldSpec: &expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:      "default_cluster1",
+					MonitoringConfig: &expinfrav1.MonitoringConfig{ManagedPrometheusConfig: &expinfrav1.ManagedPrometheusConfig{Enabled: new(false)}},
+				},
+			},
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:      "default_cluster1",
+					MonitoringConfig: &expinfrav1.MonitoringConfig{ManagedPrometheusConfig: &expinfrav1.ManagedPrometheusConfig{Enabled: new(true)}},
+				},
+			},
+		},
+		{
+			name:        "request to set gateway api channel on an autopilot cluster should cause an error",
+			expectError: true,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:     "default_cluster1",
+					EnableAutopilot: true,
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						GatewayAPIChannel: &gatewayAPIChannelStandard,
+					},
+				},
+			},
+			oldSpec: &expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:     "default_cluster1",
+					EnableAutopilot: true,
+				},
+			},
+		},
+		{
+			name:        "request to set datapath provider on an autopilot cluster should cause an error",
+			expectError: true,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:     "default_cluster1",
+					EnableAutopilot: true,
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						DatapathProvider: ptr.To(expinfrav1.AdvancedDatapath),
+					},
+				},
+			},
+			oldSpec: &expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:     "default_cluster1",
+					EnableAutopilot: true,
+				},
+			},
+		},
+		{
+			name:        "request to change datapath provider should cause an error",
+			expectError: true,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						DatapathProvider: ptr.To(expinfrav1.AdvancedDatapath),
+					},
+				},
+			},
+			oldSpec: &expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						DatapathProvider: ptr.To(expinfrav1.LegacyDatapath),
+					},
+				},
+			},
+		},
+		{
+			name:        "request to keep datapath provider unchanged should not cause an error",
+			expectError: false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						DatapathProvider: ptr.To(expinfrav1.AdvancedDatapath),
+					},
+				},
+			},
+			oldSpec: &expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						DatapathProvider: ptr.To(expinfrav1.AdvancedDatapath),
+					},
+				},
+			},
+		},
+		{
+			name:        "request to remove DNSConfig should cause an error",
+			expectError: true,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName:    "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{},
+				},
+			},
+			oldSpec: &expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						DNSConfig: &expinfrav1.DNSConfig{
+							ClusterDNS: ptr.To(expinfrav1.CloudDNS),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:        "request to change DNSConfig contents should not cause an error",
+			expectError: false,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						DNSConfig: &expinfrav1.DNSConfig{
+							ClusterDNS: ptr.To(expinfrav1.KubeDNS),
+						},
+					},
+				},
+			},
+			oldSpec: &expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						DNSConfig: &expinfrav1.DNSConfig{
+							ClusterDNS: ptr.To(expinfrav1.CloudDNS),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:        "changing pod secondary range name should cause an error",
+			expectError: true,
+			oldSpec: &expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Pod:          &expinfrav1.ClusterNetworkPod{SecondaryRangeName: ptr.To("pods-range")},
+					},
+				},
+			},
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Pod:          &expinfrav1.ClusterNetworkPod{SecondaryRangeName: ptr.To("pods-range-2")},
+					},
+				},
+			},
+		},
+		{
+			name:        "setting pod secondary range name when previously unset should cause an error",
+			expectError: true,
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Pod:          &expinfrav1.ClusterNetworkPod{SecondaryRangeName: ptr.To("pods-range")},
+					},
+				},
+			},
+		},
+		{
+			name:        "removing pod secondary range name when previously set should cause an error",
+			expectError: true,
+			oldSpec: &expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Pod:          &expinfrav1.ClusterNetworkPod{SecondaryRangeName: ptr.To("pods-range")},
+					},
+				},
+			},
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Pod:          &expinfrav1.ClusterNetworkPod{},
+					},
+				},
+			},
+		},
+		{
+			name:        "changing service secondary range name should cause an error",
+			expectError: true,
+			oldSpec: &expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Service:      &expinfrav1.ClusterNetworkService{SecondaryRangeName: ptr.To("services-range")},
+					},
+				},
+			},
+			spec: expinfrav1.GCPManagedControlPlaneSpec{
+				GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
+					ClusterName: "default_cluster1",
+					ClusterNetwork: &expinfrav1.ClusterNetwork{
+						UseIPAliases: true,
+						Service:      &expinfrav1.ClusterNetworkService{SecondaryRangeName: ptr.To("services-range-2")},
 					},
 				},
 			},
@@ -272,21 +824,13 @@ func TestGCPManagedControlPlaneValidatingWebhookUpdate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			newMCP := &expinfrav1.GCPManagedControlPlane{
-				Spec: tc.spec,
+			newMCP := &expinfrav1.GCPManagedControlPlane{Spec: tc.spec}
+
+			oldSpec := defaultOldSpec
+			if tc.oldSpec != nil {
+				oldSpec = *tc.oldSpec
 			}
-			oldMCP := &expinfrav1.GCPManagedControlPlane{
-				Spec: expinfrav1.GCPManagedControlPlaneSpec{
-					ClusterName: "default_cluster1",
-					GCPManagedControlPlaneClassSpec: expinfrav1.GCPManagedControlPlaneClassSpec{
-						ClusterNetwork: &expinfrav1.ClusterNetwork{
-							PrivateCluster: &expinfrav1.PrivateCluster{
-								EnablePrivateEndpoint: true,
-							},
-						},
-					},
-				},
-			}
+			oldMCP := &expinfrav1.GCPManagedControlPlane{Spec: oldSpec}
 
 			warn, err := (&GCPManagedControlPlane{}).ValidateUpdate(t.Context(), oldMCP, newMCP)
 

@@ -101,7 +101,7 @@ func defaultRegionNotificationEndpointsRESTCallOptions() *RegionNotificationEndp
 	}
 }
 
-// internalRegionNotificationEndpointsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionNotificationEndpointsClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionNotificationEndpointsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -114,7 +114,7 @@ type internalRegionNotificationEndpointsClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsRegionNotificationEndpointRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// RegionNotificationEndpointsClient is a client for interacting with Google Compute Engine API.
+// RegionNotificationEndpointsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionNotificationEndpoints API.
@@ -128,7 +128,7 @@ type RegionNotificationEndpointsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionNotificationEndpointsClient) Close() error {
 	return c.internalClient.Close()
@@ -286,7 +286,7 @@ func (c *regionNotificationEndpointsRESTClient) setGoogleClientInfo(keyval ...st
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionNotificationEndpointsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

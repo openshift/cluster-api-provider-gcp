@@ -1,0 +1,9 @@
+# This overlay layers Workload Identity Federation support on top of
+# config/default: it removes the credentials Secret and its Deployment
+# volume/mount, and annotates the manager ServiceAccount for GCP WIF.
+bases:
+  - ../default
+
+patchesStrategicMerge:
+  - remove_credentials_patch.yaml
+  - serviceaccount_wif_patch.yaml

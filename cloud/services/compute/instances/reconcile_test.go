@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleCloudPlatform/k8s-cloud-provider/pkg/cloud"
 	"github.com/GoogleCloudPlatform/k8s-cloud-provider/pkg/cloud/meta"
 	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
 
@@ -186,12 +187,25 @@ func TestService_createOrGetInstance(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	fakeGCPMachineWithProviderID := getFakeGCPMachine()
+	fakeGCPMachineWithProviderID.Spec.ProviderID = ptr.To("gce://my-proj/us-central1-c/my-machine")
+	machineScopeWithProviderID, err := scope.NewMachineScope(scope.MachineScopeParams{
+		Client:        fakec,
+		Machine:       fakeMachine,
+		GCPMachine:    fakeGCPMachineWithProviderID,
+		ClusterGetter: clusterScope,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tests := []struct {
 		name         string
 		scope        func() Scope
 		mockInstance *cloud.MockInstances
 		want         *compute.Instance
 		wantErr      bool
+		wantErrIs    error
 	}{
 		{
 			name:  "instance already exist (should return existing instance)",
@@ -1086,6 +1100,20 @@ func TestService_createOrGetInstance(t *testing.T) {
 				Zone: "us-central1-c",
 			},
 		},
+		{
+			name:  "Instance with ProviderID set but instance is missing",
+			scope: func() Scope { return machineScopeWithProviderID },
+			mockInstance: &cloud.MockInstances{
+				ProjectRouter: &cloud.SingleProjectRouter{ID: "proj-id"},
+				Objects:       map[meta.Key]*cloud.MockInstancesObj{},
+				GetHook: func(_ context.Context, _ *meta.Key, _ *cloud.MockInstances, _ ...cloud.Option) (bool, *compute.Instance, error) {
+					return true, &compute.Instance{}, &googleapi.Error{Code: http.StatusNotFound}
+				},
+			},
+			want:      nil,
+			wantErr:   true,
+			wantErrIs: ErrInstanceNotFound,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1093,13 +1121,49 @@ func TestService_createOrGetInstance(t *testing.T) {
 			s := New(tt.scope())
 			s.instances = tt.mockInstance
 			got, err := s.createOrGetInstance(ctx)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Service.createOrGetInstance() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			expectError := tt.wantErr || tt.wantErrIs != nil
+
+			if (err != nil) != expectError {
+				t.Fatalf("Service.createOrGetInstance() error=%v but expectError=%v", err, expectError)
+			}
+
+			if tt.wantErrIs != nil && !errors.Is(err, tt.wantErrIs) {
+				t.Fatalf("Service.createOrGetInstance() error=%v but wantErrIs=%v", err, tt.wantErrIs)
 			}
 
 			if d := cmp.Diff(tt.want, got); d != "" {
 				t.Errorf("Service.createOrGetInstance() mismatch (-want +got):\n%s", d)
+			}
+		})
+	}
+}
+
+func TestValidateResourcePolicyRegions(t *testing.T) {
+	const policy = "projects/my-project/regions/us-central1/resourcePolicies/spread"
+	for _, tt := range []struct {
+		name     string
+		policies []string
+		zone     string
+		wantErr  string
+	}{
+		{name: "omitted", zone: "us-central1-a"},
+		{name: "regional path", policies: []string{"regions/us-central1/resourcePolicies/spread"}, zone: "us-central1-a"},
+		{name: "partial path", policies: []string{policy}, zone: "us-central1-a"},
+		{name: "full URL", policies: []string{"https://www.googleapis.com/compute/v1/" + policy}, zone: "us-central1-b"},
+		{name: "different region", policies: []string{policy}, zone: "europe-west1-b", wantErr: "must be in the same region"},
+		{name: "one mismatched policy", policies: []string{policy, strings.ReplaceAll(policy, "us-central1", "us-east1")}, zone: "us-central1-a", wantErr: "must be in the same region"},
+		{name: "missing zone", policies: []string{policy}, wantErr: "cannot determine region"},
+		{name: "missing region", policies: []string{"projects/my-project/resourcePolicies/spread"}, zone: "us-central1-a", wantErr: "failed to parse resource policy"},
+		{name: "missing key", policies: []string{"projects/my-project"}, zone: "us-central1-a", wantErr: "must be in the same region"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateResourcePolicyRegions(tt.policies, tt.zone)
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+			} else if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("error = %v, want error containing %q", err, tt.wantErr)
 			}
 		})
 	}

@@ -37,7 +37,7 @@ func SetupGCPManagedMachinePoolTemplateWebhookWithManager(mgr ctrl.Manager) erro
 	mmptw := &GCPManagedMachinePoolTemplate{Client: mgr.GetClient()}
 	return ctrl.NewWebhookManagedBy(mgr, &expinfrav1.GCPManagedMachinePoolTemplate{}).
 		WithDefaulter(mmptw).
-		WithValidator(mmptw).
+		WithValidator(webhookutils.TopologyDryRunAware(mmptw)).
 		Complete()
 }
 
@@ -46,6 +46,7 @@ type GCPManagedMachinePoolTemplate struct {
 	Client client.Client
 }
 
+//+kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedmachinepooltemplate,mutating=false,failurePolicy=fail,matchPolicy=Equivalent,groups=infrastructure.cluster.x-k8s.io,resources=gcpmanagedmachinepooltemplates,versions=v1beta1,name=vgcpmanagedmachinepooltemplate.kb.io,sideEffects=None,admissionReviewVersions=v1
 //+kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta1-gcpmanagedmachinepooltemplate,mutating=true,failurePolicy=fail,sideEffects=None,groups=infrastructure.cluster.x-k8s.io,resources=gcpmanagedmachinepooltemplates,versions=v1beta1,name=mgcpmanagedmachinepooltemplate.kb.io,admissionReviewVersions=v1
 
 func (*GCPManagedMachinePoolTemplate) Default(_ context.Context, r *expinfrav1.GCPManagedMachinePoolTemplate) error {
@@ -58,6 +59,15 @@ func (*GCPManagedMachinePoolTemplate) ValidateCreate(_ context.Context, r *expin
 	gmmplog.Info("Validating GCPManagedMachinePoolTemplate create", "name", r.Name)
 
 	var allErrs field.ErrorList
+	var allWarns admission.Warnings
+
+	if r.Spec.Template.Spec.DiskSizeGB != nil { //nolint:staticcheck // SA1019: checked to emit a deprecation warning
+		allWarns = append(allWarns, "spec.template.spec.diskSizeGB is deprecated and will soon be removed: please use spec.template.spec.diskSizeGb")
+	}
+
+	if r.Spec.Template.Spec.MachineType != nil { //nolint:staticcheck // SA1019: checked to emit a deprecation warning
+		allWarns = append(allWarns, "spec.template.spec.machineType is deprecated and will soon be removed: please use spec.template.spec.instanceType")
+	}
 
 	if err := validateNodePoolName(
 		r.Spec.Template.Spec.NodePoolName,
@@ -98,10 +108,10 @@ func (*GCPManagedMachinePoolTemplate) ValidateCreate(_ context.Context, r *expin
 	}
 
 	if len(allErrs) == 0 {
-		return nil, nil
+		return allWarns, nil
 	}
 
-	return nil, apierrors.NewInvalid(
+	return allWarns, apierrors.NewInvalid(
 		r.GroupVersionKind().GroupKind(),
 		r.Name,
 		allErrs,
@@ -125,13 +135,6 @@ func (*GCPManagedMachinePoolTemplate) ValidateUpdate(_ context.Context, old, r *
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("spec", "template", "spec", "instanceType"),
-		old.Spec.Template.Spec.InstanceType,
-		r.Spec.Template.Spec.InstanceType); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "template", "spec", "nodePoolName"),
 		old.Spec.Template.Spec.NodePoolName,
 		r.Spec.Template.Spec.NodePoolName); err != nil {
@@ -140,8 +143,8 @@ func (*GCPManagedMachinePoolTemplate) ValidateUpdate(_ context.Context, old, r *
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "template", "spec", "machineType"),
-		old.Spec.Template.Spec.MachineType,
-		r.Spec.Template.Spec.MachineType); err != nil {
+		old.Spec.Template.Spec.MachineType,             //nolint:staticcheck // SA1019: deprecated field still validated for backward compatibility
+		r.Spec.Template.Spec.MachineType); err != nil { //nolint:staticcheck // SA1019: deprecated field still validated for backward compatibility
 		allErrs = append(allErrs, err)
 	}
 
@@ -149,6 +152,13 @@ func (*GCPManagedMachinePoolTemplate) ValidateUpdate(_ context.Context, old, r *
 		field.NewPath("spec", "template", "spec", "diskSizeGb"),
 		old.Spec.Template.Spec.DiskSizeGb,
 		r.Spec.Template.Spec.DiskSizeGb); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "template", "spec", "diskSizeGB"),
+		old.Spec.Template.Spec.DiskSizeGB,             //nolint:staticcheck // SA1019: deprecated field still validated for backward compatibility
+		r.Spec.Template.Spec.DiskSizeGB); err != nil { //nolint:staticcheck // SA1019: deprecated field still validated for backward compatibility
 		allErrs = append(allErrs, err)
 	}
 
@@ -202,9 +212,51 @@ func (*GCPManagedMachinePoolTemplate) ValidateUpdate(_ context.Context, old, r *
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("spec", "template", "spec", "nodeSecurity"),
-		old.Spec.Template.Spec.NodeSecurity,
-		r.Spec.Template.Spec.NodeSecurity); err != nil {
+		field.NewPath("spec", "template", "spec", "nodeSecurity", "serviceAccount"),
+		old.Spec.Template.Spec.NodeSecurity.ServiceAccount,
+		r.Spec.Template.Spec.NodeSecurity.ServiceAccount); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "template", "spec", "nodeSecurity", "sandboxType"),
+		old.Spec.Template.Spec.NodeSecurity.SandboxType,
+		r.Spec.Template.Spec.NodeSecurity.SandboxType); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "template", "spec", "nodeSecurity", "enableSecureBoot"),
+		old.Spec.Template.Spec.NodeSecurity.EnableSecureBoot,
+		r.Spec.Template.Spec.NodeSecurity.EnableSecureBoot); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "template", "spec", "nodeSecurity", "enableIntegrityMonitoring"),
+		old.Spec.Template.Spec.NodeSecurity.EnableIntegrityMonitoring,
+		r.Spec.Template.Spec.NodeSecurity.EnableIntegrityMonitoring); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "template", "spec", "spot"),
+		old.Spec.Template.Spec.Spot,
+		r.Spec.Template.Spec.Spot); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "template", "spec", "preemptible"),
+		old.Spec.Template.Spec.Preemptible,
+		r.Spec.Template.Spec.Preemptible); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "template", "spec", "reservationAffinity"),
+		old.Spec.Template.Spec.ReservationAffinity,
+		r.Spec.Template.Spec.ReservationAffinity); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
