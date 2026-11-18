@@ -122,7 +122,7 @@ func defaultNetworkAttachmentsRESTCallOptions() *NetworkAttachmentsCallOptions {
 	}
 }
 
-// internalNetworkAttachmentsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalNetworkAttachmentsClient is an interface that defines the methods available from Compute Engine API.
 type internalNetworkAttachmentsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -138,7 +138,7 @@ type internalNetworkAttachmentsClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsNetworkAttachmentRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// NetworkAttachmentsClient is a client for interacting with Google Compute Engine API.
+// NetworkAttachmentsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The NetworkAttachments API.
@@ -152,7 +152,7 @@ type NetworkAttachmentsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *NetworkAttachmentsClient) Close() error {
 	return c.internalClient.Close()
@@ -336,7 +336,7 @@ func (c *networkAttachmentsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *networkAttachmentsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

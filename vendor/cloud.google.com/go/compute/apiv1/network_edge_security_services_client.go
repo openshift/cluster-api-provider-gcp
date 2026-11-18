@@ -88,7 +88,7 @@ func defaultNetworkEdgeSecurityServicesRESTCallOptions() *NetworkEdgeSecuritySer
 	}
 }
 
-// internalNetworkEdgeSecurityServicesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalNetworkEdgeSecurityServicesClient is an interface that defines the methods available from Compute Engine API.
 type internalNetworkEdgeSecurityServicesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -100,7 +100,7 @@ type internalNetworkEdgeSecurityServicesClient interface {
 	Patch(context.Context, *computepb.PatchNetworkEdgeSecurityServiceRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// NetworkEdgeSecurityServicesClient is a client for interacting with Google Compute Engine API.
+// NetworkEdgeSecurityServicesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The NetworkEdgeSecurityServices API.
@@ -114,7 +114,7 @@ type NetworkEdgeSecurityServicesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *NetworkEdgeSecurityServicesClient) Close() error {
 	return c.internalClient.Close()
@@ -269,7 +269,7 @@ func (c *networkEdgeSecurityServicesRESTClient) setGoogleClientInfo(keyval ...st
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *networkEdgeSecurityServicesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

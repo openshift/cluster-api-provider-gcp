@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/container/apiv1/containerpb"
+	infrav1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
 )
 
 // TaintEffect is the effect for a Kubernetes taint.
@@ -49,6 +50,23 @@ func convertToSdkTaintEffect(effect TaintEffect) containerpb.NodeTaint_Effect {
 		return containerpb.NodeTaint_PREFER_NO_SCHEDULE
 	default:
 		return containerpb.NodeTaint_EFFECT_UNSPECIFIED
+	}
+}
+
+// ConvertToSdkTaintConfig converts an ArchitectureTaintBehavior to the SDK TaintConfig.
+// It utilises an SDK lookup, which therefore requires that CAPG's string values are the SDK enum
+// ones lower-cased. This is enforced by a test in types_test.go.
+// A nil behavior returns nil, which leaves whatever GKE already has in place.
+func ConvertToSdkTaintConfig(behavior *ArchitectureTaintBehavior) *containerpb.TaintConfig {
+	if behavior == nil {
+		return nil
+	}
+	index := containerpb.TaintConfig_ArchitectureTaintBehavior_value[strings.ToUpper(string(*behavior))]
+	if index == 0 {
+		return nil
+	}
+	return &containerpb.TaintConfig{
+		ArchitectureTaintBehavior: containerpb.TaintConfig_ArchitectureTaintBehavior(index).Enum(),
 	}
 }
 
@@ -127,6 +145,20 @@ func ConvertToSdkCgroupMode(cgroupMode ManagedNodePoolCgroupMode) containerpb.Li
 	return containerpb.LinuxNodeConfig_CGROUP_MODE_UNSPECIFIED
 }
 
+// ConvertToSdkWorkloadMetadataMode converts a WorkloadMetadataMode to the GCP SDK WorkloadMetadataConfig.
+// It utilises an SDK lookup, which therefore requires that CAPG's string values are exactly the same
+// as the SDK enum ones. This is enforced by a test in types_test.go
+func ConvertToSdkWorkloadMetadataMode(mode *WorkloadMetadataMode) *containerpb.WorkloadMetadataConfig {
+	if mode == nil {
+		return nil
+	}
+	index := containerpb.WorkloadMetadataConfig_Mode_value[string(*mode)]
+	if index == 0 {
+		return nil
+	}
+	return &containerpb.WorkloadMetadataConfig{Mode: containerpb.WorkloadMetadataConfig_Mode(index)}
+}
+
 // ConvertToSdkLinuxNodeConfig converts GCP SDK node version to k8s version.
 func ConvertToSdkLinuxNodeConfig(linuxNodeConfig *LinuxNodeConfig) *containerpb.LinuxNodeConfig {
 	sdkLinuxNodeConfig := containerpb.LinuxNodeConfig{}
@@ -143,4 +175,22 @@ func ConvertToSdkLinuxNodeConfig(linuxNodeConfig *LinuxNodeConfig) *containerpb.
 		}
 	}
 	return &sdkLinuxNodeConfig
+}
+
+// ConvertToSdkReservationAffinity converts a ReservationAffinity to the GCP SDK ReservationAffinity.
+// It utilizes an SDK lookup, which therefore requires that CAPG's string values are exactly the same
+// as the SDK enum ones. This is enforced by a test in types_test.go
+func ConvertToSdkReservationAffinity(affinity *infrav1.ReservationAffinity) *containerpb.ReservationAffinity {
+	if affinity == nil {
+		return nil
+	}
+	index := containerpb.ReservationAffinity_Type_value[string(affinity.ConsumeReservationType)]
+	if index == 0 {
+		return nil
+	}
+	return &containerpb.ReservationAffinity{
+		ConsumeReservationType: containerpb.ReservationAffinity_Type(index),
+		Key:                    string(affinity.Key),
+		Values:                 affinity.Values,
+	}
 }

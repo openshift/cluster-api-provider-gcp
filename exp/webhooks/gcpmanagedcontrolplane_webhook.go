@@ -23,7 +23,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/ptr"
 
 	"github.com/pkg/errors"
 	expinfrav1 "sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
@@ -99,16 +101,52 @@ func (*GCPManagedControlPlane) ValidateCreate(_ context.Context, r *expinfrav1.G
 
 	if r.Spec.EnableAutopilot && r.Spec.MonitoringService != nil {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "MonitoringService"),
-			r.Spec.LoggingService, "can't be set when autopilot is enabled"))
+			r.Spec.MonitoringService, "can't be set when autopilot is enabled"))
+	}
+
+	if r.Spec.EnableAutopilot && r.Spec.MonitoringConfig != nil && r.Spec.MonitoringConfig.ManagedPrometheusConfig != nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "MonitoringConfig", "ManagedPrometheusConfig"),
+			r.Spec.MonitoringConfig.ManagedPrometheusConfig.Enabled, "can't be set when autopilot is enabled"))
+	}
+
+	if r.Spec.EnableAutopilot && r.Spec.ClusterNetwork != nil && r.Spec.ClusterNetwork.GatewayAPIChannel != nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "ClusterNetwork", "GatewayAPIChannel"),
+			r.Spec.ClusterNetwork.GatewayAPIChannel, "can't be set when autopilot is enabled"))
+	}
+
+	if r.Spec.EnableAutopilot && r.Spec.ClusterNetwork != nil && r.Spec.ClusterNetwork.DatapathProvider != nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "ClusterNetwork", "DatapathProvider"),
+			r.Spec.ClusterNetwork.DatapathProvider, "can't be set when autopilot is enabled: Autopilot clusters always use Dataplane V2"))
 	}
 
 	if r.Spec.ControlPlaneVersion != nil { //nolint:staticcheck
 		if r.Spec.Version != nil {
 			allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "ControlPlaneVersion"),
-				r.Spec.LoggingService, "spec.ControlPlaneVersion and spec.Version cannot be set at the same time: please use spec.Version"))
+				r.Spec.ControlPlaneVersion, "spec.ControlPlaneVersion and spec.Version cannot be set at the same time: please use spec.Version")) //nolint:staticcheck
 		} else {
 			allWarns = append(allWarns, "spec.ControlPlaneVersion is deprecated and will soon be removed: please use spec.Version")
 		}
+	}
+
+	if cn := r.Spec.ClusterNetwork; cn != nil {
+		var podRangeName, serviceRangeName *string
+		var podCidrBlock, serviceCidrBlock string
+		if cn.Pod != nil {
+			podRangeName = cn.Pod.SecondaryRangeName
+			podCidrBlock = cn.Pod.CidrBlock
+		}
+		if cn.Service != nil {
+			serviceRangeName = cn.Service.SecondaryRangeName
+			serviceCidrBlock = cn.Service.CidrBlock
+		}
+		allErrs = append(allErrs, validateSecondaryRangeName(
+			podRangeName, cn.UseIPAliases, podCidrBlock,
+			field.NewPath("spec", "clusterNetwork", "pod", "secondaryRangeName"),
+		)...)
+		allErrs = append(allErrs, validateSecondaryRangeName(
+			serviceRangeName, cn.UseIPAliases, serviceCidrBlock,
+			field.NewPath("spec", "clusterNetwork", "service", "secondaryRangeName"),
+		)...)
 	}
 
 	if len(allErrs) == 0 {
@@ -157,12 +195,44 @@ func (*GCPManagedControlPlane) ValidateUpdate(_ context.Context, old, r *expinfr
 
 	if old.Spec.EnableAutopilot && r.Spec.MonitoringService != nil {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "MonitoringService"),
-			r.Spec.LoggingService, "can't be set when autopilot is enabled"))
+			r.Spec.MonitoringService, "can't be set when autopilot is enabled"))
+	}
+
+	if old.Spec.EnableAutopilot && r.Spec.MonitoringConfig != nil && r.Spec.MonitoringConfig.ManagedPrometheusConfig != nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "MonitoringConfig", "ManagedPrometheusConfig"),
+			r.Spec.MonitoringConfig.ManagedPrometheusConfig.Enabled, "can't be set when autopilot is enabled"))
+	}
+
+	if old.Spec.EnableAutopilot && r.Spec.ClusterNetwork != nil && r.Spec.ClusterNetwork.GatewayAPIChannel != nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "ClusterNetwork", "GatewayAPIChannel"),
+			r.Spec.ClusterNetwork.GatewayAPIChannel, "can't be set when autopilot is enabled"))
+	}
+
+	if old.Spec.EnableAutopilot && r.Spec.ClusterNetwork != nil && r.Spec.ClusterNetwork.DatapathProvider != nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "ClusterNetwork", "DatapathProvider"),
+			r.Spec.ClusterNetwork.DatapathProvider, "can't be set when autopilot is enabled: Autopilot clusters always use Dataplane V2"))
+	}
+
+	oldClusterNetwork := ptr.Deref(old.Spec.ClusterNetwork, expinfrav1.ClusterNetwork{})
+	newClusterNetwork := ptr.Deref(r.Spec.ClusterNetwork, expinfrav1.ClusterNetwork{})
+
+	if !cmp.Equal(oldClusterNetwork.DatapathProvider, newClusterNetwork.DatapathProvider) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "ClusterNetwork", "DatapathProvider"),
+				newClusterNetwork.DatapathProvider, "field is immutable"),
+		)
+	}
+
+	if oldClusterNetwork.DNSConfig != nil && newClusterNetwork.DNSConfig == nil {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec", "ClusterNetwork", "DNSConfig"),
+				newClusterNetwork.DNSConfig, "DNSConfig cannot be removed once set"),
+		)
 	}
 
 	if old.Spec.Version != nil && r.Spec.ControlPlaneVersion != nil { //nolint:staticcheck
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "ControlPlaneVersion"),
-			r.Spec.LoggingService, "spec.ControlPlaneVersion and spec.Version cannot be set at the same time: please use spec.Version"))
+			r.Spec.ControlPlaneVersion, "spec.ControlPlaneVersion and spec.Version cannot be set at the same time: please use spec.Version")) //nolint:staticcheck
 	}
 
 	if r.Spec.LoggingService != nil {
@@ -181,6 +251,20 @@ func (*GCPManagedControlPlane) ValidateUpdate(_ context.Context, old, r *expinfr
 		}
 	}
 
+	if !cmp.Equal(clusterNetworkPodSecondaryRangeName(r.Spec.ClusterNetwork), clusterNetworkPodSecondaryRangeName(old.Spec.ClusterNetwork)) {
+		allErrs = append(allErrs, field.Invalid(
+			field.NewPath("spec", "clusterNetwork", "pod", "secondaryRangeName"),
+			clusterNetworkPodSecondaryRangeName(r.Spec.ClusterNetwork), "field is immutable",
+		))
+	}
+
+	if !cmp.Equal(clusterNetworkServiceSecondaryRangeName(r.Spec.ClusterNetwork), clusterNetworkServiceSecondaryRangeName(old.Spec.ClusterNetwork)) {
+		allErrs = append(allErrs, field.Invalid(
+			field.NewPath("spec", "clusterNetwork", "service", "secondaryRangeName"),
+			clusterNetworkServiceSecondaryRangeName(r.Spec.ClusterNetwork), "field is immutable",
+		))
+	}
+
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
@@ -188,8 +272,44 @@ func (*GCPManagedControlPlane) ValidateUpdate(_ context.Context, old, r *expinfr
 	return nil, apierrors.NewInvalid(expinfrav1.GroupVersion.WithKind("GCPManagedControlPlane").GroupKind(), r.Name, allErrs)
 }
 
+func clusterNetworkPodSecondaryRangeName(cn *expinfrav1.ClusterNetwork) *string {
+	if cn == nil || cn.Pod == nil {
+		return nil
+	}
+	return cn.Pod.SecondaryRangeName
+}
+
+func clusterNetworkServiceSecondaryRangeName(cn *expinfrav1.ClusterNetwork) *string {
+	if cn == nil || cn.Service == nil {
+		return nil
+	}
+	return cn.Service.SecondaryRangeName
+}
+
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (*GCPManagedControlPlane) ValidateDelete(_ context.Context, _ *expinfrav1.GCPManagedControlPlane) (admission.Warnings, error) {
 	return nil, nil
+}
+
+// validateSecondaryRangeName validates a secondary range name pointer against RFC1035 rules
+// and its preconditions (useIPAliases required, mutually exclusive with cidrBlock).
+func validateSecondaryRangeName(name *string, useIPAliases bool, cidrBlock string, path *field.Path) field.ErrorList {
+	if name == nil {
+		return nil
+	}
+	var errs field.ErrorList
+	for _, msg := range validation.IsDNS1035Label(*name) {
+		errs = append(errs, field.Invalid(path, *name, msg))
+	}
+	if *name != "" {
+		if !useIPAliases {
+			errs = append(errs, field.Invalid(path, *name, "secondaryRangeName requires useIPAliases to be true"))
+		}
+		if cidrBlock != "" {
+			errs = append(errs, field.Invalid(path, *name, "secondaryRangeName and cidrBlock are mutually exclusive"))
+		}
+	}
+	return errs
 }
 
 func generateGKEName(resourceName, namespace string, maxLength int) (string, error) {

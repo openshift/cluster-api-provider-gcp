@@ -108,6 +108,15 @@ func (*GCPManagedMachinePool) ValidateCreate(_ context.Context, r *expinfrav1.GC
 	gcpmanagedmachinepoollog.Info("Validating GCPManagedMachinePool create", "name", r.Name)
 
 	var allErrs field.ErrorList
+	var allWarns admission.Warnings
+
+	if r.Spec.DiskSizeGB != nil { //nolint:staticcheck // SA1019: checked to emit a deprecation warning
+		allWarns = append(allWarns, "spec.diskSizeGB is deprecated and will soon be removed: please use spec.diskSizeGb")
+	}
+
+	if r.Spec.MachineType != nil { //nolint:staticcheck // SA1019: checked to emit a deprecation warning
+		allWarns = append(allWarns, "spec.machineType is deprecated and will soon be removed: please use spec.instanceType")
+	}
 
 	if err := validateNodePoolName(
 		r.Spec.NodePoolName,
@@ -148,10 +157,10 @@ func (*GCPManagedMachinePool) ValidateCreate(_ context.Context, r *expinfrav1.GC
 	}
 
 	if len(allErrs) == 0 {
-		return nil, nil
+		return allWarns, nil
 	}
 
-	return nil, apierrors.NewInvalid(
+	return allWarns, apierrors.NewInvalid(
 		r.GroupVersionKind().GroupKind(),
 		r.Name,
 		allErrs,
@@ -175,13 +184,6 @@ func (*GCPManagedMachinePool) ValidateUpdate(_ context.Context, old, r *expinfra
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("spec", "instanceType"),
-		old.Spec.InstanceType,
-		r.Spec.InstanceType); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "nodePoolName"),
 		old.Spec.NodePoolName,
 		r.Spec.NodePoolName); err != nil {
@@ -190,8 +192,8 @@ func (*GCPManagedMachinePool) ValidateUpdate(_ context.Context, old, r *expinfra
 
 	if err := webhookutils.ValidateImmutable(
 		field.NewPath("spec", "machineType"),
-		old.Spec.MachineType,
-		r.Spec.MachineType); err != nil {
+		old.Spec.MachineType,             //nolint:staticcheck // SA1019: deprecated field still validated for backward compatibility
+		r.Spec.MachineType); err != nil { //nolint:staticcheck // SA1019: deprecated field still validated for backward compatibility
 		allErrs = append(allErrs, err)
 	}
 
@@ -199,6 +201,13 @@ func (*GCPManagedMachinePool) ValidateUpdate(_ context.Context, old, r *expinfra
 		field.NewPath("spec", "diskSizeGb"),
 		old.Spec.DiskSizeGb,
 		r.Spec.DiskSizeGb); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "diskSizeGB"),
+		old.Spec.DiskSizeGB,             //nolint:staticcheck // SA1019: deprecated field still validated for backward compatibility
+		r.Spec.DiskSizeGB); err != nil { //nolint:staticcheck // SA1019: deprecated field still validated for backward compatibility
 		allErrs = append(allErrs, err)
 	}
 
@@ -252,9 +261,27 @@ func (*GCPManagedMachinePool) ValidateUpdate(_ context.Context, old, r *expinfra
 	}
 
 	if err := webhookutils.ValidateImmutable(
-		field.NewPath("spec", "nodeSecurity"),
-		old.Spec.NodeSecurity,
-		r.Spec.NodeSecurity); err != nil {
+		field.NewPath("spec", "nodeSecurity", "serviceAccount"),
+		old.Spec.NodeSecurity.ServiceAccount,
+		r.Spec.NodeSecurity.ServiceAccount); err != nil {
+		allErrs = append(allErrs, err)
+	}
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "nodeSecurity", "sandboxType"),
+		old.Spec.NodeSecurity.SandboxType,
+		r.Spec.NodeSecurity.SandboxType); err != nil {
+		allErrs = append(allErrs, err)
+	}
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "nodeSecurity", "enableSecureBoot"),
+		old.Spec.NodeSecurity.EnableSecureBoot,
+		r.Spec.NodeSecurity.EnableSecureBoot); err != nil {
+		allErrs = append(allErrs, err)
+	}
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "nodeSecurity", "enableIntegrityMonitoring"),
+		old.Spec.NodeSecurity.EnableIntegrityMonitoring,
+		r.Spec.NodeSecurity.EnableIntegrityMonitoring); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
@@ -269,6 +296,13 @@ func (*GCPManagedMachinePool) ValidateUpdate(_ context.Context, old, r *expinfra
 		field.NewPath("spec", "spot"),
 		old.Spec.Spot,
 		r.Spec.Spot); err != nil {
+		allErrs = append(allErrs, err)
+	}
+
+	if err := webhookutils.ValidateImmutable(
+		field.NewPath("spec", "reservationAffinity"),
+		old.Spec.ReservationAffinity,
+		r.Spec.ReservationAffinity); err != nil {
 		allErrs = append(allErrs, err)
 	}
 

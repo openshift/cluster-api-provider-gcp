@@ -118,7 +118,7 @@ func defaultVpnGatewaysRESTCallOptions() *VpnGatewaysCallOptions {
 	}
 }
 
-// internalVpnGatewaysClient is an interface that defines the methods available from Google Compute Engine API.
+// internalVpnGatewaysClient is an interface that defines the methods available from Compute Engine API.
 type internalVpnGatewaysClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -133,7 +133,7 @@ type internalVpnGatewaysClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsVpnGatewayRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// VpnGatewaysClient is a client for interacting with Google Compute Engine API.
+// VpnGatewaysClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The VpnGateways API.
@@ -147,7 +147,7 @@ type VpnGatewaysClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *VpnGatewaysClient) Close() error {
 	return c.internalClient.Close()
@@ -321,7 +321,7 @@ func (c *vpnGatewaysRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *vpnGatewaysRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

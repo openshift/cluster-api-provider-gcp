@@ -19,16 +19,22 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/GoogleCloudPlatform/k8s-cloud-provider/pkg/cloud/filter"
 	"github.com/GoogleCloudPlatform/k8s-cloud-provider/pkg/cloud/meta"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-gcp/cloud"
 	"sigs.k8s.io/cluster-api-provider-gcp/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-gcp/cloud/services/compute/firewalls"
 	"sigs.k8s.io/cluster-api-provider-gcp/cloud/services/compute/networks"
 	"sigs.k8s.io/cluster-api-provider-gcp/cloud/services/compute/subnets"
 	infrav1exp "sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
@@ -37,8 +43,9 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/annotations"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
 	"sigs.k8s.io/cluster-api/util/predicates"
-	"sigs.k8s.io/cluster-api/util/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -48,9 +55,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+// clusterReconcilers returns the reconcilers in the order they must run: the network must exist
+// before the firewalls, and the subnets depend on the network. Deletion runs them in reverse.
+func clusterReconcilers(clusterScope *scope.ManagedClusterScope) []cloud.NamedReconciler {
+	return []cloud.NamedReconciler{
+		{Name: "networks", Reconciler: networks.New(clusterScope)},
+		{Name: "firewalls", Reconciler: firewalls.New(clusterScope)},
+		{Name: "subnets", Reconciler: subnets.New(clusterScope)},
+	}
+}
+
+// clusterReconcilerConditions maps each entry of clusterReconcilers to the condition it reports on.
+var clusterReconcilerConditions = map[string]struct {
+	conditionType string
+	readyReason   string
+	failedReason  string
+}{
+	"networks":  {infrav1.GCPClusterNetworkReadyCondition, infrav1.NetworkReadyReason, infrav1.NetworkReconciliationFailedReason},
+	"firewalls": {infrav1.GCPClusterFirewallRulesReadyCondition, infrav1.FirewallRulesReadyReason, infrav1.FirewallRulesReconciliationFailedReason},
+	"subnets":   {infrav1.GCPClusterSubnetsReadyCondition, infrav1.SubnetsReadyReason, infrav1.SubnetsReconciliationFailedReason},
+}
+
 // GCPManagedClusterReconciler reconciles a GCPManagedCluster object.
 type GCPManagedClusterReconciler struct {
 	client.Client
+	Recorder         record.EventRecorder
 	WatchFilterValue string
 	ReconcileTimeout time.Duration
 }
@@ -123,9 +152,9 @@ func (r *GCPManagedClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
 
-	// Always close the scope when exiting this function so we can persist any GCPMachine changes.
+	// Always close the scope when exiting this function so we can persist any GCPManagedCluster changes.
 	defer func() {
-		if err := clusterScope.Close(); err != nil && reterr == nil {
+		if err := clusterScope.Close(ctx); err != nil && reterr == nil {
 			reterr = err
 		}
 	}()
@@ -165,6 +194,7 @@ func (r *GCPManagedClusterReconciler) SetupWithManager(ctx context.Context, mgr 
 		return fmt.Errorf("adding watch for ready clusters: %v", err)
 	}
 
+	r.Recorder = mgr.GetEventRecorderFor("gcpmanagedcluster-controller")
 	return nil
 }
 
@@ -173,7 +203,7 @@ func (r *GCPManagedClusterReconciler) reconcile(ctx context.Context, clusterScop
 	log.Info("Reconciling GCPManagedCluster")
 
 	controllerutil.AddFinalizer(clusterScope.GCPManagedCluster, infrav1exp.ClusterFinalizer)
-	if err := clusterScope.PatchObject(); err != nil {
+	if err := clusterScope.PatchObject(ctx); err != nil {
 		return err
 	}
 
@@ -195,22 +225,51 @@ func (r *GCPManagedClusterReconciler) reconcile(ctx context.Context, clusterScop
 	}
 	clusterScope.SetFailureDomains(failureDomains)
 
-	reconcilers := map[string]cloud.Reconciler{
-		"networks": networks.New(clusterScope),
-		"subnets":  subnets.New(clusterScope),
+	// The default firewall rules target CAPI-specific instance tags that do not exist on GKE
+	// nodes, so they are never created here. Surface that in the logs for anyone wondering why
+	// the default rules are missing.
+	if clusterScope.GCPManagedCluster.Spec.Network.Firewall.DefaultRulesManagement != infrav1.RulesManagementUnmanaged {
+		log.Info("Default firewall rules are not created for GCPManagedCluster: defaultRulesManagement is ignored because the default rules target CAPI instance tags that GKE nodes do not have, only custom firewallRules are reconciled")
 	}
 
-	for name, r := range reconcilers {
-		log.V(4).Info("Calling reconciler", "reconciler", name)
-		if err := r.Reconcile(ctx); err != nil {
-			log.Error(err, "Reconcile error", "reconciler", name)
-			record.Warnf(clusterScope.GCPManagedCluster, "GCPManagedClusterReconcile", "Reconcile error - %v", err)
+	for _, rec := range clusterReconcilers(clusterScope) {
+		log.V(4).Info("Calling reconciler", "reconciler", rec.Name)
+		cond := clusterReconcilerConditions[rec.Name]
+		if err := rec.Reconciler.Reconcile(ctx); err != nil {
+			log.Error(err, "Reconcile error", "reconciler", rec.Name)
+			r.Recorder.Eventf(clusterScope.GCPManagedCluster, corev1.EventTypeWarning, "GCPManagedClusterReconcile", "Reconcile error - %v", err)
+			v1beta1conditions.MarkFalse(clusterScope.ConditionSetter(), clusterv1beta1.ConditionType(cond.conditionType), cond.failedReason, clusterv1beta1.ConditionSeverityError, "%v", err)
+			v1beta1conditions.MarkFalse(clusterScope.ConditionSetter(), clusterv1beta1.ReadyCondition, cond.failedReason, clusterv1beta1.ConditionSeverityError, "%v", err)
+			v1beta2conditions.Set(clusterScope.V1Beta2ConditionSetter(), metav1.Condition{
+				Type:    cond.conditionType,
+				Status:  metav1.ConditionFalse,
+				Reason:  cond.failedReason,
+				Message: err.Error(),
+			})
+			v1beta2conditions.Set(clusterScope.V1Beta2ConditionSetter(), metav1.Condition{
+				Type:    clusterv1.ReadyCondition,
+				Status:  metav1.ConditionFalse,
+				Reason:  cond.failedReason,
+				Message: err.Error(),
+			})
 			return err
 		}
+		v1beta1conditions.MarkTrue(clusterScope.ConditionSetter(), clusterv1beta1.ConditionType(cond.conditionType))
+		v1beta2conditions.Set(clusterScope.V1Beta2ConditionSetter(), metav1.Condition{
+			Type:   cond.conditionType,
+			Status: metav1.ConditionTrue,
+			Reason: cond.readyReason,
+		})
 	}
 
 	clusterScope.SetReady()
-	record.Event(clusterScope.GCPManagedCluster, "GCPManagedClusterReconcile", "Ready")
+	v1beta1conditions.MarkTrue(clusterScope.ConditionSetter(), clusterv1beta1.ReadyCondition)
+	v1beta2conditions.Set(clusterScope.V1Beta2ConditionSetter(), metav1.Condition{
+		Type:   clusterv1.ReadyCondition,
+		Status: metav1.ConditionTrue,
+		Reason: infrav1.ClusterReadyReason,
+	})
+	r.Recorder.Event(clusterScope.GCPManagedCluster, corev1.EventTypeNormal, "GCPManagedClusterReconcile", "Ready")
 
 	controlPlaneEndpoint := clusterScope.GCPManagedControlPlane.Spec.Endpoint
 	clusterScope.SetControlPlaneEndpoint(clusterv1.APIEndpoint{
@@ -220,9 +279,9 @@ func (r *GCPManagedClusterReconciler) reconcile(ctx context.Context, clusterScop
 
 	if controlPlaneEndpoint.IsZero() {
 		log.Info("GCPManagedControlplane does not have endpoint yet. Reconciling")
-		record.Event(clusterScope.GCPManagedCluster, "GCPManagedClusterReconcile", "Waiting for control-plane endpoint")
+		r.Recorder.Event(clusterScope.GCPManagedCluster, corev1.EventTypeNormal, "GCPManagedClusterReconcile", "Waiting for control-plane endpoint")
 	} else {
-		record.Eventf(clusterScope.GCPManagedCluster, "GCPManagedClusterReconcile", "Got control-plane endpoint - %s", controlPlaneEndpoint.Host)
+		r.Recorder.Eventf(clusterScope.GCPManagedCluster, corev1.EventTypeNormal, "GCPManagedClusterReconcile", "Got control-plane endpoint - %s", controlPlaneEndpoint.Host)
 	}
 
 	return nil
@@ -248,22 +307,22 @@ func (r *GCPManagedClusterReconciler) reconcileDelete(ctx context.Context, clust
 		return ctrl.Result{RequeueAfter: reconciler.DefaultRetryTime}, nil
 	}
 
-	reconcilers := map[string]cloud.Reconciler{
-		"subnets":  subnets.New(clusterScope),
-		"networks": networks.New(clusterScope),
-	}
+	// Delete in reverse dependency order: subnets and firewalls must be
+	// removed before the network.
+	reconcilers := clusterReconcilers(clusterScope)
+	slices.Reverse(reconcilers)
 
-	for name, r := range reconcilers {
-		log.V(4).Info("Calling reconciler delete", "reconciler", name)
-		if err := r.Delete(ctx); err != nil {
-			log.Error(err, "Reconcile error", "reconciler", name)
-			record.Warnf(clusterScope.GCPManagedCluster, "GCPManagedClusterReconcile", "Reconcile error - %v", err)
+	for _, rec := range reconcilers {
+		log.V(4).Info("Calling reconciler delete", "reconciler", rec.Name)
+		if err := rec.Reconciler.Delete(ctx); err != nil {
+			log.Error(err, "Reconcile error", "reconciler", rec.Name)
+			r.Recorder.Eventf(clusterScope.GCPManagedCluster, corev1.EventTypeWarning, "GCPManagedClusterReconcile", "Reconcile error - %v", err)
 			return ctrl.Result{}, err
 		}
 	}
 
 	controllerutil.RemoveFinalizer(clusterScope.GCPManagedCluster, infrav1exp.ClusterFinalizer)
-	record.Event(clusterScope.GCPManagedCluster, "GCPClusterReconcile", "Reconciled")
+	r.Recorder.Event(clusterScope.GCPManagedCluster, corev1.EventTypeNormal, "GCPClusterReconcile", "Reconciled")
 
 	return ctrl.Result{}, nil
 }

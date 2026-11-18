@@ -27,16 +27,20 @@ import (
 )
 
 var (
-	minCount          = int32(1)
-	maxCount          = int32(3)
-	invalidMinCount   = int32(-1)
-	enableAutoscaling = false
-	diskSizeGb        = int32(200)
-	maxPods           = int64(10)
-	localSsds         = int32(0)
-	invalidDiskSizeGb = int32(-200)
-	invalidMaxPods    = int64(-10)
-	invalidLocalSsds  = int32(-0)
+	minCount            = int32(1)
+	maxCount            = int32(3)
+	invalidMinCount     = int32(-1)
+	enableAutoscaling   = false
+	diskSizeGb          = int32(200)
+	diskSizeGB          = int64(200)
+	maxPods             = int64(10)
+	localSsds           = int32(0)
+	invalidDiskSizeGb   = int32(-200)
+	invalidMaxPods      = int64(-10)
+	invalidLocalSsds    = int32(-0)
+	sandboxTypeGvisor   = "GVISOR"
+	workloadMetadataGKE = expinfrav1.WorkloadMetadataModeGKEMetadata
+	workloadMetadataGCE = expinfrav1.WorkloadMetadataModeGCEMetadata
 )
 
 func TestGCPManagedMachinePoolValidatingWebhookCreate(t *testing.T) {
@@ -44,6 +48,7 @@ func TestGCPManagedMachinePoolValidatingWebhookCreate(t *testing.T) {
 		name        string
 		spec        expinfrav1.GCPManagedMachinePoolSpec
 		expectError bool
+		expectWarn  bool
 	}{
 		{
 			name: "valid node pool name",
@@ -140,6 +145,17 @@ func TestGCPManagedMachinePoolValidatingWebhookCreate(t *testing.T) {
 			},
 			expectError: true,
 		},
+		{
+			name: "diskSizeGB (deprecated) set should cause a warning",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					DiskSizeGB:   &diskSizeGB,
+				},
+			},
+			expectError: false,
+			expectWarn:  true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -156,8 +172,11 @@ func TestGCPManagedMachinePoolValidatingWebhookCreate(t *testing.T) {
 			} else {
 				g.Expect(err).ToNot(HaveOccurred())
 			}
-			// Nothing emits warnings yet
-			g.Expect(warn).To(BeEmpty())
+			if tc.expectWarn {
+				g.Expect(warn).ToNot(BeEmpty())
+			} else {
+				g.Expect(warn).To(BeEmpty())
+			}
 		})
 	}
 }
@@ -190,11 +209,152 @@ func TestGCPManagedMachinePoolValidatingWebhookUpdate(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name: "immutable field node pool name is mutated",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool2",
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "mutable field instanceType is mutated",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					InstanceType: ptr.To("n1-standard-4"),
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "mutable field upgradeSettings is mutated",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					UpgradeSettings: &expinfrav1.NodePoolUpgradeSettings{
+						Strategy:       ptr.To("SURGE"),
+						MaxSurge:       ptr.To(int32(1)),
+						MaxUnavailable: ptr.To(int32(0)),
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "immutable field machineType set after creation",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					MachineType:  ptr.To("n2-standard-4"),
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "immutable field diskType set after creation",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					DiskType:     ptr.To(expinfrav1.SSD),
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "immutable field localSsdCount set after creation",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName:  "nodepool1",
+					LocalSsdCount: ptr.To(int32(2)),
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "immutable field management set after creation",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					Management:   &expinfrav1.NodePoolManagement{AutoUpgrade: true},
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "immutable field maxPodsPerNode set after creation",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName:   "nodepool1",
+					MaxPodsPerNode: ptr.To(int64(20)),
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "immutable field nodeNetwork podRangeName set after creation",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					NodeNetwork: expinfrav1.NodeNetworkConfig{
+						PodRangeName: ptr.To("pods-range"),
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "immutable field nodeNetwork createPodRange set after creation",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					NodeNetwork: expinfrav1.NodeNetworkConfig{
+						CreatePodRange: ptr.To(true),
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "immutable field nodeNetwork podRangeCidrBlock set after creation",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					NodeNetwork: expinfrav1.NodeNetworkConfig{
+						PodRangeCidrBlock: ptr.To("10.0.0.0/16"),
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "immutable field nodeSecurity set after creation",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					NodeSecurity: expinfrav1.NodeSecurityConfig{
+						SandboxType: ptr.To("gvisor"),
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
 			name: "immutable field disk size is mutated",
 			spec: expinfrav1.GCPManagedMachinePoolSpec{
 				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
 					NodePoolName: "nodepool1",
 					DiskSizeGb:   &diskSizeGb,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "immutable field diskSizeGB (deprecated) is mutated",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					DiskSizeGB:   &diskSizeGB,
 				},
 			},
 			expectError: true,
@@ -218,6 +378,54 @@ func TestGCPManagedMachinePoolValidatingWebhookUpdate(t *testing.T) {
 				},
 			},
 			expectError: true,
+		},
+		{
+			name: "immutable field reservationAffinity set after creation should fail",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					ReservationAffinity: &infrav1.ReservationAffinity{
+						ConsumeReservationType: "ANY_RESERVATION",
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "immutable nodeSecurity sandboxType is mutated",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					NodeSecurity: expinfrav1.NodeSecurityConfig{
+						SandboxType: &sandboxTypeGvisor,
+					},
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "mutable workloadMetadataMode can be set to GKE_METADATA",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					NodeSecurity: expinfrav1.NodeSecurityConfig{
+						WorkloadMetadataMode: &workloadMetadataGKE,
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "mutable workloadMetadataMode can be set to GCE_METADATA",
+			spec: expinfrav1.GCPManagedMachinePoolSpec{
+				GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+					NodePoolName: "nodepool1",
+					NodeSecurity: expinfrav1.NodeSecurityConfig{
+						WorkloadMetadataMode: &workloadMetadataGCE,
+					},
+				},
+			},
+			expectError: false,
 		},
 	}
 
@@ -247,4 +455,23 @@ func TestGCPManagedMachinePoolValidatingWebhookUpdate(t *testing.T) {
 			g.Expect(warn).To(BeEmpty())
 		})
 	}
+}
+
+func TestGCPManagedMachinePoolValidatingWebhookCreateMachineTypeDeprecationWarning(t *testing.T) {
+	g := NewWithT(t)
+
+	machineType := "n1-standard-1"
+	mmp := &expinfrav1.GCPManagedMachinePool{
+		Spec: expinfrav1.GCPManagedMachinePoolSpec{
+			GCPManagedMachinePoolClassSpec: expinfrav1.GCPManagedMachinePoolClassSpec{
+				NodePoolName: "nodepool1",
+				MachineType:  &machineType,
+			},
+		},
+	}
+
+	warn, err := (&GCPManagedMachinePool{}).ValidateCreate(t.Context(), mmp)
+
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(warn).To(ConsistOf(ContainSubstring("spec.machineType is deprecated")))
 }

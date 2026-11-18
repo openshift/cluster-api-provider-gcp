@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.0
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: gcpmanagedcontrolplanetemplates.infrastructure.cluster.x-k8s.io
 spec:
   group: infrastructure.cluster.x-k8s.io
@@ -61,9 +61,60 @@ spec:
                         - disabled
                         - project_singleton_policy_enforce
                         type: string
+                      clusterName:
+                        description: |-
+                          ClusterName allows you to specify the name of the GKE cluster.
+                          If you don't specify a name then a default name will be created
+                          based on the namespace and name of the managed control plane.
+                        type: string
                       clusterNetwork:
                         description: ClusterNetwork define the cluster network.
                         properties:
+                          datapathProvider:
+                            description: |-
+                              DatapathProvider represents the desired datapath provider for the GKE cluster.
+                              If unspecified, GKE uses the default IPTables-based kube-proxy implementation.
+                              This field is immutable once the cluster has been created, and is always
+                              "advanced" (Dataplane V2) for Autopilot clusters.
+                            enum:
+                            - legacy
+                            - advanced
+                            type: string
+                          dnsConfig:
+                            description: |-
+                              DNSConfig represents the cluster DNS configuration for the GKE cluster.
+                              Once set, it cannot be removed entirely, though its contents may be changed.
+                            properties:
+                              clusterDNS:
+                                description: |-
+                                  ClusterDNS represents which in-cluster DNS provider should be used.
+                                  If not specified, defaults to the GKE default DNS provider (kube-dns).
+                                enum:
+                                - platform
+                                - cloud-dns
+                                - kube-dns
+                                type: string
+                              clusterDNSDomain:
+                                description: ClusterDNSDomain is the suffix used for
+                                  all GKE cluster service records.
+                                type: string
+                              clusterDNSScope:
+                                description: |-
+                                  ClusterDNSScope represents the scope of access to the GKE cluster DNS records.
+                                  If not specified, defaults to cluster scope.
+                                enum:
+                                - cluster
+                                - vpc
+                                type: string
+                            type: object
+                          gatewayAPIChannel:
+                            description: |-
+                              GatewayAPIChannel controls whether the GKE-managed Gateway API controller
+                              is enabled on the cluster, and which release channel it runs on.
+                            enum:
+                            - disabled
+                            - standard
+                            type: string
                           pod:
                             description: Pod defines the range of CIDRBlock list from
                               where it gets the IP address.
@@ -73,6 +124,12 @@ spec:
                                   CidrBlock is where all pods in the cluster are assigned an IP address from this range. Enter a range
                                   (in CIDR notation) within a network range, a mask, or leave this field blank to use a default range.
                                   This setting is permanent.
+                                type: string
+                              secondaryRangeName:
+                                description: |-
+                                  SecondaryRangeName is the name of the existing secondary range in the cluster's subnetwork to
+                                  use for pod IP addresses. The range must already exist on the subnet. Only applicable if
+                                  UseIPAliases is true. Mutually exclusive with CidrBlock. This setting is permanent.
                                 type: string
                             type: object
                           privateCluster:
@@ -115,6 +172,12 @@ spec:
                                   CidrBlock is where cluster services will be assigned an IP address from this IP address range. Enter a range
                                   (in CIDR notation) within a network range, a mask, or leave this field blank to use a default range.
                                   This setting is permanent.
+                                type: string
+                              secondaryRangeName:
+                                description: |-
+                                  SecondaryRangeName is the name of the existing secondary range in the cluster's subnetwork to
+                                  use for service cluster IPs. The range must already exist on the subnet. Only applicable if
+                                  UseIPAliases is true. Mutually exclusive with CidrBlock. This setting is permanent.
                                 type: string
                             type: object
                           useIPAliases:
@@ -206,6 +269,21 @@ spec:
                             description: Whether master is accessible via Google Compute
                               Engine Public IP addresses.
                             type: boolean
+                        type: object
+                      monitoringConfig:
+                        description: MonitoringConfig represents configuration of
+                          the monitoring feature of the GKE cluster.
+                        properties:
+                          managedPrometheusConfig:
+                            description: ManagedPrometheusConfig configures Google
+                              Cloud Managed Service for Prometheus for the cluster.
+                            properties:
+                              enabled:
+                                description: |-
+                                  Enabled controls whether Google Cloud Managed Service for Prometheus is enabled for the cluster.
+                                  GKE enables this by default; set to false to disable it. This field cannot be set on Autopilot clusters.
+                                type: boolean
+                            type: object
                         type: object
                       monitoringService:
                         description: |-

@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.0
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: gcpmanagedmachinepooltemplates.infrastructure.cluster.x-k8s.io
 spec:
   group: infrastructure.cluster.x-k8s.io
@@ -60,10 +60,25 @@ spec:
                           AdditionalLabels is an optional set of tags to add to GCP resources managed by the GCP provider, in addition to the
                           ones added by default.
                         type: object
+                      architectureTaintBehavior:
+                        description: |-
+                          ArchitectureTaintBehavior controls GKE's default architecture taint on the nodes of this
+                          node pool. GKE taints ARM64 nodes kubernetes.io/arch=arm64:NoSchedule unless this is set
+                          to none. Left unset, GKE keeps its own default, which applies the taint.
+                        enum:
+                        - none
+                        - arm
+                        type: string
                       diskSizeGB:
                         description: |-
                           DiskSizeGB is size of the disk attached to each node,
                           specified in GB.
+
+                          Deprecated: DiskSizeGB duplicates DiskSizeGb (both configure the same
+                          underlying GKE node pool disk size) and is retained only for backward
+                          compatibility with existing resources that already set it. This field
+                          remains immutable and will not gain new functionality; use DiskSizeGb
+                          for new manifests. If both fields are set, DiskSizeGb takes precedence.
                         format: int64
                         minimum: 10
                         type: integer
@@ -71,6 +86,7 @@ spec:
                         description: |-
                           DiskSizeGb is the size of the disk attached to each node, specified in GB.
                           The smallest allowed disk size is 10GB. If unspecified, the default disk size is 100GB.
+                          If DiskSizeGB is also set, DiskSizeGb takes precedence.
                         format: int32
                         type: integer
                       diskType:
@@ -80,13 +96,17 @@ spec:
                         - pd-standard
                         - pd-ssd
                         - pd-balanced
+                        - hyperdisk-balanced
                         type: string
                       imageType:
                         description: ImageType is image type to use for this nodepool.
                         type: string
                       instanceType:
-                        description: InstanceType is name of Compute Engine machine
-                          type.
+                        description: |-
+                          InstanceType is name of Compute Engine machine type.
+                          This field is mutable: changing it drives a rolling node replacement via
+                          GKE's node pool upgrade strategy (see UpgradeSettings), not an in-place
+                          resize. It takes precedence over MachineType if both are set.
                         type: string
                       kubernetesLabels:
                         additionalProperties:
@@ -155,6 +175,12 @@ spec:
                           MachineType is the name of a Google Compute Engine [machine
                           type](https://cloud.google.com/compute/docs/machine-types).
                           If unspecified, the default machine type is `e2-medium`.
+
+                          Deprecated: MachineType duplicates InstanceType (both configure the same
+                          underlying GKE node pool machine type) and is retained only for backward
+                          compatibility with existing resources that already set it. This field
+                          remains immutable and will not gain new functionality; use InstanceType
+                          for new manifests. If both fields are set, InstanceType takes precedence.
                         type: string
                       management:
                         description: Management specifies the node pool management
@@ -257,6 +283,15 @@ spec:
                                   type: string
                                 type: array
                             type: object
+                          workloadMetadataMode:
+                            description: |-
+                              WorkloadMetadataMode sets the mode for how to expose metadata to workloads running on the node pool.
+                              Valid values are GKE_METADATA and GCE_METADATA. Unset here means unmanaged. See documentation for
+                              more details.
+                            enum:
+                            - GKE_METADATA
+                            - GCE_METADATA
+                            type: string
                         type: object
                       preemptible:
                         description: |-
@@ -264,6 +299,47 @@ spec:
                           Preemptible VMs have a maximum lifetime of 24 hours and may be reclaimed with 30 seconds
                           notice. This field is immutable.
                         type: boolean
+                      reservationAffinity:
+                        description: ReservationAffinity specifies whether to utilize
+                          reservations for compute. This field is immutable.
+                        properties:
+                          consumeReservationType:
+                            description: ConsumeReservationType decides how reservations
+                              should be consumed if they exist
+                            enum:
+                            - NO_RESERVATION
+                            - ANY_RESERVATION
+                            - SPECIFIC_RESERVATION
+                            - ANY_RESERVATION_THEN_FAIL
+                            type: string
+                          key:
+                            description: |-
+                              Key dictates the key that should be used to match the reservation, required only for SPECIFIC_RESERVATION.
+                              Can only take the value "compute.googleapis.com/reservation-name"
+                            enum:
+                            - compute.googleapis.com/reservation-name
+                            type: string
+                          values:
+                            description: Values are the names of the reservations
+                              to match against, required only for SPECIFIC_RESERVATION
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - consumeReservationType
+                        type: object
+                        x-kubernetes-validations:
+                        - message: if using SPECIFIC_RESERVATION, key and values must
+                            also be specified
+                          rule: '!(self.consumeReservationType == ''SPECIFIC_RESERVATION'')
+                            || (has(self.key) && self.key.size() > 0 && has(self.values)
+                            && self.values.size() > 0 && self.values.all(e, e.size()
+                            > 0))'
+                        - message: setting key and values is not valid without using
+                            the SPECIFIC_RESERVATION type
+                          rule: (self.consumeReservationType == 'SPECIFIC_RESERVATION')
+                            || (!has(self.key) && (!has(self.values) || self.values.size()
+                            == 0))
                       scaling:
                         description: Scaling specifies scaling for the node pool
                         properties:
@@ -293,6 +369,33 @@ spec:
                           Spot specifies whether to create nodes using Spot VM instances. Spot VMs can be reclaimed at
                           any time and are recommended over Preemptible VMs for new workloads. This field is immutable.
                         type: boolean
+                      upgradeSettings:
+                        description: |-
+                          UpgradeSettings specifies the rollout strategy GKE uses when a change to
+                          this node pool requires replacing nodes, such as an InstanceType change.
+                        properties:
+                          maxSurge:
+                            description: |-
+                              MaxSurge is the number of extra nodes to add to the node pool during an
+                              upgrade. Only applies when Strategy is SURGE. Default value is 1.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          maxUnavailable:
+                            description: |-
+                              MaxUnavailable is the number of nodes that can be simultaneously
+                              unavailable during an upgrade. Only applies when Strategy is SURGE.
+                              Default value is 0.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                          strategy:
+                            description: Strategy is the upgrade strategy to use for
+                              the node pool.
+                            enum:
+                            - SURGE
+                            type: string
+                        type: object
                     type: object
                 required:
                 - spec

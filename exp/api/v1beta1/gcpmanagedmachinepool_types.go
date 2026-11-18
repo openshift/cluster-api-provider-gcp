@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
@@ -30,12 +31,27 @@ const (
 	ManagedMachinePoolFinalizer = "gcpmanagedmachinepool.infrastructure.cluster.x-k8s.io"
 
 	// GCPManagedMachinePoolMachineKind indicates the kind of an GCPManagedMachinePoolMachine.
+	//
+	// Deprecated: GCPManagedMachinePool doesn't support MachinePool Machines and no longer sets
+	// status.infrastructureMachineKind. This constant will be removed in a future API version.
 	GCPManagedMachinePoolMachineKind = "GCPManagedMachinePool"
 )
 
 // DiskType is type of the disk attached to node.
-// +kubebuilder:validation:Enum=pd-standard;pd-ssd;pd-balanced
+// +kubebuilder:validation:Enum=pd-standard;pd-ssd;pd-balanced;hyperdisk-balanced
 type DiskType string
+
+// ArchitectureTaintBehavior controls whether GKE applies its default architecture taint to the
+// nodes of a node pool.
+// +kubebuilder:validation:Enum=none;arm
+type ArchitectureTaintBehavior string
+
+const (
+	// ArchitectureTaintBehaviorNone disables the default architecture taint on the node pool.
+	ArchitectureTaintBehaviorNone ArchitectureTaintBehavior = "none"
+	// ArchitectureTaintBehaviorARM taints every node in the node pool with the default ARM taint.
+	ArchitectureTaintBehaviorARM ArchitectureTaintBehavior = "arm"
+)
 
 const (
 	// Standard disk type.
@@ -79,6 +95,17 @@ type NodeNetworkConfig struct {
 	PodRangeCidrBlock *string `json:"podRangeCidrBlock,omitempty"`
 }
 
+// WorkloadMetadataMode is the mode for how to expose metadata to workloads running on the node pool.
+// +kubebuilder:validation:Enum=GKE_METADATA;GCE_METADATA
+type WorkloadMetadataMode string
+
+const (
+	// WorkloadMetadataModeGKEMetadata enables the GKE Metadata Server on the node.
+	WorkloadMetadataModeGKEMetadata WorkloadMetadataMode = "GKE_METADATA"
+	// WorkloadMetadataModeGCEMetadata exposes the Compute Engine metadata server to the node.
+	WorkloadMetadataModeGCEMetadata WorkloadMetadataMode = "GCE_METADATA"
+)
+
 // NodeSecurityConfig encapsulates node security configurations.
 type NodeSecurityConfig struct {
 	// ServiceAccount specifies the identity details for node
@@ -96,6 +123,11 @@ type NodeSecurityConfig struct {
 	// integrity monitoring enabled.
 	// +optional
 	EnableIntegrityMonitoring *bool `json:"enableIntegrityMonitoring,omitempty"`
+	// WorkloadMetadataMode sets the mode for how to expose metadata to workloads running on the node pool.
+	// Valid values are GKE_METADATA and GCE_METADATA. Unset here means unmanaged. See documentation for
+	// more details.
+	// +optional
+	WorkloadMetadataMode *WorkloadMetadataMode `json:"workloadMetadataMode,omitempty"`
 }
 
 // ServiceAccountConfig encapsulates service account options.
@@ -118,16 +150,35 @@ type GCPManagedMachinePoolStatus struct {
 	// Replicas is the most recently observed number of replicas.
 	// +optional
 	Replicas int32 `json:"replicas"`
-	// Conditions specifies the cpnditions for the managed machine pool
+	// Conditions specifies the conditions for the managed machine pool
+	// +optional
 	Conditions clusterv1beta1.Conditions `json:"conditions,omitempty"`
 	// InfrastructureMachineKind is the kind of the infrastructure resources behind MachinePool Machines.
+	//
+	// Deprecated: GKE node pools don't support MachinePool Machines, so this field is no longer set and
+	// any existing value is cleared. This field will be removed in a future API version.
+	//
 	// +optional
 	InfrastructureMachineKind string `json:"infrastructureMachineKind,omitempty"`
+
+	// v1beta2 groups all the fields that will be added or modified in GCPManagedMachinePool's status with the v1beta2 contract.
+	// +optional
+	V1Beta2 *GCPManagedMachinePoolV1Beta2Status `json:"v1beta2,omitempty"`
+}
+
+// GCPManagedMachinePoolV1Beta2Status groups the v1beta2 fields of GCPManagedMachinePoolStatus.
+type GCPManagedMachinePoolV1Beta2Status struct {
+	// conditions represents the observations of a GCPManagedMachinePool's current state.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready"
+// +kubebuilder:printcolumn:name="Ready",type="boolean",JSONPath=".status.ready"
 // +kubebuilder:printcolumn:name="Replicas",type="string",JSONPath=".status.replicas"
 // +kubebuilder:resource:path=gcpmanagedmachinepools,scope=Namespaced,categories=cluster-api,shortName=gcpmmp
 // +kubebuilder:storageversion
@@ -180,6 +231,28 @@ type NodePoolManagement struct {
 	AutoRepair bool `json:"autoRepair,omitempty"`
 }
 
+// NodePoolUpgradeSettings specifies how a node pool rolls out changes that require
+// replacing nodes, such as an InstanceType change. SURGE is GKE's default strategy
+// if Strategy is unset; MaxSurge and MaxUnavailable only apply to SURGE.
+// BLUE_GREEN is not currently supported.
+type NodePoolUpgradeSettings struct {
+	// Strategy is the upgrade strategy to use for the node pool.
+	// +kubebuilder:validation:Enum=SURGE
+	// +optional
+	Strategy *string `json:"strategy,omitempty"`
+	// MaxSurge is the number of extra nodes to add to the node pool during an
+	// upgrade. Only applies when Strategy is SURGE. Default value is 1.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MaxSurge *int32 `json:"maxSurge,omitempty"`
+	// MaxUnavailable is the number of nodes that can be simultaneously
+	// unavailable during an upgrade. Only applies when Strategy is SURGE.
+	// Default value is 0.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	MaxUnavailable *int32 `json:"maxUnavailable,omitempty"`
+}
+
 // ManagedNodePoolLocationPolicy specifies the location policy of the node pool when autoscaling is enabled.
 type ManagedNodePoolLocationPolicy string
 
@@ -223,6 +296,22 @@ func (r *GCPManagedMachinePool) SetConditions(conditions clusterv1beta1.Conditio
 	r.Status.Conditions = conditions
 }
 
+// GetV1Beta2Conditions returns the set of conditions for this object.
+func (r *GCPManagedMachinePool) GetV1Beta2Conditions() []metav1.Condition {
+	if r.Status.V1Beta2 == nil {
+		return nil
+	}
+	return r.Status.V1Beta2.Conditions
+}
+
+// SetV1Beta2Conditions sets the conditions on this object.
+func (r *GCPManagedMachinePool) SetV1Beta2Conditions(conditions []metav1.Condition) {
+	if r.Status.V1Beta2 == nil {
+		r.Status.V1Beta2 = &GCPManagedMachinePoolV1Beta2Status{}
+	}
+	r.Status.V1Beta2.Conditions = conditions
+}
+
 func init() {
-	SchemeBuilder.Register(&GCPManagedMachinePool{}, &GCPManagedMachinePoolList{})
+	objectTypes = append(objectTypes, &GCPManagedMachinePool{}, &GCPManagedMachinePoolList{})
 }

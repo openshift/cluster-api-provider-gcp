@@ -23,10 +23,8 @@ import (
 
 	"k8s.io/utils/ptr"
 	infrav1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-gcp/cloud"
+	"sigs.k8s.io/cluster-api-provider-gcp/cloud/services/shared"
 	"sigs.k8s.io/cluster-api-provider-gcp/util/location"
-
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	container "cloud.google.com/go/container/apiv1"
@@ -35,20 +33,30 @@ import (
 	infrav1exp "sigs.k8s.io/cluster-api-provider-gcp/exp/api/v1beta1"
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	defaultMaxSurge               = 1
+	defaultMaxUnavailable         = 0
+	defaultNodepoolUpdateStrategy = containerpb.NodePoolUpdateStrategy_SURGE
 )
 
 // ManagedMachinePoolScopeParams defines the input parameters used to create a new Scope.
 type ManagedMachinePoolScopeParams struct {
 	ManagedClusterClient        *container.ClusterManagerClient
 	InstanceGroupManagersClient *compute.InstanceGroupManagersClient
+	InstanceTemplatesClient     *compute.InstanceTemplatesClient
 	Client                      client.Client
 	Cluster                     *clusterv1.Cluster
 	MachinePool                 *clusterv1.MachinePool
 	GCPManagedCluster           *infrav1exp.GCPManagedCluster
 	GCPManagedControlPlane      *infrav1exp.GCPManagedControlPlane
 	GCPManagedMachinePool       *infrav1exp.GCPManagedMachinePool
+	Resolver                    location.Resolving
 }
 
 // NewManagedMachinePoolScope creates a new Scope from the supplied parameters.
@@ -84,6 +92,27 @@ func NewManagedMachinePoolScope(ctx context.Context, params ManagedMachinePoolSc
 		}
 		params.InstanceGroupManagersClient = instanceGroupManagersClient
 	}
+	if params.InstanceTemplatesClient == nil {
+		instanceTemplatesClient, err := newInstanceTemplatesRESTClient(ctx, params.GCPManagedCluster.Spec.CredentialsRef, params.Client, params.GCPManagedCluster.Spec.ServiceEndpoints)
+		if err != nil {
+			return nil, errors.Errorf("failed to create gcp instance templates client: %v", err)
+		}
+		params.InstanceTemplatesClient = instanceTemplatesClient
+	}
+
+	if params.Resolver == nil {
+		resolver, err := NewResolver(ctx, params.GCPManagedCluster.Spec.CredentialsRef, params.Client, params.GCPManagedCluster.Spec.ServiceEndpoints)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create location resolver")
+		}
+		defer resolver.Close()
+		params.Resolver = resolver
+	}
+
+	resolvedLocation, err := params.Resolver.Resolve(ctx, params.GCPManagedControlPlane.Spec.Project, params.GCPManagedControlPlane.Spec.Location)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to resolve location")
+	}
 
 	helper, err := v1beta1patch.NewHelper(params.GCPManagedMachinePool, params.Client)
 	if err != nil {
@@ -91,14 +120,16 @@ func NewManagedMachinePoolScope(ctx context.Context, params ManagedMachinePoolSc
 	}
 
 	return &ManagedMachinePoolScope{
-		client:                 params.Client,
-		Cluster:                params.Cluster,
-		MachinePool:            params.MachinePool,
-		GCPManagedControlPlane: params.GCPManagedControlPlane,
-		GCPManagedMachinePool:  params.GCPManagedMachinePool,
-		mcClient:               params.ManagedClusterClient,
-		migClient:              params.InstanceGroupManagersClient,
-		patchHelper:            helper,
+		client:                  params.Client,
+		Cluster:                 params.Cluster,
+		MachinePool:             params.MachinePool,
+		GCPManagedControlPlane:  params.GCPManagedControlPlane,
+		GCPManagedMachinePool:   params.GCPManagedMachinePool,
+		mcClient:                params.ManagedClusterClient,
+		migClient:               params.InstanceGroupManagersClient,
+		instanceTemplatesClient: params.InstanceTemplatesClient,
+		patchHelper:             helper,
+		ResolvedLocation:        *resolvedLocation,
 	}, nil
 }
 
@@ -107,37 +138,52 @@ type ManagedMachinePoolScope struct {
 	client      client.Client
 	patchHelper *v1beta1patch.Helper
 
-	Cluster                *clusterv1.Cluster
-	MachinePool            *clusterv1.MachinePool
-	GCPManagedCluster      *infrav1exp.GCPManagedCluster
-	GCPManagedControlPlane *infrav1exp.GCPManagedControlPlane
-	GCPManagedMachinePool  *infrav1exp.GCPManagedMachinePool
-	mcClient               *container.ClusterManagerClient
-	migClient              *compute.InstanceGroupManagersClient
+	Cluster                 *clusterv1.Cluster
+	MachinePool             *clusterv1.MachinePool
+	GCPManagedCluster       *infrav1exp.GCPManagedCluster
+	GCPManagedControlPlane  *infrav1exp.GCPManagedControlPlane
+	GCPManagedMachinePool   *infrav1exp.GCPManagedMachinePool
+	mcClient                *container.ClusterManagerClient
+	migClient               *compute.InstanceGroupManagersClient
+	instanceTemplatesClient *compute.InstanceTemplatesClient
+	ResolvedLocation        location.ResolvedLocation
 }
 
 // PatchObject persists the managed control plane configuration and status.
-func (s *ManagedMachinePoolScope) PatchObject() error {
+func (s *ManagedMachinePoolScope) PatchObject(ctx context.Context) error {
 	return s.patchHelper.Patch(
-		context.TODO(),
+		ctx,
 		s.GCPManagedMachinePool,
 		v1beta1patch.WithOwnedConditions{Conditions: []clusterv1beta1.ConditionType{
 			infrav1exp.GKEMachinePoolReadyCondition,
 			infrav1exp.GKEMachinePoolCreatingCondition,
 			infrav1exp.GKEMachinePoolUpdatingCondition,
 			infrav1exp.GKEMachinePoolDeletingCondition,
-		}})
+		}},
+		v1beta1patch.WithOwnedV1Beta2Conditions{Conditions: []string{
+			string(infrav1exp.GKEMachinePoolReadyCondition),
+			string(infrav1exp.GKEMachinePoolCreatingCondition),
+			string(infrav1exp.GKEMachinePoolUpdatingCondition),
+			string(infrav1exp.GKEMachinePoolDeletingCondition),
+		}},
+	)
 }
 
 // Close closes the current scope persisting the managed control plane configuration and status.
-func (s *ManagedMachinePoolScope) Close() error {
+func (s *ManagedMachinePoolScope) Close(ctx context.Context) error {
 	s.mcClient.Close()
 	s.migClient.Close()
-	return s.PatchObject()
+	s.instanceTemplatesClient.Close()
+	return s.PatchObject(ctx)
 }
 
-// ConditionSetter return a condition setter (which is GCPManagedMachinePool itself).
+// ConditionSetter returns a v1beta1 condition setter for this scope.
 func (s *ManagedMachinePoolScope) ConditionSetter() v1beta1conditions.Setter {
+	return s.GCPManagedMachinePool
+}
+
+// V1Beta2ConditionSetter returns a v1beta2 condition setter for this scope.
+func (s *ManagedMachinePoolScope) V1Beta2ConditionSetter() v1beta2conditions.Setter {
 	return s.GCPManagedMachinePool
 }
 
@@ -149,6 +195,11 @@ func (s *ManagedMachinePoolScope) ManagedMachinePoolClient() *container.ClusterM
 // InstanceGroupManagersClient returns a client used to interact with GCP MIG.
 func (s *ManagedMachinePoolScope) InstanceGroupManagersClient() *compute.InstanceGroupManagersClient {
 	return s.migClient
+}
+
+// InstanceTemplatesClient returns a client used to interact with GCE instance templates.
+func (s *ManagedMachinePoolScope) InstanceTemplatesClient() *compute.InstanceTemplatesClient {
+	return s.instanceTemplatesClient
 }
 
 // NodePoolVersion returns the k8s version of the node pool.
@@ -168,14 +219,7 @@ func NodePoolResourceLabels(additionalLabels infrav1.Labels, clusterName string)
 
 // ConvertToSdkNodePool converts a node pool to format that is used by GCP SDK.
 func ConvertToSdkNodePool(nodePool infrav1exp.GCPManagedMachinePool, machinePool clusterv1.MachinePool, regional bool, clusterName string) *containerpb.NodePool {
-	replicas := *machinePool.Spec.Replicas
-	if regional {
-		if len(nodePool.Spec.NodeLocations) != 0 {
-			replicas /= int32(len(nodePool.Spec.NodeLocations))
-		} else {
-			replicas /= cloud.DefaultNumRegionsPerZone
-		}
-	}
+	replicas := *machinePool.Spec.Replicas / shared.CalculateReplicaDivisor(nodePool.Spec.NodeLocations, regional)
 	nodePoolName := nodePool.Spec.NodePoolName
 	if len(nodePoolName) == 0 {
 		// Use the GCPManagedMachinePool CR name if nodePoolName is not specified
@@ -195,12 +239,6 @@ func ConvertToSdkNodePool(nodePool infrav1exp.GCPManagedMachinePool, machinePool
 			ResourceLabels: NodePoolResourceLabels(nodePool.Spec.AdditionalLabels, clusterName),
 		},
 	}
-	if nodePool.Spec.MachineType != nil {
-		sdkNodePool.Config.MachineType = *nodePool.Spec.MachineType
-	}
-	if nodePool.Spec.DiskSizeGb != nil {
-		sdkNodePool.Config.DiskSizeGb = *nodePool.Spec.DiskSizeGb
-	}
 	if nodePool.Spec.ImageType != nil {
 		sdkNodePool.Config.ImageType = *nodePool.Spec.ImageType
 	}
@@ -209,6 +247,9 @@ func ConvertToSdkNodePool(nodePool infrav1exp.GCPManagedMachinePool, machinePool
 	}
 	if nodePool.Spec.DiskType != nil {
 		sdkNodePool.Config.DiskType = string(*nodePool.Spec.DiskType)
+	}
+	if nodePool.Spec.ArchitectureTaintBehavior != nil {
+		sdkNodePool.Config.TaintConfig = infrav1exp.ConvertToSdkTaintConfig(nodePool.Spec.ArchitectureTaintBehavior)
 	}
 	if nodePool.Spec.Scaling != nil {
 		sdkNodePool.Autoscaling = infrav1exp.ConvertToSdkAutoscaling(nodePool.Spec.Scaling)
@@ -222,22 +263,35 @@ func ConvertToSdkNodePool(nodePool infrav1exp.GCPManagedMachinePool, machinePool
 			AutoUpgrade: nodePool.Spec.Management.AutoUpgrade,
 		}
 	}
+	if nodePool.Spec.UpgradeSettings != nil {
+		defaultStrategy := defaultNodepoolUpdateStrategy
+
+		sdkNodePool.UpgradeSettings = &containerpb.NodePool_UpgradeSettings{
+			MaxSurge:       ptr.Deref(nodePool.Spec.UpgradeSettings.MaxSurge, defaultMaxSurge),
+			MaxUnavailable: ptr.Deref(nodePool.Spec.UpgradeSettings.MaxUnavailable, defaultMaxUnavailable),
+			Strategy:       &defaultStrategy,
+		}
+	}
 	if nodePool.Spec.MaxPodsPerNode != nil {
 		sdkNodePool.MaxPodsConstraint = &containerpb.MaxPodsConstraint{
 			MaxPodsPerNode: *nodePool.Spec.MaxPodsPerNode,
 		}
 	}
+	// MachineType is deprecated in favor of InstanceType; apply it first so that
+	// InstanceType - the canonical field - takes precedence when both are set.
+	if nodePool.Spec.MachineType != nil { //nolint:staticcheck // SA1019: deprecated field read intentionally for backward compatibility
+		sdkNodePool.Config.MachineType = *nodePool.Spec.MachineType //nolint:staticcheck // SA1019: deprecated field read intentionally for backward compatibility
+	}
 	if nodePool.Spec.InstanceType != nil {
 		sdkNodePool.Config.MachineType = *nodePool.Spec.InstanceType
 	}
-	if nodePool.Spec.ImageType != nil {
-		sdkNodePool.Config.ImageType = *nodePool.Spec.ImageType
+	// DiskSizeGB is deprecated in favor of DiskSizeGb; apply it first so that
+	// DiskSizeGb - the canonical field - takes precedence when both are set.
+	if nodePool.Spec.DiskSizeGB != nil { //nolint:staticcheck // SA1019: deprecated field read intentionally for backward compatibility
+		sdkNodePool.Config.DiskSizeGb = int32(*nodePool.Spec.DiskSizeGB) //nolint:gosec,staticcheck // SA1019: deprecated field read intentionally for backward compatibility
 	}
-	if nodePool.Spec.DiskType != nil {
-		sdkNodePool.Config.DiskType = string(*nodePool.Spec.DiskType)
-	}
-	if nodePool.Spec.DiskSizeGB != nil {
-		sdkNodePool.Config.DiskSizeGb = int32(*nodePool.Spec.DiskSizeGB) //nolint:gosec
+	if nodePool.Spec.DiskSizeGb != nil {
+		sdkNodePool.Config.DiskSizeGb = *nodePool.Spec.DiskSizeGb
 	}
 	if len(nodePool.Spec.NodeNetwork.Tags) != 0 {
 		sdkNodePool.Config.Tags = nodePool.Spec.NodeNetwork.Tags
@@ -275,9 +329,15 @@ func ConvertToSdkNodePool(nodePool infrav1exp.GCPManagedMachinePool, machinePool
 	if ptr.Deref(nodePool.Spec.Spot, false) {
 		sdkNodePool.Config.Spot = true
 	}
+	if nodePool.Spec.NodeSecurity.WorkloadMetadataMode != nil {
+		sdkNodePool.Config.WorkloadMetadataConfig = infrav1exp.ConvertToSdkWorkloadMetadataMode(nodePool.Spec.NodeSecurity.WorkloadMetadataMode)
+	}
 	if machinePool.Spec.Template.Spec.Version != "" {
 		sdkNodePool.Version = strings.Replace(machinePool.Spec.Template.Spec.Version, "v", "", 1)
 	}
+
+	sdkNodePool.Config.ReservationAffinity = infrav1exp.ConvertToSdkReservationAffinity(nodePool.Spec.ReservationAffinity)
+
 	return &sdkNodePool
 }
 
@@ -303,15 +363,26 @@ func (s *ManagedMachinePoolScope) NodePoolName() string {
 	return s.GCPManagedMachinePool.Name
 }
 
-// Region returns the region of the GKE node pool.
+// Region returns the region of the GKE cluster the node pool belongs to. The GCPManagedControlPlane location is used,
+// as in GCP node pools have no location of their own, a pool lives wherever its cluster lives.
 func (s *ManagedMachinePoolScope) Region() string {
-	loc, _ := location.Parse(s.GCPManagedControlPlane.Spec.Location)
-	return loc.Region
+	return s.ResolvedLocation.Region
+}
+
+// IsRegional returns whether the GKE cluster the node pool belongs to is regional.
+func (s *ManagedMachinePoolScope) IsRegional() bool {
+	return s.ResolvedLocation.Regional
+}
+
+// Location returns the location of the GKE node pool. As above, we use the GCPManagedControlPlane location,
+// as node pools in GCP have no location of their own
+func (s *ManagedMachinePoolScope) Location() string {
+	return s.GCPManagedControlPlane.Spec.Location
 }
 
 // NodePoolLocation returns the location of the node pool.
 func (s *ManagedMachinePoolScope) NodePoolLocation() string {
-	return fmt.Sprintf("projects/%s/locations/%s/clusters/%s", s.GCPManagedControlPlane.Spec.Project, s.Region(), s.GCPManagedControlPlane.Spec.ClusterName)
+	return fmt.Sprintf("projects/%s/locations/%s/clusters/%s", s.GCPManagedControlPlane.Spec.Project, s.Location(), s.GCPManagedControlPlane.Spec.ClusterName)
 }
 
 // NodePoolFullName returns the full name of the node pool.
@@ -319,11 +390,13 @@ func (s *ManagedMachinePoolScope) NodePoolFullName() string {
 	return fmt.Sprintf("%s/nodePools/%s", s.NodePoolLocation(), s.NodePoolName())
 }
 
-// SetInfrastructureMachineKind sets the infrastructure machine kind in the status if it is not set already, returning
-// `true` if the status was updated. This supports MachinePool Machines.
-func (s *ManagedMachinePoolScope) SetInfrastructureMachineKind() bool {
-	if s.GCPManagedMachinePool.Status.InfrastructureMachineKind != infrav1exp.GCPManagedMachinePoolMachineKind {
-		s.GCPManagedMachinePool.Status.InfrastructureMachineKind = infrav1exp.GCPManagedMachinePoolMachineKind
+// ClearInfrastructureMachineKind unsets the infrastructure machine kind in the status, returning `true` if the status
+// was updated. GKE node pools don't have per-node infrastructure resources, so MachinePool Machines are not supported.
+// Setting this field makes Cluster API compute the MachinePool replica counters and versions from Machines that are
+// never created. This also clears the value set by previous versions.
+func (s *ManagedMachinePoolScope) ClearInfrastructureMachineKind() bool {
+	if s.GCPManagedMachinePool.Status.InfrastructureMachineKind != "" { //nolint:staticcheck // clearing the deprecated field is intentional.
+		s.GCPManagedMachinePool.Status.InfrastructureMachineKind = "" //nolint:staticcheck // clearing the deprecated field is intentional.
 
 		return true
 	}

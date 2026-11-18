@@ -25,14 +25,16 @@ import (
 	"github.com/googleapis/gax-go/v2/apierror"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/cluster-api-provider-gcp/cloud"
 	"sigs.k8s.io/cluster-api-provider-gcp/cloud/services/container/nodepools"
 	"sigs.k8s.io/cluster-api/util/annotations"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
-	"sigs.k8s.io/cluster-api/util/record"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -56,6 +58,7 @@ import (
 // GCPManagedMachinePoolReconciler reconciles a GCPManagedMachinePool object.
 type GCPManagedMachinePoolReconciler struct {
 	client.Client
+	Recorder         record.EventRecorder
 	ReconcileTimeout time.Duration
 	WatchFilterValue string
 }
@@ -186,6 +189,7 @@ func (r *GCPManagedMachinePoolReconciler) SetupWithManager(ctx context.Context, 
 		return errors.Wrap(err, "failed adding a watch for ready clusters")
 	}
 
+	r.Recorder = mgr.GetEventRecorderFor("gcpmanagedmachinepool-controller")
 	return nil
 }
 
@@ -260,7 +264,18 @@ func (r *GCPManagedMachinePoolReconciler) Reconcile(ctx context.Context, req ctr
 
 	if !gcpManagedControlPlane.Status.Ready {
 		log.Info("Control plane is not ready yet")
+		v1beta2conditions.Set(gcpManagedMachinePool, metav1.Condition{
+			Type:   infrav1exp.GCPManagedMachinePoolReadyCondition,
+			Status: metav1.ConditionFalse,
+			Reason: infrav1exp.WaitingForGKEControlPlaneReason,
+		})
+		v1beta2conditions.Set(gcpManagedMachinePool, metav1.Condition{
+			Type:   infrav1exp.GCPManagedMachinePoolGKEMachinePoolReadyCondition,
+			Status: metav1.ConditionFalse,
+			Reason: infrav1exp.WaitingForGKEControlPlaneReason,
+		})
 		v1beta1conditions.MarkFalse(gcpManagedMachinePool, infrav1exp.GKEMachinePoolReadyCondition, infrav1exp.WaitingForGKEControlPlaneReason, clusterv1beta1.ConditionSeverityInfo, "")
+
 		return ctrl.Result{}, nil
 	}
 
@@ -276,9 +291,9 @@ func (r *GCPManagedMachinePoolReconciler) Reconcile(ctx context.Context, req ctr
 		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
 
-	// Always close the scope when exiting this function so we can persist any GCPMachine changes.
+	// Always close the scope when exiting this function so we can persist any GCPManagedMachinePool changes.
 	defer func() {
-		if err := managedMachinePoolScope.Close(); err != nil && reterr == nil {
+		if err := managedMachinePoolScope.Close(ctx); err != nil && reterr == nil {
 			log.Error(err, "Failed to patch GCPManagedMachinePool object", "GCPManagedMachinePool", managedMachinePoolScope.GCPManagedMachinePool.Name)
 			reterr = err
 		}
@@ -298,8 +313,8 @@ func (r *GCPManagedMachinePoolReconciler) reconcile(ctx context.Context, managed
 	log.Info("Reconciling GCPManagedMachinePool")
 
 	controllerutil.AddFinalizer(managedMachinePoolScope.GCPManagedMachinePool, infrav1exp.ManagedMachinePoolFinalizer)
-	managedMachinePoolScope.SetInfrastructureMachineKind()
-	if err := managedMachinePoolScope.PatchObject(); err != nil {
+	managedMachinePoolScope.ClearInfrastructureMachineKind()
+	if err := managedMachinePoolScope.PatchObject(ctx); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -307,9 +322,9 @@ func (r *GCPManagedMachinePoolReconciler) reconcile(ctx context.Context, managed
 		"nodepools": nodepools.New(managedMachinePoolScope),
 	}
 
-	for name, r := range reconcilers {
+	for name, rec := range reconcilers {
 		log.V(4).Info("Calling reconciler", "reconciler", name)
-		res, err := r.Reconcile(ctx)
+		res, err := rec.Reconcile(ctx)
 		if err != nil {
 			var e *apierror.APIError
 			if ok := errors.As(err, &e); ok {
@@ -320,7 +335,7 @@ func (r *GCPManagedMachinePoolReconciler) reconcile(ctx context.Context, managed
 			}
 			log.Error(err, "Reconcile error", "reconciler", name)
 
-			record.Warnf(managedMachinePoolScope.GCPManagedMachinePool, "GCPManagedMachinePoolReconcile", "Reconcile error - %v", err)
+			r.Recorder.Eventf(managedMachinePoolScope.GCPManagedMachinePool, corev1.EventTypeWarning, "GCPManagedMachinePoolReconcile", "Reconcile error - %v", err)
 			return ctrl.Result{}, err
 		}
 		if res.RequeueAfter > 0 {
@@ -340,9 +355,9 @@ func (r *GCPManagedMachinePoolReconciler) reconcileDelete(ctx context.Context, m
 		"nodepools": nodepools.New(managedMachinePoolScope),
 	}
 
-	for name, r := range reconcilers {
+	for name, rec := range reconcilers {
 		log.V(4).Info("Calling reconciler delete", "reconciler", name)
-		res, err := r.Delete(ctx)
+		res, err := rec.Delete(ctx)
 		if err != nil {
 			var e *apierror.APIError
 			if ok := errors.As(err, &e); ok {
@@ -352,7 +367,7 @@ func (r *GCPManagedMachinePoolReconciler) reconcileDelete(ctx context.Context, m
 				}
 			}
 			log.Error(err, "Reconcile error", "reconciler", name)
-			record.Warnf(managedMachinePoolScope.GCPManagedMachinePool, "GCPManagedMachinePoolReconcile", "Reconcile error - %v", err)
+			r.Recorder.Eventf(managedMachinePoolScope.GCPManagedMachinePool, corev1.EventTypeWarning, "GCPManagedMachinePoolReconcile", "Reconcile error - %v", err)
 			return ctrl.Result{}, err
 		}
 		if res.RequeueAfter > 0 {

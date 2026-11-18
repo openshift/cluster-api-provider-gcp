@@ -80,7 +80,7 @@ func defaultLicenseCodesRESTCallOptions() *LicenseCodesCallOptions {
 	}
 }
 
-// internalLicenseCodesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalLicenseCodesClient is an interface that defines the methods available from Compute Engine API.
 type internalLicenseCodesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -91,7 +91,7 @@ type internalLicenseCodesClient interface {
 	TestIamPermissions(context.Context, *computepb.TestIamPermissionsLicenseCodeRequest, ...gax.CallOption) (*computepb.TestPermissionsResponse, error)
 }
 
-// LicenseCodesClient is a client for interacting with Google Compute Engine API.
+// LicenseCodesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The LicenseCodes API.
@@ -105,7 +105,7 @@ type LicenseCodesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *LicenseCodesClient) Close() error {
 	return c.internalClient.Close()
@@ -251,7 +251,7 @@ func (c *licenseCodesRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *licenseCodesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

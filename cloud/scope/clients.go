@@ -18,16 +18,15 @@ package scope
 
 import (
 	"context"
-	"encoding/json"
-	stderrors "errors"
 	"fmt"
 	"time"
 
 	computerest "cloud.google.com/go/compute/apiv1"
+	"cloud.google.com/go/compute/apiv1/computepb"
 	container "cloud.google.com/go/container/apiv1"
-	credentials "cloud.google.com/go/iam/credentials/apiv1"
 	resourcemanager "cloud.google.com/go/resourcemanager/apiv3"
 	"github.com/GoogleCloudPlatform/k8s-cloud-provider/pkg/cloud"
+	"github.com/googleapis/gax-go/v2"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
@@ -35,6 +34,7 @@ import (
 	"k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/util/flowcontrol"
 	infrav1 "sigs.k8s.io/cluster-api-provider-gcp/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-gcp/util/location"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -50,6 +50,19 @@ type GCPRateLimiter struct{}
 // GCP credentials from JSON data.
 type credentialHeader struct {
 	Type string `json:"type"`
+}
+
+// zonesAdapter is a wrapper for the GCP ZonesClient so we can deal in concrete types not pointers
+type zonesAdapter struct {
+	zoneClient *computerest.ZonesClient
+}
+
+func (za *zonesAdapter) Close() error {
+	return za.zoneClient.Close()
+}
+
+func (za *zonesAdapter) List(ctx context.Context, req *computepb.ListZonesRequest, opts ...gax.CallOption) location.ZoneIterator {
+	return za.zoneClient.List(ctx, req, opts...)
 }
 
 // Accept blocks until the operation can be performed.
@@ -88,47 +101,24 @@ func defaultClientOptions(ctx context.Context, credentialsRef *infrav1.ObjectRef
 	}
 
 	if credentialsRef != nil {
-		rawData, err := getCredentialDataFromRef(ctx, credentialsRef, crClient)
+		resolved, err := CredentialsClient{}.Resolve(ctx, credentialsRef, crClient)
 		if err != nil {
 			return nil, fmt.Errorf("getting gcp credentials from reference %s: %w", credentialsRef, err)
 		}
 
-		header := &credentialHeader{}
-		if err := json.Unmarshal(rawData, header); err != nil {
-			return nil, fmt.Errorf("parsing gcp credential type from reference %s: %w", credentialsRef, err)
-		}
-
 		var optCredType option.CredentialsType
-		var googleCredType google.CredentialsType
-		switch header.Type {
-		case "service_account":
-			optCredType = option.ServiceAccount
-			googleCredType = google.ServiceAccount
-		case "external_account":
+		switch resolved.Type {
+		case google.ExternalAccount:
 			optCredType = option.ExternalAccount
-			googleCredType = google.ExternalAccount
-		case "impersonated_service_account":
+		case google.ImpersonatedServiceAccount:
 			optCredType = option.ImpersonatedServiceAccount
-			googleCredType = google.ImpersonatedServiceAccount
 		default:
 			optCredType = option.ServiceAccount
-			googleCredType = google.ServiceAccount
 		}
-		opts = append(opts, option.WithAuthCredentialsJSON(optCredType, rawData))
+		opts = append(opts, option.WithAuthCredentialsJSON(optCredType, resolved.RawData))
 
-		// Extract credentials to get universe domain for sovereign clouds
-		// Use CredentialsFromJSONWithType to avoid deprecated CredentialsFromJSON
-		creds, err := google.CredentialsFromJSONWithType(ctx, rawData, googleCredType)
-		if err != nil {
-			return nil, fmt.Errorf("failed to extract credentials from JSON: %w", err)
-		}
-
-		// CredentialsFromJSONWithType never returns (nil, nil), but guard defensively.
-		if creds == nil {
-			return nil, stderrors.New("credentials are nil after parsing JSON")
-		}
-
-		universeDomain, err := creds.GetUniverseDomain()
+		// Extract universe domain for sovereign clouds.
+		universeDomain, err := resolved.Credentials.GetUniverseDomain()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get universe domain from credentials: %w", err)
 		}
@@ -174,24 +164,6 @@ func newClusterManagerClient(ctx context.Context, credentialsRef *infrav1.Object
 	return managedClusterClient, nil
 }
 
-func newIamCredentialsClient(ctx context.Context, credentialsRef *infrav1.ObjectReference, crClient client.Client, endpoints *infrav1.ServiceEndpoints) (*credentials.IamCredentialsClient, error) {
-	opts, err := defaultClientOptions(ctx, credentialsRef, crClient)
-	if err != nil {
-		return nil, fmt.Errorf("getting default gcp client options: %w", err)
-	}
-
-	if endpoints != nil && endpoints.IAMServiceEndpoint != "" {
-		opts = append(opts, option.WithEndpoint(endpoints.IAMServiceEndpoint))
-	}
-
-	credentialsClient, err := credentials.NewIamCredentialsClient(ctx, opts...)
-	if err != nil {
-		return nil, errors.Errorf("failed to create gcp ciam credentials client: %v", err)
-	}
-
-	return credentialsClient, nil
-}
-
 func newInstanceGroupManagerClient(ctx context.Context, credentialsRef *infrav1.ObjectReference, crClient client.Client, endpoints *infrav1.ServiceEndpoints) (*computerest.InstanceGroupManagersClient, error) {
 	opts, err := defaultClientOptions(ctx, credentialsRef, crClient)
 	if err != nil {
@@ -208,6 +180,24 @@ func newInstanceGroupManagerClient(ctx context.Context, credentialsRef *infrav1.
 	}
 
 	return instanceGroupManagersClient, nil
+}
+
+func newInstanceTemplatesRESTClient(ctx context.Context, credentialsRef *infrav1.ObjectReference, crClient client.Client, endpoints *infrav1.ServiceEndpoints) (*computerest.InstanceTemplatesClient, error) {
+	opts, err := defaultClientOptions(ctx, credentialsRef, crClient)
+	if err != nil {
+		return nil, fmt.Errorf("getting default gcp client options: %w", err)
+	}
+
+	if endpoints != nil && endpoints.ComputeServiceEndpoint != "" {
+		opts = append(opts, option.WithEndpoint(endpoints.ComputeServiceEndpoint))
+	}
+
+	instanceTemplatesClient, err := computerest.NewInstanceTemplatesRESTClient(ctx, opts...)
+	if err != nil {
+		return nil, errors.Errorf("failed to create gcp instance templates rest client: %v", err)
+	}
+
+	return instanceTemplatesClient, nil
 }
 
 func newTagBindingsClient(ctx context.Context, credentialsRef *infrav1.ObjectReference, crClient client.Client, location string, endpoints *infrav1.ServiceEndpoints) (*resourcemanager.TagBindingsClient, error) {
@@ -230,4 +220,21 @@ func newTagBindingsClient(ctx context.Context, credentialsRef *infrav1.ObjectRef
 	}
 
 	return client, nil
+}
+
+// NewResolver this builds a location.Resolver with real GCP clients so that we can resolve locations
+// correctly
+func NewResolver(ctx context.Context, credentialsRef *infrav1.ObjectReference, crClient client.Client, endpoints *infrav1.ServiceEndpoints) (*location.Resolver, error) {
+	clientOptions, err := defaultClientOptions(ctx, credentialsRef, crClient)
+	if err != nil {
+		return nil, err
+	}
+	if endpoints != nil && endpoints.ComputeServiceEndpoint != "" {
+		clientOptions = append(clientOptions, option.WithEndpoint(endpoints.ComputeServiceEndpoint))
+	}
+	zonesClient, err := computerest.NewZonesRESTClient(ctx, clientOptions...)
+	if err != nil {
+		return nil, err
+	}
+	return location.NewResolver(&zonesAdapter{zoneClient: zonesClient}), nil
 }

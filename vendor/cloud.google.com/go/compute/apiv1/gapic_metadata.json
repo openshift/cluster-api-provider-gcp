@@ -87,6 +87,16 @@
               "methods": [
                 "CalendarMode"
               ]
+            },
+            "Capacity": {
+              "methods": [
+                "Capacity"
+              ]
+            },
+            "CapacityHistory": {
+              "methods": [
+                "CapacityHistory"
+              ]
             }
           }
         }
@@ -1062,6 +1072,30 @@
             "Update": {
               "methods": [
                 "Update"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "Hosts": {
+      "clients": {
+        "rest": {
+          "libraryClient": "HostsClient",
+          "rpcs": {
+            "Get": {
+              "methods": [
+                "Get"
+              ]
+            },
+            "GetVersion": {
+              "methods": [
+                "GetVersion"
+              ]
+            },
+            "List": {
+              "methods": [
+                "List"
               ]
             }
           }
@@ -2856,6 +2890,20 @@
         }
       }
     },
+    "ProjectViews": {
+      "clients": {
+        "rest": {
+          "libraryClient": "ProjectViewsClient",
+          "rpcs": {
+            "Get": {
+              "methods": [
+                "Get"
+              ]
+            }
+          }
+        }
+      }
+    },
     "Projects": {
       "clients": {
         "rest": {
@@ -4495,6 +4543,25 @@
         }
       }
     },
+    "ReliabilityRisks": {
+      "clients": {
+        "rest": {
+          "libraryClient": "ReliabilityRisksClient",
+          "rpcs": {
+            "Get": {
+              "methods": [
+                "Get"
+              ]
+            },
+            "List": {
+              "methods": [
+                "List"
+              ]
+            }
+          }
+        }
+      }
+    },
     "ReservationBlocks": {
       "clients": {
         "rest": {
@@ -4542,6 +4609,11 @@
             "Get": {
               "methods": [
                 "Get"
+              ]
+            },
+            "GetHealth": {
+              "methods": [
+                "GetHealth"
               ]
             },
             "GetVersion": {
@@ -4764,6 +4836,11 @@
         "rest": {
           "libraryClient": "RolloutsClient",
           "rpcs": {
+            "Advance": {
+              "methods": [
+                "Advance"
+              ]
+            },
             "Cancel": {
               "methods": [
                 "Cancel"
@@ -4782,6 +4859,16 @@
             "List": {
               "methods": [
                 "List"
+              ]
+            },
+            "Pause": {
+              "methods": [
+                "Pause"
+              ]
+            },
+            "Resume": {
+              "methods": [
+                "Resume"
               ]
             }
           }
@@ -4803,6 +4890,11 @@
                 "Delete"
               ]
             },
+            "DeleteNamedSet": {
+              "methods": [
+                "DeleteNamedSet"
+              ]
+            },
             "DeleteRoutePolicy": {
               "methods": [
                 "DeleteRoutePolicy"
@@ -4811,6 +4903,11 @@
             "Get": {
               "methods": [
                 "Get"
+              ]
+            },
+            "GetNamedSet": {
+              "methods": [
+                "GetNamedSet"
               ]
             },
             "GetNatIpInfo": {
@@ -4848,6 +4945,11 @@
                 "ListBgpRoutes"
               ]
             },
+            "ListNamedSets": {
+              "methods": [
+                "ListNamedSets"
+              ]
+            },
             "ListRoutePolicies": {
               "methods": [
                 "ListRoutePolicies"
@@ -4856,6 +4958,11 @@
             "Patch": {
               "methods": [
                 "Patch"
+              ]
+            },
+            "PatchNamedSet": {
+              "methods": [
+                "PatchNamedSet"
               ]
             },
             "PatchRoutePolicy": {
@@ -4871,6 +4978,11 @@
             "Update": {
               "methods": [
                 "Update"
+              ]
+            },
+            "UpdateNamedSet": {
+              "methods": [
+                "UpdateNamedSet"
               ]
             },
             "UpdateRoutePolicy": {

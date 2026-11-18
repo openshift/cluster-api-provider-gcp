@@ -33,14 +33,27 @@ export GOPROXY
 export GO111MODULE=on
 
 # Go version
-GOLANG_VERSION := 1.25.11
-GOLANG_DIRECTIVE_VERSION ?= 1.25.8
+GOLANG_VERSION := 1.26.10
+GOLANG_DIRECTIVE_VERSION ?= 1.26.0
 
 # Kubebuilder
-export KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.35.0
+# Match the Kubernetes minor version without requiring an envtest release for its exact patch.
+export KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= $(basename $(patsubst v%,%,$(KUBECTL_VER)))
 export KUBEBUILDER_CONTROLPLANE_START_TIMEOUT ?=60s
 export KUBEBUILDER_CONTROLPLANE_STOP_TIMEOUT ?=60s
 
+# Keep the standalone cert manager pinned here; it is not a dependency of either Go module.
+CERT_MANAGER_VER := v1.16.3
+# Keep the standalone go-apidiff pinned here; it is not a dependency of either Go module.
+GO_APIDIFF_VER := v0.8.3
+# Keep the standalone yq pinned here; it is not a dependency of either Go module.
+YQ_VER := v4.45.4
+# Keep the standalone kustomize CLI pinned here; it is not a dependency of either Go module.
+KUSTOMIZE_VER := v4.5.7
+# Keep release-notes pinned here: adding it to hack/tools/go.mod changes many shared dependencies.
+RELEASE_NOTES_VER := v0.11.0
+# Keep kpromo pinned here: adding it to hack/tools/go.mod pulls in a large dependency graph.
+KPROMO_VER := 5ab0dbc74b0228c22a93d240596dff77464aee8f
 # Calico version for e2e tests and dev workflows.
 # When updating, also update test/e2e/data/cni/calico/calico.yaml with the
 # manifest from the new release.
@@ -67,64 +80,65 @@ E2E_DATA_DIR ?= $(ROOT_DIR)/test/e2e/data
 KUBETEST_CONF_PATH ?= $(abspath $(E2E_DATA_DIR)/kubetest/conformance.yaml)
 CONVERSION_VERIFIER:= $(TOOLS_BIN_DIR)/conversion-verifier
 
+# Helper function to get dependency version from go.mod (optionally in another module directory)
+get_go_version = $(shell cd $(or $2,.) && go list -m -f '{{.Version}}' $1)
+
 # Binaries.
 CLUSTERCTL := $(BIN_DIR)/clusterctl
 
-CONTROLLER_GEN_VER := v0.20.0
+CONTROLLER_GEN_VER := $(call get_go_version,sigs.k8s.io/controller-tools,$(TOOLS_DIR))
 CONTROLLER_GEN_BIN := controller-gen
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER)
 
-CONVERSION_GEN_VER := v0.35.0
+CONVERSION_GEN_VER := $(call get_go_version,k8s.io/code-generator,$(TOOLS_DIR))
 CONVERSION_GEN_BIN := conversion-gen
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/$(CONVERSION_GEN_BIN)-$(CONVERSION_GEN_VER)
 
-ENVSUBST_VER := v1.4.2
+ENVSUBST_VER := $(call get_go_version,github.com/a8m/envsubst,$(TOOLS_DIR))
 ENVSUBST_BIN := envsubst
 ENVSUBST := $(TOOLS_BIN_DIR)/$(ENVSUBST_BIN)
 
-GOLANGCI_LINT_VER := v2.12.2
+# Use the CI pin without adding golangci-lint's large dependency graph to hack/tools/go.mod.
+GOLANGCI_LINT_VER = $(shell $(YQ) '.jobs.golangci.steps[] | select(.name == "golangci-lint") | .with.version' .github/workflows/lint.yml)
 
-KIND_VER := v0.32.0
+KIND_VER := $(call get_go_version,sigs.k8s.io/kind)
 KIND_BIN := kind
 KIND := $(TOOLS_BIN_DIR)/$(KIND_BIN)-$(KIND_VER)
 
-KUSTOMIZE_VER := v4.5.7
-KUSTOMIZE_BIN := kustomize
-KUSTOMIZE := $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER)
-
-RELEASE_NOTES_VER := v0.11.0
-RELEASE_NOTES_BIN := release-notes
-RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
-
-GINKGO_VER := v2.27.5
+GINKGO_VER := $(call get_go_version,github.com/onsi/ginkgo/v2)
 GINKGO_BIN := ginkgo
 GINKGO := $(TOOLS_BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
 
-KUBECTL_VER := v1.35.0
+# Kubernetes Go module v0.x.y corresponds to kubectl v1.x.y.
+KUBECTL_VER := $(patsubst v0.%,v1.%,$(call get_go_version,k8s.io/client-go))
 KUBECTL_BIN := kubectl
 KUBECTL := $(TOOLS_BIN_DIR)/$(KUBECTL_BIN)-$(KUBECTL_VER)
 
 TIMEOUT := $(shell command -v timeout || command -v gtimeout)
 
-SETUP_ENVTEST_VER := v0.0.0-20260305142021-f9589b9f2b9d
+SETUP_ENVTEST_VER := $(call get_go_version,sigs.k8s.io/controller-runtime/tools/setup-envtest,$(TOOLS_DIR))
 SETUP_ENVTEST_BIN := setup-envtest
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/$(SETUP_ENVTEST_BIN)
 
-GOTESTSUM_VER := v1.6.4
+GOTESTSUM_VER := $(call get_go_version,gotest.tools/gotestsum,$(TOOLS_DIR))
 GOTESTSUM_BIN := gotestsum
 GOTESTSUM := $(TOOLS_BIN_DIR)/$(GOTESTSUM_BIN)
 
-KPROMO_VER := 5ab0dbc74b0228c22a93d240596dff77464aee8f
-KPROMO_BIN := kpromo
-KPROMO :=  $(TOOLS_BIN_DIR)/$(KPROMO_BIN)-$(KPROMO_VER)
-
-YQ_VER := v4.35.2
 YQ_BIN := yq
 YQ :=  $(TOOLS_BIN_DIR)/$(YQ_BIN)-$(YQ_VER)
 
-# Other tools versions
-CERT_MANAGER_VER := v1.16.3
+GO_APIDIFF_BIN := go-apidiff
+GO_APIDIFF := $(TOOLS_BIN_DIR)/$(GO_APIDIFF_BIN)-$(GO_APIDIFF_VER)
+
+KUSTOMIZE_BIN := kustomize
+KUSTOMIZE := $(TOOLS_BIN_DIR)/$(KUSTOMIZE_BIN)-$(KUSTOMIZE_VER)
+
+RELEASE_NOTES_BIN := release-notes
+RELEASE_NOTES := $(TOOLS_BIN_DIR)/$(RELEASE_NOTES_BIN)-$(RELEASE_NOTES_VER)
+
+KPROMO_BIN := kpromo
+KPROMO :=  $(TOOLS_BIN_DIR)/$(KPROMO_BIN)-$(KPROMO_VER)
 
 # Define Docker related variables. Releases should modify and double check these vars.
 export GCP_PROJECT ?= $(shell gcloud config get-value project)
@@ -179,8 +193,8 @@ test: $(SETUP_ENVTEST) ## Run unit and integration tests
 	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... $(TEST_ARGS)
 
 # Allow overriding the e2e configurations
-GINKGO_FOCUS ?= Workload cluster creation
-GINKGO_SKIP ?= API Version Upgrade
+GINKGO_FOCUS ?= Workload cluster creation|GKE workload cluster
+GINKGO_SKIP ?=
 GINKGO_NOCOLOR ?= false
 GINKGO_ARGS ?=
 GINKGO_TIMEOUT ?= 2h
@@ -191,7 +205,8 @@ SKIP_CLEANUP ?= false
 SKIP_CREATE_MGMT_CLUSTER ?= false
 
 .PHONY: test-e2e-run
-test-e2e-run: $(ENVSUBST) $(KUBECTL) $(GINKGO) e2e-image ## Run the end-to-end tests
+test-e2e-run: $(ENVSUBST) $(KUBECTL) $(GINKGO) $(YQ) e2e-image ## Run the end-to-end tests
+	source $(ROOT_DIR)/hack/resolve-e2e-versions.sh && \
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) && \
 	time $(GINKGO) -v --trace -poll-progress-after=$(GINKGO_POLL_PROGRESS_AFTER) -poll-progress-interval=$(GINKGO_POLL_PROGRESS_INTERVAL) \
 	--tags=e2e --focus="$(GINKGO_FOCUS)" -skip="$(GINKGO_SKIP)" --no-color=$(GINKGO_NOCOLOR) \
@@ -247,26 +262,33 @@ manager: ## Build manager binary.
 ## Tooling Binaries
 ## --------------------------------------
 
+
 .PHONY: $(KPROMO_BIN)
 $(KPROMO_BIN): $(KPROMO) ## Build a local copy of kpromo
 
 .PHONY: $(YQ_BIN)
 $(YQ_BIN): $(YQ) ## Build a local copy of yq
 
+.PHONY: $(GO_APIDIFF_BIN)
+$(GO_APIDIFF_BIN): $(GO_APIDIFF) ## Build a local copy of go-apidiff
+
 $(CLUSTERCTL): go.mod ## Build clusterctl binary.
 	go build -o $(BIN_DIR)/clusterctl sigs.k8s.io/cluster-api/cmd/clusterctl
 
-$(ENVSUBST): ## Build envsubst from tools folder.
+$(ENVSUBST): $(TOOLS_DIR)/go.mod ## Build envsubst from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/a8m/envsubst/cmd/envsubst $(ENVSUBST_BIN) $(ENVSUBST_VER)
 
-$(GOTESTSUM): go.mod # Build gotestsum from tools folder.
+$(GOTESTSUM): $(TOOLS_DIR)/go.mod # Build gotestsum from tools folder.
 	 GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) gotest.tools/gotestsum $(GOTESTSUM_BIN) $(GOTESTSUM_VER)
 
 $(KUSTOMIZE): ## Build kustomize from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/kustomize/kustomize/v4 $(KUSTOMIZE_BIN) $(KUSTOMIZE_VER)
 
-$(SETUP_ENVTEST): go.mod # Build setup-envtest from tools folder.
+$(SETUP_ENVTEST): $(TOOLS_DIR)/go.mod # Build setup-envtest from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/controller-runtime/tools/setup-envtest $(SETUP_ENVTEST_BIN) $(SETUP_ENVTEST_VER)
+
+$(GO_APIDIFF):
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/joelanford/go-apidiff $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
 
 $(KPROMO):
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) sigs.k8s.io/promo-tools/v4/cmd/kpromo $(KPROMO_BIN) $(KPROMO_VER)
@@ -311,14 +333,14 @@ $(KIND_BIN): $(KIND) ## Building Kind from tools folder
 ## --------------------------------------
 
 .PHONY: lint
-lint: ## Lint codebase
+lint: $(YQ) ## Lint codebase
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VER} run -v $(GOLANGCI_LINT_EXTRA_ARGS)
 
 .PHONY: lint-fix
 lint-fix: ## Lint the codebase and run auto-fixers if supported by the linter
 	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
 
-lint-full: ## Run slower linters to detect possible issues
+lint-full: $(YQ) ## Run slower linters to detect possible issues
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VER} run -v --fast=false
 
 ## --------------------------------------
@@ -335,6 +357,10 @@ generate: ## Generate code
 	$(MAKE) generate-go
 	$(MAKE) generate-manifests
 
+.PHONY: generate-doctoc
+generate-doctoc: ## Generate tables of contents for Markdown files with doctoc markers
+	TRACE=$(TRACE) ./hack/generate-doctoc.sh
+
 .PHONY: generate-go
 generate-go: $(CONTROLLER_GEN) $(CONVERSION_GEN) ## Runs Go related generate targets
 	$(CONTROLLER_GEN) \
@@ -350,8 +376,10 @@ generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) \
 		paths=./ \
 		paths=./api/... \
+		paths=./webhooks/... \
 		paths=./$(EXP_DIR)/api/... \
 		paths=./$(EXP_DIR)/bootstrap/gke/api/... \
+		paths=./$(EXP_DIR)/webhooks/... \
 		crd:crdVersions=v1 \
 		rbac:roleName=manager-role \
 		output:crd:dir=$(CRD_ROOT) \
@@ -600,7 +628,7 @@ clean-release: ## Remove the release folder
 apidiff: APIDIFF_OLD_COMMIT ?= $(shell git rev-parse origin/main)
 apidiff: $(GO_APIDIFF) ## Check for API differences
 	@$(call checkdiff) > /dev/null
-	APIDIFF_OLD_COMMIT="$(APIDIFF_OLD_COMMIT)" hack/verify-apidiff
+	APIDIFF_OLD_COMMIT="$(APIDIFF_OLD_COMMIT)" GO_APIDIFF="$(GO_APIDIFF)" hack/verify-apidiff
 
 define checkdiff
 	git --no-pager diff --name-only FETCH_HEAD
@@ -611,7 +639,7 @@ format-tiltfile: ## Format the Tiltfile.
 	./hack/verify-starlark.sh fix
 
 .PHONY: verify
-verify: verify-boilerplate verify-modules verify-gen verify-shellcheck verify-tiltfile verify-conversions verify-go-directive
+verify: verify-boilerplate verify-modules verify-gen verify-shellcheck verify-tiltfile verify-conversions verify-go-directive verify-doctoc
 
 .PHONY: verify-boilerplate
 verify-boilerplate:
@@ -641,6 +669,13 @@ verify-gen: generate
 		echo "generated files are out of date, run make generate"; \
 		git diff HEAD; \
 		exit 1; \
+	fi
+
+.PHONY: verify-doctoc
+verify-doctoc: generate-doctoc
+	@if !(git diff --quiet HEAD); then \
+		git diff; \
+		echo "doctoc is out of date, run make generate-doctoc"; exit 1; \
 	fi
 
 .PHONY: verify-go-directive

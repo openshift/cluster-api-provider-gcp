@@ -112,7 +112,7 @@ func defaultRegionSnapshotsRESTCallOptions() *RegionSnapshotsCallOptions {
 	}
 }
 
-// internalRegionSnapshotsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalRegionSnapshotsClient is an interface that defines the methods available from Compute Engine API.
 type internalRegionSnapshotsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -128,7 +128,7 @@ type internalRegionSnapshotsClient interface {
 	UpdateKmsKey(context.Context, *computepb.UpdateKmsKeyRegionSnapshotRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// RegionSnapshotsClient is a client for interacting with Google Compute Engine API.
+// RegionSnapshotsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The RegionSnapshots API.
@@ -142,7 +142,7 @@ type RegionSnapshotsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *RegionSnapshotsClient) Close() error {
 	return c.internalClient.Close()
@@ -330,7 +330,7 @@ func (c *regionSnapshotsRESTClient) setGoogleClientInfo(keyval ...string) {
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *regionSnapshotsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

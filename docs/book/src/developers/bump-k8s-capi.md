@@ -15,15 +15,16 @@ The two arguments are the target **Kubernetes minor version** (e.g. `1.35`) and 
 
 Perform these lookups before making any changes. All values determined here are referenced in later steps.
 
-### 1a. Latest Kubernetes patch
+Kubernetes-version-derived variables in `test/e2e/config/gcp-ci.yaml`
+(`KUBERNETES_VERSION`, `KUBERNETES_VERSION_GKE`, `CCM_VERSION`,
+`KUBERNETES_VERSION_MANAGEMENT`, and the upgrade-test FROM/TO/etcd/coredns/
+image variables) are **not** looked up here — they derive automatically at
+CI time from `KUBERNETES_MINOR` via `hack/resolve-e2e-versions.sh`. The one
+thing to check by hand before setting `KUBERNETES_MINOR` is that GKE
+actually supports it yet (1f below) — that's a precondition for the bump,
+not something to route around if it doesn't.
 
-```bash
-gh api repos/kubernetes/kubernetes/tags --paginate -q '.[].name' | grep '^v1.MINOR\.' | head -5
-```
-
-Pick the latest stable tag. Call it `K8S_VERSION` (e.g. `v1.35.5`).
-
-### 1b. Latest CAPI patch
+### 1a. Latest CAPI patch
 
 ```bash
 gh api repos/kubernetes-sigs/cluster-api/tags --paginate -q '.[].name' | grep '^v1.MINOR\.' | head -5
@@ -31,7 +32,7 @@ gh api repos/kubernetes-sigs/cluster-api/tags --paginate -q '.[].name' | grep '^
 
 Pick the latest stable tag. Call it `CAPI_VERSION` (e.g. `v1.13.2`).
 
-### 1c. CAPI dependency versions
+### 1b. CAPI dependency versions
 
 Fetch CAPI's `go.mod` to determine aligned dependency versions:
 
@@ -43,46 +44,17 @@ Extract:
 - `sigs.k8s.io/controller-runtime` version → `CONTROLLER_RUNTIME_VER`
 - `k8s.io/api` version → `K8S_MODULE_VER` (e.g. `v0.35.4`)
 
-### 1d. CAPI tool versions
+### 1c. setup-envtest version
 
-Fetch CAPI's `Makefile` to align tool versions:
-
-```bash
-gh api "repos/kubernetes-sigs/cluster-api/contents/Makefile?ref=CAPI_VERSION" --jq '.content' | base64 -d | grep -E '^[A-Z_]+(VER|VERSION)\s*[:?]?='
-```
-
-Extract:
-- `CONTROLLER_GEN_VER`
-- `CONVERSION_GEN_VER`
-- `SETUP_ENVTEST_VER`
-
-### 1e. Kubernetes component versions
-
-Fetch the etcd and CoreDNS versions from kubeadm constants:
+Fetch CAPI's `Makefile` to align the setup-envtest CLI version:
 
 ```bash
-gh api "repos/kubernetes/kubernetes/contents/cmd/kubeadm/app/constants/constants.go?ref=K8S_VERSION" --jq '.content' | base64 -d | grep -E '(DefaultCoreDNS|DefaultEtcd)'
+gh api "repos/kubernetes-sigs/cluster-api/contents/Makefile?ref=CAPI_VERSION" --jq '.content' | base64 -d | grep '^SETUP_ENVTEST_VER :='
 ```
 
-Call these `ETCD_VERSION` and `COREDNS_VERSION`.
+Call this `SETUP_ENVTEST_VER`. The controller-gen and conversion-gen versions are selected by `hack/tools/go.mod`, not copied from CAPI's `Makefile`.
 
-### 1f. GCP cloud provider version
-
-```bash
-gh api repos/kubernetes/cloud-provider-gcp/tags -q '.[].name' | grep "v$(echo K8S_VERSION | cut -d. -f2)" | head -5
-```
-
-Pick the latest. Call it `CCM_VERSION`.
-
-**Verify** the container image is actually published:
-
-```bash
-docker manifest inspect gcr.io/k8s-staging-cloud-provider-gcp/cloud-controller-manager:CCM_VERSION
-```
-
-If the image does not exist, try earlier patch versions until you find one that is published.
-
-### 1g. GCP k8s-cloud-provider version
+### 1d. GCP k8s-cloud-provider version
 
 ```bash
 gh api repos/GoogleCloudPlatform/k8s-cloud-provider/tags -q '.[].name' | head -5
@@ -90,35 +62,24 @@ gh api repos/GoogleCloudPlatform/k8s-cloud-provider/tags -q '.[].name' | head -5
 
 Pick the latest matching the target k8s minor. Call it `K8S_CLOUD_PROVIDER_VER`.
 
-### 1h. kind version
+### 1e. kind version
+
+Kind follows the version selected by the root `go.mod`; do not choose a separate Makefile pin. After updating dependencies in Step 3, check the selected version with `go list -m sigs.k8s.io/kind`.
+
+### 1f. Confirm GKE supports the target minor
 
 ```bash
-gh api repos/kubernetes-sigs/kind/tags -q '.[].name' | grep -v alpha | grep -v beta | head -5
+gcloud container get-server-config --region=us-central1 --format=json | \
+  jq -r '.channels[] | select(.channel=="REGULAR") | .validVersions[]' | \
+  grep '^K8S_MINOR\.' | sort -V | tail -5
 ```
 
-Pick the latest stable. Call it `KIND_VER`.
-
-### 1i. Previous Kubernetes minor latest patch
-
-For the upgrade-from version in e2e tests, find the latest patch of the previous k8s minor:
-
-```bash
-gh api repos/kubernetes/kubernetes/tags --paginate -q '.[].name' | grep '^v1.PREV_MINOR\.' | head -5
-```
-
-Call this `K8S_UPGRADE_FROM` (e.g. `v1.34.8`).
-
-### 1j. Management cluster Kubernetes version
-
-This version determines the `kindest/node` image used for the management cluster. Pick the latest patch of the target k8s minor that is available as a `kindest/node` image in kind's registry.
-
-Verify the image exists:
-
-```bash
-docker manifest inspect kindest/node:vK8S_VERSION
-```
-
-If it does not exist, try earlier patch versions until you find one that is published. Call it `K8S_MGMT_VERSION`.
+If nothing matches, GKE hasn't caught up to this minor yet. **Don't** bump
+`KUBERNETES_MINOR` past it — wait for GKE to catch up instead. This
+project bumps to the trailing edge of Kubernetes releases, not the
+bleeding edge, so this should be rare; the more likely failure mode over
+time is the opposite one (GKE eventually dropping support for a minor
+this project sat on too long), which the same check catches just as well.
 
 ## Step 2: Review CAPI migration guide
 
@@ -156,7 +117,7 @@ Then run:
 go mod tidy
 ```
 
-Indirect dependencies will be resolved automatically.
+Indirect dependencies, including Kind, will be resolved automatically.
 
 ## Step 4: Update hack/tools/go.mod
 
@@ -166,26 +127,26 @@ Update the `sigs.k8s.io/cluster-api/hack/tools` pseudo-version. To find the righ
 GOPROXY=https://proxy.golang.org go list -m -json "sigs.k8s.io/cluster-api/hack/tools@CAPI_VERSION"
 ```
 
-Then run:
+Update the setup-envtest tool pin to the version found in Step 1c, then run:
 
 ```bash
-cd hack/tools && go mod tidy
+cd hack/tools
+go get -tool sigs.k8s.io/controller-runtime/tools/setup-envtest@SETUP_ENVTEST_VER
+go mod tidy
 ```
 
-## Step 5: Update Makefile
+## Step 5: Verify derived tool versions
 
-Update these version variables:
+Do not manually edit `KUBEBUILDER_ENVTEST_KUBERNETES_VERSION`, `CONTROLLER_GEN_VER`, `CONVERSION_GEN_VER`, `KIND_VER`, `KUBECTL_VER`, or `SETUP_ENVTEST_VER` in the Makefile. They follow the root or tools module:
 
-```makefile
-KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= K8S_MINOR.0
-CONTROLLER_GEN_VER := <from CAPI Makefile>
-CONVERSION_GEN_VER := <from CAPI Makefile>
-KIND_VER := KIND_VER
-KUBECTL_VER := vK8S_MINOR.0
-SETUP_ENVTEST_VER := <from CAPI Makefile>
+```bash
+go list -m k8s.io/client-go sigs.k8s.io/kind github.com/onsi/ginkgo/v2
+(cd hack/tools && go list -m sigs.k8s.io/controller-tools k8s.io/code-generator sigs.k8s.io/controller-runtime/tools/setup-envtest)
 ```
 
-Do NOT update: `GOLANG_VERSION`, `GOLANGCI_LINT_VER`, `GINKGO_VER`, `KUSTOMIZE_VER`, `CERT_MANAGER_VER`, `CALICO_VERSION` — these are independent of the k8s/CAPI bump.
+The `k8s.io/client-go` version `v0.MINOR.PATCH` determines kubectl `v1.MINOR.PATCH` and the envtest `1.MINOR` selector. Verify the kubectl binary and a matching envtest release are available. The Ginkgo CLI follows the root `go.mod`; controller-gen, conversion-gen, and setup-envtest follow `hack/tools/go.mod`. Check that their selected versions are appropriate before regenerating files.
+
+Do NOT update the independent pins `GOLANG_VERSION`, `KUSTOMIZE_VER`, `CERT_MANAGER_VER`, or `CALICO_VERSION` as part of the k8s/CAPI bump. `GOLANGCI_LINT_VER` follows `.github/workflows/lint.yml` and is handled by the Go bump guide.
 
 ## Step 6: Update metadata.yaml
 
@@ -218,32 +179,31 @@ Update the GCP infrastructure provider dev version from `v1.OLD_CAPI_MINOR.99` t
 ### Variables
 
 ```yaml
-KUBERNETES_VERSION: "K8S_VERSION"
-CCM_VERSION: "CCM_VERSION" # major version must match KUBERNETES_VERSION minor; tag must exist at https://github.com/kubernetes/cloud-provider-gcp/tags
-KUBERNETES_VERSION_MANAGEMENT: "K8S_MGMT_VERSION" # latest patch of target k8s minor that is available as a kindest/node image: https://hub.docker.com/r/kindest/node/tags
-ETCD_VERSION_UPGRADE_TO: "ETCD_VERSION"
-COREDNS_VERSION_UPGRADE_TO: "COREDNS_VERSION"
-KUBERNETES_IMAGE_UPGRADE_FROM: "projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-2204-v1-PREV_MINOR-PATCH-nightly"
-KUBERNETES_IMAGE_UPGRADE_TO: "projects/k8s-staging-cluster-api-gcp/global/images/cluster-api-ubuntu-2204-v1-MINOR-PATCH-nightly"
-KUBERNETES_VERSION_UPGRADE_FROM: "${KUBERNETES_VERSION_UPGRADE_FROM:-K8S_UPGRADE_FROM}"
-KUBERNETES_VERSION_UPGRADE_TO: "${KUBERNETES_VERSION_UPGRADE_TO:-K8S_VERSION}"
+KUBERNETES_MINOR: "K8S_MINOR"
 ```
 
-Note: the nightly image names use dashes instead of dots in versions (e.g. `v1-35-5` not `v1.35.5`).
+That's the only line to touch here. Every other Kubernetes-version
+variable in this file (`KUBERNETES_VERSION`, `KUBERNETES_VERSION_GKE`,
+`CCM_VERSION`, `KUBERNETES_VERSION_MANAGEMENT`, the upgrade-test FROM/TO/
+etcd/coredns/image variables) is already `"${VAR}"` with no default, and
+derives automatically at CI time via `hack/resolve-e2e-versions.sh` — don't
+add a hand-pinned fallback to any of them; that would just recreate the
+staleness problem this whole scheme exists to avoid.
 
-The comments on `CCM_VERSION` and `KUBERNETES_VERSION_MANAGEMENT` should be preserved in the YAML — they help future maintainers verify these values.
+Optionally, run `hack/resolve-e2e-versions.sh` locally first (needs
+`gcloud`/`docker`/`git` access; `E2E_FLAVOR=all GCP_PROJECT=... GCP_REGION=...`)
+to catch a missing nightly image, CCM tag, or kindest/node image before
+pushing, rather than waiting on a full CI run to find out.
 
 ## Step 9: Update CCM manifest
 
-In `test/e2e/data/ccm/gce-cloud-controller-manager.yaml`, update the default CCM version:
-
-```yaml
-image: gcr.io/k8s-staging-cloud-provider-gcp/cloud-controller-manager:${CCM_VERSION:-CCM_VERSION}
-```
+`test/e2e/data/ccm/gce-cloud-controller-manager.yaml` already references
+`${CCM_VERSION}` with no default — nothing to change here either, for the
+same reason as Step 8.
 
 ## Step 10: Regenerate CRDs
 
-The controller-gen version change may produce updated CRD manifests:
+Changes to the derived controller-gen or conversion-gen versions may update generated files:
 
 ```bash
 make generate
@@ -278,7 +238,7 @@ Create a branch named `bump-k8s-MINOR-capi-MINOR` (e.g. `bump-k8s-135-capi-113`)
 
 1. The version bump itself:
    ```
-   chore(bump): bump k8s to K8S_VERSION, CAPI to CAPI_VERSION
+   chore(bump): bump k8s to K8S_MINOR, CAPI to CAPI_VERSION
    ```
 
 2. Lint and build fixes (if any):

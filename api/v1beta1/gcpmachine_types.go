@@ -19,6 +19,7 @@ package v1beta1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 const (
@@ -250,6 +251,15 @@ type GCPMachineSpec struct {
 	// InstanceType is the type of instance to create. Example: n1.standard-2
 	InstanceType string `json:"instanceType"`
 
+	// ResourcePolicies are full or partial URLs of existing regional resource policies
+	// to attach when creating the instance. For example:
+	// projects/my-project/regions/us-central1/resourcePolicies/my-placement-policy.
+	// Policies must be in the same region as the instance. CAPG does not create or
+	// delete these policies. Changing this field requires replacing the machine.
+	// +optional
+	// +listType=set
+	ResourcePolicies []string `json:"resourcePolicies,omitempty"`
+
 	// Subnet is a reference to the subnetwork to use for this instance. If not specified,
 	// the first subnetwork retrieved from the Cluster Region and Network is picked.
 	// +optional
@@ -394,6 +404,43 @@ type Accelerator struct {
 	Type string `json:"type,omitempty"`
 }
 
+// ReservationConsumeType is the mode in which reservations should be consumed if they exist
+// +kubebuilder:validation:Enum=NO_RESERVATION;ANY_RESERVATION;SPECIFIC_RESERVATION;ANY_RESERVATION_THEN_FAIL
+type ReservationConsumeType string
+
+const (
+	// ReservationConsumeTypeNoReservation means to explicitly not take capacity from any reservation (i.e. always from the general population of compute)
+	ReservationConsumeTypeNoReservation ReservationConsumeType = "NO_RESERVATION"
+	// ReservationConsumeTypeAnyReservation means take compute from any reservation
+	ReservationConsumeTypeAnyReservation ReservationConsumeType = "ANY_RESERVATION"
+	// ReservationConsumeTypeSpecificReservation means take compute from a reservation specified by `key` and `values`
+	ReservationConsumeTypeSpecificReservation ReservationConsumeType = "SPECIFIC_RESERVATION"
+	// ReservationConsumeTypeAnyReservationThenFail means take compute from any reservation but then fail if there isn't sufficient capacity in those reservations
+	ReservationConsumeTypeAnyReservationThenFail ReservationConsumeType = "ANY_RESERVATION_THEN_FAIL"
+)
+
+// ReservationAffinity encapsulates all the ways you can configure instances or nodes to take capacity from reservations
+// +kubebuilder:validation:XValidation:rule="!(self.consumeReservationType == 'SPECIFIC_RESERVATION') || (has(self.key) && self.key.size() > 0 && has(self.values) && self.values.size() > 0 && self.values.all(e, e.size() > 0))",message="if using SPECIFIC_RESERVATION, key and values must also be specified"
+// +kubebuilder:validation:XValidation:rule="(self.consumeReservationType == 'SPECIFIC_RESERVATION') || (!has(self.key) && (!has(self.values) || self.values.size() == 0))",message="setting key and values is not valid without using the SPECIFIC_RESERVATION type"
+type ReservationAffinity struct {
+	// ConsumeReservationType decides how reservations should be consumed if they exist
+	ConsumeReservationType ReservationConsumeType `json:"consumeReservationType"`
+	// Key dictates the key that should be used to match the reservation, required only for SPECIFIC_RESERVATION.
+	// Can only take the value "compute.googleapis.com/reservation-name"
+	// +optional
+	Key ReservationKey `json:"key,omitempty"`
+	// Values are the names of the reservations to match against, required only for SPECIFIC_RESERVATION
+	// +optional
+	Values []string `json:"values,omitempty"`
+}
+
+// ReservationKey is the set of values that can be passed to the `key` field, when using SPECIFIC_RESERVATION
+// +kubebuilder:validation:Enum=compute.googleapis.com/reservation-name
+type ReservationKey string
+
+// ReservationKeyReservationName stores the label used to match with reservation names
+const ReservationKeyReservationName ReservationKey = "compute.googleapis.com/reservation-name"
+
 // MetadataItem defines a single piece of metadata associated with an instance.
 type MetadataItem struct {
 	// Key is the identifier for the metadata entry.
@@ -452,6 +499,27 @@ type GCPMachineStatus struct {
 	// controller's output.
 	// +optional
 	FailureMessage *string `json:"failureMessage,omitempty"`
+
+	// conditions defines current service state of the GCPMachine.
+	// +optional
+	Conditions clusterv1beta1.Conditions `json:"conditions,omitempty"`
+
+	// v1beta2 groups all the fields that will be added or modified in GCPMachine's status
+	// with the v1beta2 version of the Cluster API contract.
+	// +optional
+	V1Beta2 *GCPMachineV1Beta2Status `json:"v1beta2,omitempty"`
+}
+
+// GCPMachineV1Beta2Status groups the fields that will be added or modified in GCPMachine's status
+// with the v1beta2 version of the Cluster API contract.
+type GCPMachineV1Beta2Status struct {
+	// conditions represents the observations of a GCPMachine's current state.
+	// Known condition types are Ready.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -460,7 +528,7 @@ type GCPMachineStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Cluster to which this GCPMachine belongs"
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.instanceState",description="GCE instance state"
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Machine ready status"
+// +kubebuilder:printcolumn:name="Ready",type="boolean",JSONPath=".status.ready",description="Machine ready status"
 // +kubebuilder:printcolumn:name="InstanceID",type="string",JSONPath=".spec.providerID",description="GCE instance ID"
 // +kubebuilder:printcolumn:name="Machine",type="string",JSONPath=".metadata.ownerReferences[?(@.kind==\"Machine\")].name",description="Machine object which owns with this GCPMachine"
 
@@ -482,6 +550,32 @@ type GCPMachineList struct {
 	Items           []GCPMachine `json:"items"`
 }
 
+// GetConditions returns the set of conditions for this object.
+func (m *GCPMachine) GetConditions() clusterv1beta1.Conditions {
+	return m.Status.Conditions
+}
+
+// SetConditions sets the conditions on this object.
+func (m *GCPMachine) SetConditions(conditions clusterv1beta1.Conditions) {
+	m.Status.Conditions = conditions
+}
+
+// GetV1Beta2Conditions returns the set of conditions for this object.
+func (m *GCPMachine) GetV1Beta2Conditions() []metav1.Condition {
+	if m.Status.V1Beta2 == nil {
+		return nil
+	}
+	return m.Status.V1Beta2.Conditions
+}
+
+// SetV1Beta2Conditions sets the conditions on this object.
+func (m *GCPMachine) SetV1Beta2Conditions(conditions []metav1.Condition) {
+	if m.Status.V1Beta2 == nil {
+		m.Status.V1Beta2 = &GCPMachineV1Beta2Status{}
+	}
+	m.Status.V1Beta2.Conditions = conditions
+}
+
 func init() {
-	SchemeBuilder.Register(&GCPMachine{}, &GCPMachineList{})
+	objectTypes = append(objectTypes, &GCPMachine{}, &GCPMachineList{})
 }

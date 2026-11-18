@@ -95,7 +95,7 @@ func defaultPublicAdvertisedPrefixesRESTCallOptions() *PublicAdvertisedPrefixesC
 	}
 }
 
-// internalPublicAdvertisedPrefixesClient is an interface that defines the methods available from Google Compute Engine API.
+// internalPublicAdvertisedPrefixesClient is an interface that defines the methods available from Compute Engine API.
 type internalPublicAdvertisedPrefixesClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -109,7 +109,7 @@ type internalPublicAdvertisedPrefixesClient interface {
 	Withdraw(context.Context, *computepb.WithdrawPublicAdvertisedPrefixeRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// PublicAdvertisedPrefixesClient is a client for interacting with Google Compute Engine API.
+// PublicAdvertisedPrefixesClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The PublicAdvertisedPrefixes API.
@@ -123,7 +123,7 @@ type PublicAdvertisedPrefixesClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *PublicAdvertisedPrefixesClient) Close() error {
 	return c.internalClient.Close()
@@ -289,7 +289,7 @@ func (c *publicAdvertisedPrefixesRESTClient) setGoogleClientInfo(keyval ...strin
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *publicAdvertisedPrefixesRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

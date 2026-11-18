@@ -18,11 +18,14 @@ package v1beta1
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/strings/slices"
+	"k8s.io/utils/ptr"
+
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 )
 
 const (
@@ -66,6 +69,12 @@ type ClusterNetworkPod struct {
 	// This setting is permanent.
 	// +optional
 	CidrBlock string `json:"cidrBlock,omitempty"`
+
+	// SecondaryRangeName is the name of the existing secondary range in the cluster's subnetwork to
+	// use for pod IP addresses. The range must already exist on the subnet. Only applicable if
+	// UseIPAliases is true. Mutually exclusive with CidrBlock. This setting is permanent.
+	// +optional
+	SecondaryRangeName *string `json:"secondaryRangeName,omitempty"`
 }
 
 // ClusterNetworkService defines the range of CIDRBlock list from where it gets the IP address.
@@ -75,6 +84,12 @@ type ClusterNetworkService struct {
 	// This setting is permanent.
 	// +optional
 	CidrBlock string `json:"cidrBlock,omitempty"`
+
+	// SecondaryRangeName is the name of the existing secondary range in the cluster's subnetwork to
+	// use for service cluster IPs. The range must already exist on the subnet. Only applicable if
+	// UseIPAliases is true. Mutually exclusive with CidrBlock. This setting is permanent.
+	// +optional
+	SecondaryRangeName *string `json:"secondaryRangeName,omitempty"`
 }
 
 // ClusterNetwork define the cluster network.
@@ -95,7 +110,88 @@ type ClusterNetwork struct {
 	// Service defines the range of CIDRBlock list from where it gets the IP address.
 	// +optional
 	Service *ClusterNetworkService `json:"service,omitempty"`
+
+	// GatewayAPIChannel controls whether the GKE-managed Gateway API controller
+	// is enabled on the cluster, and which release channel it runs on.
+	// +optional
+	GatewayAPIChannel *GatewayAPIChannel `json:"gatewayAPIChannel,omitempty"`
+
+	// DatapathProvider represents the desired datapath provider for the GKE cluster.
+	// If unspecified, GKE uses the default IPTables-based kube-proxy implementation.
+	// This field is immutable once the cluster has been created, and is always
+	// "advanced" (Dataplane V2) for Autopilot clusters.
+	// +optional
+	DatapathProvider *DatapathProvider `json:"datapathProvider,omitempty"`
+
+	// DNSConfig represents the cluster DNS configuration for the GKE cluster.
+	// Once set, it cannot be removed entirely, though its contents may be changed.
+	// +optional
+	DNSConfig *DNSConfig `json:"dnsConfig,omitempty"`
 }
+
+// GatewayAPIChannel is the release channel of the GKE Gateway API controller.
+// +kubebuilder:validation:Enum=disabled;standard
+type GatewayAPIChannel string
+
+// DatapathProvider represents the desired datapath provider for the GKE cluster. The provider
+// selects the implementation of the Kubernetes networking model for service resolution and
+// network policy enforcement.
+// +kubebuilder:validation:Enum=legacy;advanced
+type DatapathProvider string
+
+const (
+	// LegacyDatapath uses the IPTables-based implementation based on kube-proxy.
+	LegacyDatapath DatapathProvider = "legacy"
+	// AdvancedDatapath uses the eBPF-based GKE Dataplane V2. See the [GKE Dataplane V2
+	// documentation](https://cloud.google.com/kubernetes-engine/docs/how-to/dataplane-v2) for more.
+	AdvancedDatapath DatapathProvider = "advanced"
+)
+
+// DNSConfig represents the cluster DNS configuration for the GKE cluster.
+type DNSConfig struct {
+	// ClusterDNS represents which in-cluster DNS provider should be used.
+	// If not specified, defaults to the GKE default DNS provider (kube-dns).
+	// +optional
+	ClusterDNS *ClusterDNS `json:"clusterDNS,omitempty"`
+	// ClusterDNSScope represents the scope of access to the GKE cluster DNS records.
+	// If not specified, defaults to cluster scope.
+	// +optional
+	ClusterDNSScope *ClusterDNSScope `json:"clusterDNSScope,omitempty"`
+	// ClusterDNSDomain is the suffix used for all GKE cluster service records.
+	// +optional
+	ClusterDNSDomain *string `json:"clusterDNSDomain,omitempty"`
+}
+
+// ClusterDNS represents the in-cluster DNS provider.
+// +kubebuilder:validation:Enum=platform;cloud-dns;kube-dns
+type ClusterDNS string
+
+const (
+	// PlatformDefault uses the GKE default DNS provider for DNS resolution.
+	PlatformDefault ClusterDNS = "platform"
+	// CloudDNS uses Cloud DNS for DNS resolution.
+	CloudDNS ClusterDNS = "cloud-dns"
+	// KubeDNS uses kube-dns for DNS resolution.
+	KubeDNS ClusterDNS = "kube-dns"
+)
+
+// ClusterDNSScope represents the scope of access to GKE cluster DNS records.
+// +kubebuilder:validation:Enum=cluster;vpc
+type ClusterDNSScope string
+
+const (
+	// ClusterScope scopes DNS records to be accessible from within the cluster.
+	ClusterScope ClusterDNSScope = "cluster"
+	// VPCScope scopes DNS records to be accessible from within the VPC.
+	VPCScope ClusterDNSScope = "vpc"
+)
+
+const (
+	// GatewayAPIChannelDisabled disables the GKE-managed Gateway API controller.
+	GatewayAPIChannelDisabled GatewayAPIChannel = "disabled"
+	// GatewayAPIChannelStandard enables the GKE-managed Gateway API controller on the standard channel.
+	GatewayAPIChannelStandard GatewayAPIChannel = "standard"
+)
 
 // WorkloadIdentityConfig allows workloads in your GKE clusters to impersonate Identity and Access Management (IAM)
 // service accounts to access Google Cloud services.
@@ -141,12 +237,6 @@ type ClusterSecurity struct {
 type GCPManagedControlPlaneSpec struct {
 	GCPManagedControlPlaneClassSpec `json:",inline"`
 
-	// ClusterName allows you to specify the name of the GKE cluster.
-	// If you don't specify a name then a default name will be created
-	// based on the namespace and name of the managed control plane.
-	// +optional
-	ClusterName string `json:"clusterName,omitempty"`
-
 	// Description describe the cluster.
 	// +optional
 	Description string `json:"description,omitempty"`
@@ -184,6 +274,7 @@ type GCPManagedControlPlaneStatus struct {
 	Initialized bool `json:"initialized,omitempty"`
 
 	// Conditions specifies the conditions for the managed control plane
+	// +optional
 	Conditions clusterv1beta1.Conditions `json:"conditions,omitempty"`
 
 	// CurrentVersion shows the current version of the GKE control plane.
@@ -196,6 +287,20 @@ type GCPManagedControlPlaneStatus struct {
 	// Version represents the version of the GKE control plane.
 	// +optional
 	Version *string `json:"version,omitempty"`
+
+	// v1beta2 groups all the fields that will be added or modified in GCPManagedControlPlane's status with the v1beta2 contract.
+	// +optional
+	V1Beta2 *GCPManagedControlPlaneV1Beta2Status `json:"v1beta2,omitempty"`
+}
+
+// GCPManagedControlPlaneV1Beta2Status groups the v1beta2 fields of GCPManagedControlPlaneStatus.
+type GCPManagedControlPlaneV1Beta2Status struct {
+	// conditions represents the observations of a GCPManagedControlPlane's current state.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -203,7 +308,7 @@ type GCPManagedControlPlaneStatus struct {
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Cluster to which this GCPManagedControlPlane belongs"
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Control plane is ready"
+// +kubebuilder:printcolumn:name="Ready",type="boolean",JSONPath=".status.ready",description="Control plane is ready"
 // +kubebuilder:printcolumn:name="CurrentVersion",type="string",JSONPath=".status.currentVersion",description="The current Kubernetes version"
 // +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".status.version",description="The Kubernetes version of the GKE control plane"
 // +kubebuilder:printcolumn:name="Endpoint",type="string",JSONPath=".spec.endpoint",description="API Endpoint",priority=1
@@ -264,6 +369,21 @@ type MasterAuthorizedNetworksConfigCidrBlock struct {
 	CidrBlock string `json:"cidr_block,omitempty"`
 }
 
+// MonitoringConfig represents the monitoring configuration of the GKE cluster.
+type MonitoringConfig struct {
+	// ManagedPrometheusConfig configures Google Cloud Managed Service for Prometheus for the cluster.
+	// +optional
+	ManagedPrometheusConfig *ManagedPrometheusConfig `json:"managedPrometheusConfig,omitempty"`
+}
+
+// ManagedPrometheusConfig configures Google Cloud Managed Service for Prometheus.
+type ManagedPrometheusConfig struct {
+	// Enabled controls whether Google Cloud Managed Service for Prometheus is enabled for the cluster.
+	// GKE enables this by default; set to false to disable it. This field cannot be set on Autopilot clusters.
+	// +optional
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
 // LoggingService is GKE logging service configuration.
 type LoggingService string
 
@@ -310,6 +430,28 @@ func (r *GCPManagedControlPlane) SetConditions(conditions clusterv1beta1.Conditi
 	r.Status.Conditions = conditions
 }
 
+// IsDeleted reports whether the GKE control plane has finished deleting.
+func (r *GCPManagedControlPlane) IsDeleted() bool {
+	condition := ptr.Deref(v1beta1conditions.Get(r, GKEControlPlaneDeletingCondition), clusterv1beta1.Condition{})
+	return condition.Reason == GKEControlPlaneDeletedReason
+}
+
+// GetV1Beta2Conditions returns the set of conditions for this object.
+func (r *GCPManagedControlPlane) GetV1Beta2Conditions() []metav1.Condition {
+	if r.Status.V1Beta2 == nil {
+		return nil
+	}
+	return r.Status.V1Beta2.Conditions
+}
+
+// SetV1Beta2Conditions sets the conditions on this object.
+func (r *GCPManagedControlPlane) SetV1Beta2Conditions(conditions []metav1.Condition) {
+	if r.Status.V1Beta2 == nil {
+		r.Status.V1Beta2 = &GCPManagedControlPlaneV1Beta2Status{}
+	}
+	r.Status.V1Beta2.Conditions = conditions
+}
+
 func init() {
-	SchemeBuilder.Register(&GCPManagedControlPlane{}, &GCPManagedControlPlaneList{})
+	objectTypes = append(objectTypes, &GCPManagedControlPlane{}, &GCPManagedControlPlaneList{})
 }

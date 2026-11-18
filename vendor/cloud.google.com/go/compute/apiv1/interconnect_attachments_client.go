@@ -105,7 +105,7 @@ func defaultInterconnectAttachmentsRESTCallOptions() *InterconnectAttachmentsCal
 	}
 }
 
-// internalInterconnectAttachmentsClient is an interface that defines the methods available from Google Compute Engine API.
+// internalInterconnectAttachmentsClient is an interface that defines the methods available from Compute Engine API.
 type internalInterconnectAttachmentsClient interface {
 	Close() error
 	setGoogleClientInfo(...string)
@@ -119,7 +119,7 @@ type internalInterconnectAttachmentsClient interface {
 	SetLabels(context.Context, *computepb.SetLabelsInterconnectAttachmentRequest, ...gax.CallOption) (*Operation, error)
 }
 
-// InterconnectAttachmentsClient is a client for interacting with Google Compute Engine API.
+// InterconnectAttachmentsClient is a client for interacting with Compute Engine API.
 // Methods, except Close, may be called concurrently. However, fields must not be modified concurrently with method calls.
 //
 // The InterconnectAttachments API.
@@ -133,7 +133,7 @@ type InterconnectAttachmentsClient struct {
 
 // Wrapper methods routed to the internal client.
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *InterconnectAttachmentsClient) Close() error {
 	return c.internalClient.Close()
@@ -305,7 +305,7 @@ func (c *interconnectAttachmentsRESTClient) setGoogleClientInfo(keyval ...string
 	}
 }
 
-// Close closes the connection to the API service. The user should invoke this when
+// Close closes the connection to the API service. **Always** call Close() when
 // the client is no longer required.
 func (c *interconnectAttachmentsRESTClient) Close() error {
 	// Replace httpClient with nil to force cleanup.

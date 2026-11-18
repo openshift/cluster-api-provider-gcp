@@ -28,7 +28,7 @@ type GKEConfigSpec struct{}
 // +kubebuilder:resource:path=gkeconfigs,scope=Namespaced,categories=cluster-api,shortName=gkec
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Bootstrap configuration is ready"
+// +kubebuilder:printcolumn:name="Ready",type="boolean",JSONPath=".status.ready",description="Bootstrap configuration is ready"
 // +kubebuilder:printcolumn:name="DataSecretName",type="string",JSONPath=".status.dataSecretName",description="Name of Secret containing bootstrap data"
 
 // GKEConfig is the schema for the GCP GKE Bootstrap Configuration.
@@ -47,8 +47,15 @@ type GKEConfigStatus struct {
 	Ready bool `json:"ready,omitempty"`
 
 	// DataSecretName is the name of the secret that stores the bootstrap data script.
+	// GKE bootstraps its own nodes, so this is set to an empty string once the GKEConfig is ready.
 	// +optional
 	DataSecretName *string `json:"dataSecretName,omitempty"`
+
+	// initialization provides observations of the GKEConfig initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate
+	// initial MachinePool provisioning.
+	// +optional
+	Initialization GKEConfigInitializationStatus `json:"initialization,omitempty,omitzero"`
 
 	// FailureReason will be set on non-retryable errors
 	// +optional
@@ -65,6 +72,34 @@ type GKEConfigStatus struct {
 	// Conditions defines current service state of the GKEConfig.
 	// +optional
 	Conditions clusterv1beta1.Conditions `json:"conditions,omitempty"`
+
+	// v1beta2 groups all the fields that will be added or modified in GKEConfig's status
+	// with the v1beta2 version of the Cluster API contract.
+	// +optional
+	V1Beta2 *GKEConfigV1Beta2Status `json:"v1beta2,omitempty"`
+}
+
+// GKEConfigInitializationStatus provides observations of the GKEConfig initialization process.
+// +kubebuilder:validation:MinProperties=1
+type GKEConfigInitializationStatus struct {
+	// dataSecretCreated is true when the bootstrap data secret is considered created.
+	// GKE bootstraps its own nodes, so this is set to true once the GCPManagedMachinePool is ready.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate
+	// initial MachinePool provisioning.
+	// +optional
+	DataSecretCreated *bool `json:"dataSecretCreated,omitempty"`
+}
+
+// GKEConfigV1Beta2Status groups the fields that will be added or modified in GKEConfig's status
+// with the v1beta2 version of the Cluster API contract.
+type GKEConfigV1Beta2Status struct {
+	// conditions represents the observations of a GKEConfig's current state.
+	// Known condition types are Ready.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -76,6 +111,32 @@ type GKEConfigList struct {
 	Items           []GKEConfig `json:"items"`
 }
 
+// GetConditions returns the conditions for the GKEConfig.
+func (r *GKEConfig) GetConditions() clusterv1beta1.Conditions {
+	return r.Status.Conditions
+}
+
+// SetConditions sets the conditions for the GKEConfig.
+func (r *GKEConfig) SetConditions(conditions clusterv1beta1.Conditions) {
+	r.Status.Conditions = conditions
+}
+
+// GetV1Beta2Conditions returns the set of conditions for this object.
+func (r *GKEConfig) GetV1Beta2Conditions() []metav1.Condition {
+	if r.Status.V1Beta2 == nil {
+		return nil
+	}
+	return r.Status.V1Beta2.Conditions
+}
+
+// SetV1Beta2Conditions sets the conditions on this object.
+func (r *GKEConfig) SetV1Beta2Conditions(conditions []metav1.Condition) {
+	if r.Status.V1Beta2 == nil {
+		r.Status.V1Beta2 = &GKEConfigV1Beta2Status{}
+	}
+	r.Status.V1Beta2.Conditions = conditions
+}
+
 func init() {
-	SchemeBuilder.Register(&GKEConfig{}, &GKEConfigList{})
+	objectTypes = append(objectTypes, &GKEConfig{}, &GKEConfigList{})
 }
