@@ -7331,6 +7331,7 @@ spec:
         - --v=${CAPG_LOGLEVEL:=0}
         - --tls-min-version=${TLS_MIN_VERSION}
         - --tls-cipher-suites=${TLS_CIPHER_SUITES}
+        - --tls-curve-preferences=${TLS_CURVE_PREFERENCES}
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /home/.gcp/service_account.json
